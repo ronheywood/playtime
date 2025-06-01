@@ -1,0 +1,25 @@
+{
+  "name": "playtime-prototype",
+  "version": "1.0.0",
+  "description": "PlayTime - Music Practice Application Prototype",
+  "main": "index.html",
+  "scripts": {
+    "test": "jest tests/acceptance/",
+    "test:watch": "jest tests/acceptance/ --watch",
+    "serve": "npx http-server . -p 3000",
+    "start": "npm run serve"
+  },  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "http-server": "^14.1.1",
+    "@playwright/test": "^1.40.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "moduleNameMapping": {
+      "\\.(css|less|scss)$": "identity-obj-proxy"
+    }
+  }
+}

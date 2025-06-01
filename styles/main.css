@@ -1,0 +1,258 @@
+/* PlayTime - Main Styles */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+}
+
+header h1 {
+    margin-bottom: 0.5rem;
+}
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+}
+
+/* Upload Section */
+#upload-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    height: fit-content;
+}
+
+#pdf-upload {
+    display: none;
+}
+
+label[for="pdf-upload"] {
+    display: block;
+    padding: 1rem;
+    background-color: #3498db;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+label[for="pdf-upload"]:hover {
+    background-color: #2980b9;
+}
+
+/* Library Section */
+#library-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#scores-list {
+    margin-top: 1rem;
+}
+
+.score-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background-color: #ecf0f1;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.score-item:hover {
+    background-color: #d5dbdb;
+}
+
+.score-item.selected {
+    background-color: #3498db;
+    color: white;
+}
+
+/* Viewer Section */
+#viewer-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.viewer-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.viewer-controls button {
+    padding: 0.5rem 1rem;
+    background-color: #34495e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.viewer-controls button:hover {
+    background-color: #2c3e50;
+}
+
+.viewer-controls button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.current-score-title {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* PDF Viewer */
+.pdf-viewer-container {
+    position: relative;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    overflow: auto;
+    max-height: 70vh;
+}
+
+#pdf-canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.selection-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Highlighting */
+.highlight {
+    position: absolute;
+    border: 2px solid;
+    border-radius: 2px;
+    opacity: 0.3;
+    cursor: pointer;
+    pointer-events: all;
+}
+
+.highlight[data-color="green"] {
+    background-color: #2ecc71;
+    border-color: #27ae60;
+}
+
+.highlight[data-color="amber"] {
+    background-color: #f39c12;
+    border-color: #e67e22;
+}
+
+.highlight[data-color="red"] {
+    background-color: #e74c3c;
+    border-color: #c0392b;
+}
+
+.highlight.selected {
+    opacity: 0.6;
+    border-width: 3px;
+    z-index: 15;
+}
+
+/* Highlight Controls */
+.highlight-controls {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #ecf0f1;
+    border-radius: 4px;
+}
+
+.highlight-controls h3 {
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+.color-btn {
+    font-size: 1.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    margin-right: 1rem;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.color-btn:hover {
+    transform: scale(1.2);
+}
+
+.color-btn.green {
+    color: #2ecc71;
+}
+
+.color-btn.amber {
+    color: #f39c12;
+}
+
+.color-btn.red {
+    color: #e74c3c;
+}
+
+/* Practice Controls */
+.practice-controls {
+    margin-top: 1rem;
+}
+
+.practice-controls button {
+    padding: 0.75rem 1.5rem;
+    background-color: #8e44ad;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 1rem;
+}
+
+.practice-controls button:hover {
+    background-color: #7d3c98;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    main {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+    
+    .viewer-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
