@@ -13,47 +13,52 @@
     </header>
 
     <main>
-        <!-- File Upload Section -->
-        <section id="upload-section">
-            <h2>Add a Score</h2>
-            <input type="file" id="pdf-upload" accept="application/pdf" aria-label="Upload PDF score">
-            <label for="pdf-upload">Choose PDF Score</label>
-        </section>
-
-        <!-- Scores Library Section -->
-        <section id="library-section">
-            <h2>Your Scores</h2>
-            <div id="scores-list">
-                <!-- Dynamic content: list of uploaded scores will appear here -->
-            </div>
-        </section>
-
         <!-- PDF Viewer Section -->
         <section id="viewer-section">
-            <div class="viewer-controls">
-                <button id="prev-page-btn" aria-label="Previous page">◀</button>
-                <span id="page-info">Page 1 of 1</span>
-                <button id="next-page-btn" aria-label="Next page">▶</button>
-                <div class="current-score-title"></div>
+            <div class="viewer-main-row">
+                <div class="viewer-left-col">
+                    <div class="pdf-viewer-container">
+                        <canvas id="pdf-canvas"></canvas>
+                        <div class="selection-overlay" style="display: none;"></div>
+                    </div>
+                    <div id="selected-message"></div>
+                    <!-- Practice Focus Controls -->
+                    <div class="practice-controls">
+                        <button id="focus-section-btn" style="display: none;">Focus on Section</button>
+                        <button id="exit-focus-btn" style="display: none;">Exit Focus</button>
+                    </div>
+                </div>
+                <div class="viewer-right-col">
+                    <div class="viewer-controls">
+                        <div class="nav-controls-row">
+                            <button id="prev-page-btn" aria-label="Previous page">◀</button>
+                            <span id="page-info">Page 1 of 1</span>
+                            <button id="next-page-btn" aria-label="Next page">▶</button>
+                        </div>
+                        <div class="current-score-title"></div>
+                    </div>
+                    <!-- Highlighting Controls -->
+                    <div class="highlight-controls">
+                        <h3>Mark Section Confidence:</h3>
+                        <button id="color-green" class="color-btn green" data-color="green" title="Confident (Green)">●</button>
+                        <button id="color-amber" class="color-btn amber" data-color="amber" title="Unsure (Amber)">●</button>
+                        <button id="color-red" class="color-btn red" data-color="red" title="Need Study (Red)">●</button>
+                    </div>
+                </div>
             </div>
-            
-            <div class="pdf-viewer-container">
-                <canvas id="pdf-canvas"></canvas>
-                <div class="selection-overlay" style="display: none;"></div>
-            </div>
+        </section>
 
-            <!-- Highlighting Controls -->
-            <div class="highlight-controls">
-                <h3>Mark Section Confidence:</h3>
-                <button id="color-green" class="color-btn green" data-color="green" title="Confident (Green)">●</button>
-                <button id="color-amber" class="color-btn amber" data-color="amber" title="Unsure (Amber)">●</button>
-                <button id="color-red" class="color-btn red" data-color="red" title="Need Study (Red)">●</button>
+        <!-- Scores Library Section (now includes Add a Score) -->
+        <section id="library-section">
+            <div class="library-header-row">
+                <h2>Your Scores</h2>
+                <div id="add-score-controls">
+                    <input type="file" id="pdf-upload" accept="application/pdf" aria-label="Upload PDF score">
+                    <label for="pdf-upload">Add a Score</label>
+                </div>
             </div>
-
-            <!-- Practice Focus Controls -->
-            <div class="practice-controls">
-                <button id="focus-section-btn" style="display: none;">Focus on Section</button>
-                <button id="exit-focus-btn" style="display: none;">Exit Focus</button>
+            <div id="scores-list">
+                <!-- Dynamic content: list of uploaded scores will appear here -->
             </div>
         </section>
     </main>
