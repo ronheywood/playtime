@@ -7,6 +7,7 @@
     "test": "jest",
     "test:acceptance": "jest tests/acceptance/",
     "test:integration": "jest tests/integration/",
+    "test:unit": "jest tests/unit/",
     "test:watch": "jest --watch",
     "serve": "npx http-server . -p 3000",
     "start": "npm run serve"
@@ -36,6 +37,12 @@
         "displayName": "integration", 
         "testMatch": ["<rootDir>/tests/integration/**/*.test.js"],
         "testEnvironment": "jsdom",
+        "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]
+      },
+      {
+        "displayName": "unit",
+        "testMatch": ["<rootDir>/tests/unit/**/*.test.js"],
+        "testEnvironment": "node",
         "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]
       }
     ]

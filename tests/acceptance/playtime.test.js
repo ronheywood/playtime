@@ -70,6 +70,12 @@ describe('PlayTime Music Practice App', () => {
         
         global.window.PlayTimeHighlighting = { init: jest.fn().mockResolvedValue(true) };
         
+        // Setup logger for main.js
+        const logger = require('../../scripts/logger');
+        global.logger = logger;
+        // Set logger to silent for tests
+        logger.setSilent(true);
+        
         // Load and execute the main application script
         const mainJsPath = path.join(__dirname, '../../scripts/main.js');
         const mainJsContent = fs.readFileSync(mainJsPath, 'utf8');

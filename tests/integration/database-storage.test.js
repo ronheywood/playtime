@@ -5,11 +5,31 @@
 
 const fs = require('fs');
 const path = require('path');
+const TestHelpers = require('../helpers/test-helpers');
 
 describe('Database Storage Integration', () => {
     let PlayTimeDB;
+    let consoleSpy;
     
     beforeEach(async () => {
+        // Mock console methods to reduce test noise from db.js
+        consoleSpy = {
+            log: jest.spyOn(console, 'log').mockImplementation(() => {}),
+            warn: jest.spyOn(console, 'warn').mockImplementation(() => {}),
+            error: jest.spyOn(console, 'error').mockImplementation(() => {})
+        };
+
+        // Set up a silent logger for dependency injection
+        const silentLogger = {
+            log: () => {},
+            warn: () => {},
+            error: () => {},
+            info: () => {},
+            loading: () => {},
+            debug: () => {},
+            setSilent: () => {}
+        };
+
         // Clean up any existing database
         if (typeof indexedDB !== 'undefined') {
             const deleteReq = indexedDB.deleteDatabase('PlayTimeDB');
@@ -19,22 +39,16 @@ describe('Database Storage Integration', () => {
             });
         }
         
-        // Load the real db.js file and execute it in our test environment
-        const dbPath = path.join(__dirname, '../../scripts/db.js');
-        const dbContent = fs.readFileSync(dbPath, 'utf8');
-        
-        // Create a mock window object for the test environment
-        global.window = global.window || {};
-        global.window.indexedDB = global.indexedDB;
-        
-        // Execute the db.js file content to create window.PlayTimeDB
-        eval(dbContent);
-        
-        // Get reference to the PlayTimeDB object
-        PlayTimeDB = global.window.PlayTimeDB;
+        // Load the db.js factory function and create instance with silent logger
+        PlayTimeDB = TestHelpers.createPlayTimeDB(silentLogger);
     });
 
     afterEach(async () => {
+        // Restore console methods
+        consoleSpy.log.mockRestore();
+        consoleSpy.warn.mockRestore();
+        consoleSpy.error.mockRestore();
+
         // Clean up database after each test
         if (typeof indexedDB !== 'undefined') {
             const deleteReq = indexedDB.deleteDatabase('PlayTimeDB');

@@ -22,9 +22,7 @@ describe('Application Initialization', () => {
     });
     
     afterEach(() => {
-        console.log.mockRestore();
-        console.warn.mockRestore();
-        console.error.mockRestore();
+        TestHelpers.cleanupLoggerMocks();
         
         document.body.innerHTML = '';
         
@@ -61,6 +59,6 @@ describe('Application Initialization', () => {
         
         await TestHelpers.waitFor();
         
-        expect(console.warn).toHaveBeenCalledWith('❌', 'Required elements not found');
+        expect(global.logger.warn).toHaveBeenCalledWith('Required elements not found');
     });
 });

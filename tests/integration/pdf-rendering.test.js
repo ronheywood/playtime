@@ -7,8 +7,27 @@ const TestHelpers = require('../helpers/test-helpers');
 
 describe('PDF Rendering Integration', () => {
     let mockPDFViewer;
+    let consoleSpy;
     
     beforeEach(() => {
+        // Mock console methods to reduce test noise from pdf-viewer.js
+        consoleSpy = {
+            log: jest.spyOn(console, 'log').mockImplementation(() => {}),
+            warn: jest.spyOn(console, 'warn').mockImplementation(() => {}),
+            error: jest.spyOn(console, 'error').mockImplementation(() => {})
+        };
+
+        // Set up a silent logger for dependency injection
+        const silentLogger = {
+            log: () => {},
+            warn: () => {},
+            error: () => {},
+            info: () => {},
+            loading: () => {},
+            debug: () => {},
+            setSilent: () => {}
+        };
+
         // Setup PDF.js mock using helper function
         TestHelpers.setupPDFjsMock();
 
@@ -24,17 +43,16 @@ describe('PDF Rendering Integration', () => {
             return null;
         });
 
-        // Load the PDF viewer module
-        const path = require('path');
-        const fs = require('fs');
-        const pdfViewerPath = path.join(__dirname, '../../scripts/pdf-viewer.js');
-        const pdfViewerContent = fs.readFileSync(pdfViewerPath, 'utf8');
-        eval(pdfViewerContent);
-        
-        mockPDFViewer = global.window.PlayTimePDFViewer;
+        // Load the pdf-viewer.js factory function and create instance with silent logger
+        mockPDFViewer = TestHelpers.createPlayTimePDFViewer(silentLogger);
     });
 
     afterEach(() => {
+        // Restore console methods
+        consoleSpy.log.mockRestore();
+        consoleSpy.warn.mockRestore();
+        consoleSpy.error.mockRestore();
+        
         jest.restoreAllMocks();
     });
 

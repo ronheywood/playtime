@@ -183,6 +183,17 @@ const TestHelpers = {
      * Setup mock globals for main.js integration tests
      */
     setupMainJsMocks: () => {
+        // Setup logger for tests
+        const logger = require('../../scripts/logger');
+        global.logger = logger;
+        
+        // Mock logger methods for testing
+        jest.spyOn(logger, 'info').mockImplementation(() => {});
+        jest.spyOn(logger, 'warn').mockImplementation(() => {});
+        jest.spyOn(logger, 'error').mockImplementation(() => {});
+        jest.spyOn(logger, 'loading').mockImplementation(() => {});
+        jest.spyOn(logger, 'debug').mockImplementation(() => {});
+        
         global.window = global.window || {};
         global.window.PlayTimeDB = { 
             init: jest.fn().mockResolvedValue(true),
@@ -256,6 +267,28 @@ const TestHelpers = {
         return mockPage;
     },
 
+    // Factory functions for dependency injection in tests
+    
+    /**
+     * Create PlayTime Database instance using production factory with dependency injection
+     * @param {Object} logger - Logger instance to use for logging
+     * @returns {Object} Database interface
+     */
+    createPlayTimeDB: (logger = console) => {
+        const createPlayTimeDB = require('../../scripts/db');
+        return createPlayTimeDB(logger);
+    },
+
+    /**
+     * Create PlayTime PDF Viewer instance using production factory with dependency injection
+     * @param {Object} logger - Logger instance to use for logging
+     * @returns {Object} PDF Viewer interface
+     */
+    createPlayTimePDFViewer: (logger = console) => {
+        const createPlayTimePDFViewer = require('../../scripts/pdf-viewer');
+        return createPlayTimePDFViewer(logger);
+    },
+
     // Utility Helpers
 
     /**
@@ -297,6 +330,19 @@ const TestHelpers = {
     assertPageInfoDisplay: (currentPage, totalPages) => {
         const pageInfo = document.querySelector('#page-info');
         expect(pageInfo?.textContent).toBe(`Page ${currentPage} of ${totalPages}`);
+    },
+
+    /**
+     * Clean up logger mocks after tests
+     */
+    cleanupLoggerMocks: () => {
+        if (global.logger) {
+            if (global.logger.info?.mockRestore) global.logger.info.mockRestore();
+            if (global.logger.warn?.mockRestore) global.logger.warn.mockRestore();
+            if (global.logger.error?.mockRestore) global.logger.error.mockRestore();
+            if (global.logger.loading?.mockRestore) global.logger.loading.mockRestore();
+            if (global.logger.debug?.mockRestore) global.logger.debug.mockRestore();
+        }
     }
 };
 

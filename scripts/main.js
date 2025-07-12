@@ -7,14 +7,14 @@
  * 🔧 REFACTORING OPPORTUNITIES:
  * 1. Magic numbers and hardcoded values scattered throughout
  * 2. DOM selectors are hardcoded - should be configurable
- * 3. Error handling inconsistency (console.warn vs console.error)
+ * 3. ✅ Error handling inconsistency (console.warn vs console.error) - Now using centralized logger
  * 4. Functions violate Single Responsibility Principle
  * 5. Missing input validation and type documentation
  * 6. Inline CSS styles mixed with JavaScript logic
  * 
  * 📋 SPECIFIC ISSUES TO ADDRESS:
  * ✅ Extract configuration objects for selectors and constants
- * - Create consistent error handling utility
+ * ✅ Create centralized logging utility
  * - Break down large functions (especially initializeFileUpload)
  * - Add JSDoc type documentation
  * - Move UI styles to CSS classes
@@ -59,7 +59,7 @@ const CONFIG = {
 // File validation helper
 // TODO: Add more comprehensive validation (file size, MIME type verification)
 function isValidPDFFile(file) {
-    return file && file.type === CONFIG.FILE_TYPES.PDF;
+    return file !== null && file !== undefined && file.type === CONFIG.FILE_TYPES.PDF;
 }
 
 // UI update helper for better extensibility
@@ -102,7 +102,7 @@ async function initializeFileUpload(database = null) {
     
     if (!fileInput || !pdfViewer) {
         // ISSUE: Inconsistent error handling - some places use warn, others error
-        console.warn('❌', CONFIG.MESSAGES.ERROR_ELEMENTS_NOT_FOUND);
+        logger.warn(CONFIG.MESSAGES.ERROR_ELEMENTS_NOT_FOUND);
         return;
     }
 
@@ -110,7 +110,7 @@ async function initializeFileUpload(database = null) {
         const file = event.target.files[0];
         
         if (!file) {
-            console.warn('❌', CONFIG.MESSAGES.ERROR_NO_FILE);
+            logger.warn(CONFIG.MESSAGES.ERROR_NO_FILE);
             return;
         }
         
@@ -123,8 +123,8 @@ async function initializeFileUpload(database = null) {
                 try {
                     await database.savePDF(file);
                 } catch (error) {
-                    // ISSUE: Using console.warn for database errors but console.error for PDF errors
-                    console.warn('❌ Failed to save PDF to database:', error);
+                    // Using consistent error logging for database failures
+                    logger.error('Failed to save PDF to database:', error);
                 }
             }
             
@@ -132,18 +132,18 @@ async function initializeFileUpload(database = null) {
             // TODO: Extract to separate function
             if (window.PlayTimePDFViewer && window.PlayTimePDFViewer.loadPDF) {
                 try {
-                    console.log('🔄 Loading PDF into viewer...');
+                    logger.loading('Loading PDF into viewer...');
                     await window.PlayTimePDFViewer.loadPDF(file);
                     
                     // Use configuration for default page
                     await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
-                    console.log('✅ PDF successfully loaded and rendered');
+                    logger.info('PDF successfully loaded and rendered');
                 } catch (error) {
-                    console.error('❌ Failed to load PDF into viewer:', error);
+                    logger.error('Failed to load PDF into viewer:', error);
                     updatePDFViewerStatus(pdfViewer, 'Error loading PDF: ' + error.message, true);
                 }
             } else {
-                console.warn('❌', CONFIG.MESSAGES.ERROR_PDF_VIEWER_UNAVAILABLE);
+                logger.warn(CONFIG.MESSAGES.ERROR_PDF_VIEWER_UNAVAILABLE);
             }
         } else {
             updatePDFViewerStatus(pdfViewer, CONFIG.MESSAGES.ERROR_INVALID_FILE, true);
@@ -169,13 +169,13 @@ function initializePageNavigation(pdfViewer = null) {
     const nextPageBtn = document.querySelector(CONFIG.SELECTORS.NEXT_BUTTON);
     
     if (!prevPageBtn || !nextPageBtn) {
-        console.warn('❌ Page navigation buttons not found');
+        logger.warn('Page navigation buttons not found');
         return;
     }
     
     // TODO: Add more specific validation for required methods
     if (!pdfViewer || !pdfViewer.prevPage || !pdfViewer.nextPage) {
-        console.warn('❌', CONFIG.MESSAGES.ERROR_NAVIGATION_UNAVAILABLE);
+        logger.warn(CONFIG.MESSAGES.ERROR_NAVIGATION_UNAVAILABLE);
         return;
     }
     
@@ -185,7 +185,7 @@ function initializePageNavigation(pdfViewer = null) {
         try {
             await pdfViewer.prevPage();
         } catch (error) {
-            console.error('❌ Failed to navigate to previous page:', error);
+            logger.error('Failed to navigate to previous page:', error);
         }
     });
     
@@ -193,11 +193,11 @@ function initializePageNavigation(pdfViewer = null) {
         try {
             await pdfViewer.nextPage();
         } catch (error) {
-            console.error('❌ Failed to navigate to next page:', error);
+            logger.error('Failed to navigate to next page:', error);
         }
     });
     
-    console.log('✅ Page navigation buttons initialized');
+    logger.info('Page navigation buttons initialized');
 }
 
 // Initialize the application when DOM is ready
@@ -207,6 +207,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Application starting
     
     try {
+        // Initialize modules with logger dependency injection
+        // Get logger from window (loaded from logger.js script tag)
+        const appLogger = window.logger || console;
+        
+        // Create module instances with injected logger
+        if (typeof window.createPlayTimeDB === 'function') {
+            window.PlayTimeDB = window.createPlayTimeDB(appLogger);
+        }
+        if (typeof window.createPlayTimePDFViewer === 'function') {
+            window.PlayTimePDFViewer = window.createPlayTimePDFViewer(appLogger);
+        }
+        // PlayTimeHighlighting doesn't need refactoring yet - keeping as is
+        
         // Initialize file upload handler first (driven by failing tests)
         await initializeFileUpload(window.PlayTimeDB);
         
@@ -214,7 +227,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         // TODO: Add error handling for each module initialization
         await window.PlayTimeDB.init();
         await window.PlayTimePDFViewer.init();
-        await window.PlayTimeHighlighting.init();
+        if (window.PlayTimeHighlighting) {
+            await window.PlayTimeHighlighting.init();
+        }
         
         // Initialize page navigation buttons
         initializePageNavigation(window.PlayTimePDFViewer);
@@ -242,20 +257,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.body.appendChild(statusElement);
         
     } catch (error) {
-        console.error('❌ Failed to initialize PlayTime:', error);
+        logger.error('Failed to initialize PlayTime:', error);
     }
 });
 
 // Export for testing
-// TODO: Export actual functions for better testability instead of placeholder
 // TODO: Consider using ES6 modules (export/import) instead of CommonJS
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { 
-        PlayTime: 'placeholder',
-        // TODO: Export these functions for testing:
-        // isValidPDFFile,
-        // updatePDFViewerStatus,
-        // initializeFileUpload,
-        // initializePageNavigation
+        CONFIG,
+        isValidPDFFile,
+        updatePDFViewerStatus,
+        initializeFileUpload,
+        initializePageNavigation
     };
 }
