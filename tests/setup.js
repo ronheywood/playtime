@@ -6,7 +6,19 @@
 // Mock IndexedDB for testing
 global.indexedDB = {
     open: jest.fn(),
-    deleteDatabase: jest.fn()
+    deleteDatabase: jest.fn(() => {
+        const mockRequest = {
+            onsuccess: null,
+            onerror: null,
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn()
+        };
+        // Simulate async success callback
+        setTimeout(() => {
+            if (mockRequest.onsuccess) mockRequest.onsuccess();
+        }, 0);
+        return mockRequest;
+    })
 };
 
 // Mock File API

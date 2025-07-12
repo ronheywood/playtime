@@ -128,41 +128,39 @@ Task StartServer -depends ValidateTests {
     
     # Check if server is already running
     try {
-        $response = Invoke-WebRequest -Uri $ServerUrl -TimeoutSec 5 -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri $ServerUrl -TimeoutSec 3 -ErrorAction Stop
         Write-Host "✅ Server already running at $ServerUrl" -ForegroundColor Green
         return
     }
     catch {
         # Server not running, start it
+        Write-Host "⏳ Starting server on port $ServerPort..." -ForegroundColor Yellow
     }
     
-    Write-Host "⏳ Starting server on port $ServerPort..." -ForegroundColor Yellow
+    # Start server in background using Start-Process (detached)
+    $serverProcess = Start-Process -FilePath "cmd" -ArgumentList "/c", "npm", "run", "serve" -WorkingDirectory $ProjectRoot -WindowStyle Hidden -PassThru
     
-    # Start server in background using PowerShell job
-    $serverJob = Start-Job -ScriptBlock {
-        param($ProjectRoot, $ServerPort)
-        Set-Location $ProjectRoot
-        cmd /c "npm run serve"
-    } -ArgumentList $ProjectRoot, $ServerPort
-    
-    # Wait for server to start
+    # Wait for server to start responding
     $attempts = 0
-    $maxAttempts = 30
+    $maxAttempts = 15
     
     do {
-        Start-Sleep -Seconds 1
+        Start-Sleep -Seconds 2
         $attempts++
         try {
-            $testResponse = Invoke-WebRequest -Uri $ServerUrl -TimeoutSec 2 -ErrorAction Stop
-            Write-Host "✅ Server started successfully at $ServerUrl" -ForegroundColor Green
-            return $serverJob
+            $testResponse = Invoke-WebRequest -Uri $ServerUrl -TimeoutSec 3 -ErrorAction Stop
+            Write-Host "✅ Server started successfully at $ServerUrl (PID: $($serverProcess.Id))" -ForegroundColor Green
+            
+            # Store the process ID in a global variable for cleanup
+            $global:ServerProcessId = $serverProcess.Id
+            return
         }
         catch {
             if ($attempts -eq $maxAttempts) {
-                Stop-Job $serverJob -ErrorAction SilentlyContinue
-                Remove-Job $serverJob -ErrorAction SilentlyContinue
+                Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue
                 throw "❌ Server failed to start after $maxAttempts attempts"
             }
+            Write-Host "." -NoNewline -ForegroundColor Gray
         }
     } while ($attempts -lt $maxAttempts)
 }
@@ -242,6 +240,20 @@ Task StopServer {
     Write-Host "⏹️ Stopping development server..." -ForegroundColor Cyan
     
     try {
+        # First try to stop using the stored process ID
+        if ($global:ServerProcessId) {
+            try {
+                Stop-Process -Id $global:ServerProcessId -Force -ErrorAction Stop
+                Write-Host "✅ Server stopped (PID: $global:ServerProcessId)" -ForegroundColor Green
+                $global:ServerProcessId = $null
+                return
+            }
+            catch {
+                Write-Host "⚠️ Could not stop server by PID, trying port-based cleanup..." -ForegroundColor Yellow
+            }
+        }
+        
+        # Fallback: find and stop processes using the port
         $processes = Get-NetTCPConnection -LocalPort $ServerPort -ErrorAction SilentlyContinue | 
                     Select-Object -ExpandProperty OwningProcess | 
                     Get-Process -Id { $_ } -ErrorAction SilentlyContinue

@@ -13,12 +13,11 @@
     "jest-environment-jsdom": "^29.7.0",
     "http-server": "^14.1.1",
     "@playwright/test": "^1.40.0"
-  },
-  "jest": {
+  },  "jest": {
     "testEnvironment": "jsdom",
     "testMatch": ["**/tests/**/*.test.js"],
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
-    "moduleNameMapping": {
+    "moduleNameMapper": {
       "\\.(css|less|scss)$": "identity-obj-proxy"
     }
   }

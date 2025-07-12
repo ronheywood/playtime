@@ -4,29 +4,22 @@
  */
 
 describe('PlayTime Music Practice App', () => {
-    let page;
-    let browser;
-
     beforeAll(async () => {
-        // Setup for browser testing (using Playwright)
-        // This will be configured once we have the basic structure
+        // JSDOM setup is handled in tests/setup.js
     });
 
     beforeEach(async () => {
-        // Navigate to the app and clear IndexedDB before each test
-        await page.goto('http://localhost:3000'); // Adjust URL as needed
-        await page.evaluate(() => {
-            // Clear IndexedDB for clean test state
-            return new Promise((resolve) => {
-                const deleteReq = indexedDB.deleteDatabase('PlayTimeDB');
-                deleteReq.onsuccess = () => resolve();
-                deleteReq.onerror = () => resolve();
-            });
+        // Load the app HTML content using JSDOM
+        const fs = require('fs');
+        const path = require('path');
+        const htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');        document.documentElement.innerHTML = htmlContent;
+        
+        // Clear IndexedDB for clean test state using JSDOM
+        await new Promise((resolve) => {
+            const deleteReq = global.indexedDB.deleteDatabase('PlayTimeDB');
+            deleteReq.onsuccess = () => resolve();
+            deleteReq.onerror = () => resolve();
         });
-    });
-
-    afterAll(async () => {
-        if (browser) await browser.close();
     });
 
     describe('Activity 1: Manage Music Scores', () => {
@@ -36,13 +29,24 @@ describe('PlayTime Music Practice App', () => {
                 const testPdfPath = 'tests/fixtures/sample-score.pdf';
                 
                 // Act
-                const fileInput = await page.locator('input[type="file"]');
-                await expect(fileInput).toBeVisible();
-                await fileInput.setInputFiles(testPdfPath);
+                const fileInput = document.querySelector('input[type="file"]');
+                expect(fileInput).toBeTruthy();
                 
-                // Assert
-                await expect(page.locator('#pdf-canvas')).toBeVisible();
-                await expect(page.locator('.pdf-viewer-container')).toContainText('sample-score.pdf');
+                // Simulate file selection (we'll create a mock file since we can't actually read files in JSDOM)
+                const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
+                Object.defineProperty(fileInput, 'files', {
+                    value: [mockFile],
+                    writable: false,
+                });
+                
+                // Trigger change event
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                // Assert - Check if PDF canvas and viewer are present (these will fail until we implement them)
+                const pdfCanvas = document.querySelector('#pdf-canvas');
+                const pdfViewer = document.querySelector('.pdf-viewer-container');
+                expect(pdfCanvas).toBeTruthy();
+                expect(pdfViewer?.textContent).toContain('sample-score.pdf');
             });
 
             test('As a musician, I want the uploaded PDF to be saved locally in my browser', async () => {
