@@ -7,4 +7,4 @@ class AbstractDatabase {
     async delete(id) { throw new Error('Not implemented'); }
 }
 
-module.exports = AbstractDatabase;
+export default AbstractDatabase;

@@ -5,9 +5,11 @@
 
 class Logger {
     constructor() {
-        this.isTestEnvironment = typeof jest !== 'undefined' || 
-                                 typeof global !== 'undefined' && global.isTestEnvironment ||
-                                 process?.env?.NODE_ENV === 'test';
+        this.isTestEnvironment = (
+            typeof jest !== 'undefined' ||
+            (typeof global !== 'undefined' && global.isTestEnvironment) ||
+            (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')
+        );
         this.isSilent = this.isTestEnvironment; // Silent by default in tests
     }
 
@@ -69,7 +71,12 @@ class Logger {
      * @param {...any} args - Additional arguments
      */
     debug(message, ...args) {
-        if (!this.isSilent && process?.env?.NODE_ENV === 'development') {
+        if (
+            !this.isSilent &&
+            typeof process !== 'undefined' &&
+            process.env &&
+            process.env.NODE_ENV === 'development'
+        ) {
             console.log('🐛', message, ...args);
         }
     }

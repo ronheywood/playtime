@@ -13,12 +13,12 @@ function createPlayTimePDFViewer(logger = console) {
 
     return {
         init: function() {
-            logger.log('🔄 PDF Viewer initializing...');
+            logger.info('🔄 PDF Viewer initializing...');
             
             // Configure PDF.js worker
             if (typeof pdfjsLib !== 'undefined') {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                logger.log('✅ PDF.js configured');
+                logger.info('✅ PDF.js configured');
             }
             
             return Promise.resolve();
@@ -26,7 +26,7 @@ function createPlayTimePDFViewer(logger = console) {
         
         loadPDF: async function(file) {
             try {
-                logger.log('📖 Loading PDF:', file.name);
+                logger.info('📖 Loading PDF:', file.name);
                 
                 // Convert File to ArrayBuffer
                 const arrayBuffer = await file.arrayBuffer();
@@ -37,7 +37,7 @@ function createPlayTimePDFViewer(logger = console) {
                 totalPages = pdf.numPages;
                 currentPage = 1;
                 
-                logger.log(`✅ PDF loaded: ${totalPages} pages`);
+                logger.info(`✅ PDF loaded: ${totalPages} pages`);
                 
                 // Render first page
                 await this.renderPage(1);
@@ -59,7 +59,7 @@ function createPlayTimePDFViewer(logger = console) {
             }
             
             try {
-                logger.log(`🖼️ Rendering page ${pageNum}`);
+                logger.info(`🖼️ Rendering page ${pageNum}`);
                 
                 const page = await currentPDF.getPage(pageNum);
                 const canvas = document.getElementById('pdf-canvas');
@@ -87,7 +87,7 @@ function createPlayTimePDFViewer(logger = console) {
                 await page.render(renderContext).promise;
                 currentPage = pageNum;
                 
-                logger.log(`✅ Page ${pageNum} rendered`);
+                logger.info(`✅ Page ${pageNum} rendered`);
                 return Promise.resolve();
             } catch (error) {
                 logger.error(`❌ Failed to render page ${pageNum}:`, error);

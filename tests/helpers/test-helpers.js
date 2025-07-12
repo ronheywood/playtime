@@ -195,11 +195,15 @@ const TestHelpers = {
         jest.spyOn(logger, 'debug').mockImplementation(() => {});
         
         global.window = global.window || {};
-        global.window.PlayTimeDB = { 
-            init: jest.fn().mockResolvedValue(true),
-            savePDF: jest.fn().mockResolvedValue(true),
-            getAllPDFs: jest.fn().mockResolvedValue([]),
-            getPDF: jest.fn().mockResolvedValue(null)
+        // Inject a createPlayTimeDB factory that returns a mock/in-memory DB with the new abstraction
+        global.window.createPlayTimeDB = (logger = console) => {
+            return {
+                init: jest.fn().mockResolvedValue(true),
+                save: jest.fn().mockResolvedValue(true),
+                getAll: jest.fn().mockResolvedValue([]),
+                get: jest.fn().mockResolvedValue(null),
+                delete: jest.fn().mockResolvedValue(true)
+            };
         };
         global.window.PlayTimeHighlighting = { 
             init: jest.fn().mockResolvedValue(true),

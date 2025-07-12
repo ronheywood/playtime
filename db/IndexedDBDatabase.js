@@ -1,14 +1,15 @@
+
 // IndexedDBDatabase.js
-const AbstractDatabase = require('../db/AbstractDatabase');
+import AbstractDatabase from '../db/AbstractDatabase.js';
 
 const DB_NAME = 'PlayTimeDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'pdfFiles';
 
-class IndexedDBDatabase extends AbstractDatabase {
+export default class IndexedDBDatabase extends AbstractDatabase {
     // Abstract method: save(item)
-    async save(item) {
-        this.logger.log('💾 Saving PDF:', file?.name);
+    async save(file) {
+        this.logger.info('💾 Saving PDF:', file?.name);
         return new Promise((resolve, reject) => {
             if (!file) {
                 this.logger.warn('⚠️ No file provided');
@@ -33,7 +34,7 @@ class IndexedDBDatabase extends AbstractDatabase {
                 const store = transaction.objectStore(STORE_NAME);
                 const request = store.add(pdfData);
                 request.onsuccess = () => {
-                    this.logger.log('✅ PDF saved with ID:', request.result);
+                    this.logger.info('✅ PDF saved with ID:', request.result);
                     resolve(request.result);
                 };
                 request.onerror = () => {
@@ -51,7 +52,7 @@ class IndexedDBDatabase extends AbstractDatabase {
 
     // Abstract method: getAll()
     async getAll() {
-        this.logger.log('📄 Retrieving all PDFs');
+        this.logger.info('📄 Retrieving all PDFs');
         return new Promise((resolve, reject) => {
             if (!this._db) {
                 this.logger.error('❌ Database not initialized');
@@ -69,7 +70,7 @@ class IndexedDBDatabase extends AbstractDatabase {
                     size: pdf.size,
                     uploadDate: pdf.uploadDate
                 }));
-                this.logger.log('✅ Retrieved PDFs:', pdfs.length);
+                this.logger.info('✅ Retrieved PDFs:', pdfs.length);
                 resolve(pdfs);
             };
             request.onerror = () => {
@@ -81,7 +82,7 @@ class IndexedDBDatabase extends AbstractDatabase {
 
     // Abstract method: get(id)
     async get(id) {
-        this.logger.log('📄 Retrieving PDF by ID:', id);
+        this.logger.info('📄 Retrieving PDF by ID:', id);
         return new Promise((resolve, reject) => {
             if (!id) {
                 resolve(null);
@@ -105,10 +106,10 @@ class IndexedDBDatabase extends AbstractDatabase {
                         data: request.result.data,
                         uploadDate: request.result.uploadDate
                     };
-                    this.logger.log('✅ Retrieved PDF:', pdf.name);
+                    this.logger.info('✅ Retrieved PDF:', pdf.name);
                     resolve(pdf);
                 } else {
-                    this.logger.log('📄 PDF not found for ID:', id);
+                    this.logger.info('📄 PDF not found for ID:', id);
                     resolve(null);
                 }
             };
@@ -121,7 +122,7 @@ class IndexedDBDatabase extends AbstractDatabase {
 
     // Abstract method: delete(id)
     async delete(id) {
-        this.logger.log('🗑️ Deleting PDF by ID:', id);
+        this.logger.info('🗑️ Deleting PDF by ID:', id);
         return new Promise((resolve, reject) => {
             if (!this._db) {
                 this.logger.error('❌ Database not initialized');
@@ -132,7 +133,7 @@ class IndexedDBDatabase extends AbstractDatabase {
             const store = transaction.objectStore(STORE_NAME);
             const request = store.delete(Number(id));
             request.onsuccess = () => {
-                this.logger.log('✅ Deleted PDF with ID:', id);
+                this.logger.info('✅ Deleted PDF with ID:', id);
                 resolve();
             };
             request.onerror = () => {
@@ -148,7 +149,7 @@ class IndexedDBDatabase extends AbstractDatabase {
     }
 
     async init() {
-        this.logger.log('🔄 DB initializing...');
+        this.logger.info('🔄 DB initializing...');
         return new Promise((resolve, reject) => {
             if (typeof indexedDB === 'undefined') {
                 this.logger.warn('⚠️ IndexedDB not supported');
@@ -162,7 +163,7 @@ class IndexedDBDatabase extends AbstractDatabase {
             };
             request.onsuccess = () => {
                 this._db = request.result;
-                this.logger.log('✅ DB initialized successfully');
+                this.logger.info('✅ DB initialized successfully');
                 resolve();
             };
             request.onupgradeneeded = (event) => {
@@ -174,7 +175,7 @@ class IndexedDBDatabase extends AbstractDatabase {
                     });
                     store.createIndex('name', 'name', { unique: false });
                     store.createIndex('uploadDate', 'uploadDate', { unique: false });
-                    this.logger.log('✅ DB schema created');
+                    this.logger.info('✅ DB schema created');
                 }
             };
         });
@@ -185,4 +186,4 @@ class IndexedDBDatabase extends AbstractDatabase {
     }
 }
 
-module.exports = IndexedDBDatabase;
+

@@ -217,10 +217,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Get logger from window (loaded from logger.js script tag)
         const appLogger = window.logger || console;
         
-        // Create module instances with injected logger
+        // Create module instances with injected functions
+        // DB: allow test injection, fallback to IndexedDBDatabase if not provided
         if (typeof window.createPlayTimeDB === 'function') {
             window.PlayTimeDB = window.createPlayTimeDB(appLogger);
+        } else {
+            // Fallback: dynamically import IndexedDBDatabase (ES module)
+            const module = await import('../db/IndexedDBDatabase.js');
+            window.PlayTimeDB = new module.default(appLogger);
         }
+
         if (typeof window.createPlayTimePDFViewer === 'function') {
             window.PlayTimePDFViewer = window.createPlayTimePDFViewer(appLogger);
         }
