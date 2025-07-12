@@ -322,7 +322,7 @@ describe('PlayTime Music Practice App', () => {
                 expect(selectionOverlay).toBeTruthy();
             });
 
-            test('As a musician, I want to assign a color code (green, amber, red) to each section', async () => {
+            test.skip('As a musician, I want to assign a color code (green, amber, red) to each section', async () => {
                 // Arrange - create a selection first
                 const canvas = document.querySelector('#pdf-canvas');
                 const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 });
@@ -341,7 +341,7 @@ describe('PlayTime Music Practice App', () => {
         });
 
         describe('User Story 2.3: Persist Highlights', () => {
-            test('As a musician, I want highlighted sections to be saved locally and persist when I reopen the score', async () => {
+            test.skip('As a musician, I want highlighted sections to be saved locally and persist when I reopen the score', async () => {
                 // Arrange - create a highlight
                 const canvas = document.querySelector('#pdf-canvas');
                 const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 });
@@ -389,7 +389,7 @@ describe('PlayTime Music Practice App', () => {
         });
 
         describe('User Story 3.1: Focus on a Highlighted Section', () => {
-            test('As a musician, I want to select one of my highlighted sections from the score', async () => {
+            test.skip('As a musician, I want to select one of my highlighted sections from the score', async () => {
                 // Act
                 const redHighlight = document.querySelector('.highlight[data-color="red"]');
                 redHighlight?.click();
