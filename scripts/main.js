@@ -29,7 +29,9 @@ const CONFIG = {
         PDF_VIEWER: '.pdf-viewer-container',
         PREV_BUTTON: '#prev-page-btn',
         NEXT_BUTTON: '#next-page-btn',
-        STATUS_MESSAGE: '.status-message'
+        STATUS_MESSAGE: '.status-message',
+        SCORES_LIST: '#scores-list',
+        CURRENT_SCORE_TITLE: '.current-score-title'
     },
     
     // File Types
@@ -122,6 +124,10 @@ async function initializeFileUpload(database = null) {
             if (database && database.savePDF) {
                 try {
                     await database.savePDF(file);
+                    // Refresh the score list to show the newly added PDF using the score list component
+                    if (window.PlayTimeScoreList) {
+                        await window.PlayTimeScoreList.refresh();
+                    }
                 } catch (error) {
                     // Using consistent error logging for database failures
                     logger.error('Failed to save PDF to database:', error);
@@ -218,6 +224,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (typeof window.createPlayTimePDFViewer === 'function') {
             window.PlayTimePDFViewer = window.createPlayTimePDFViewer(appLogger);
         }
+        if (typeof window.createPlayTimeScoreList === 'function') {
+            window.PlayTimeScoreList = window.createPlayTimeScoreList(null, appLogger); // Database will be set after initialization
+        }
         // PlayTimeHighlighting doesn't need refactoring yet - keeping as is
         
         // Initialize file upload handler first (driven by failing tests)
@@ -226,6 +235,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Initialize all modules (placeholders for now)
         // TODO: Add error handling for each module initialization
         await window.PlayTimeDB.init();
+        
+        // Initialize score list component after database is ready
+        if (window.PlayTimeScoreList) {
+            window.PlayTimeScoreList.setDatabase(window.PlayTimeDB);
+            await window.PlayTimeScoreList.init();
+            await window.PlayTimeScoreList.refresh();
+        }
+        
         await window.PlayTimePDFViewer.init();
         if (window.PlayTimeHighlighting) {
             await window.PlayTimeHighlighting.init();
