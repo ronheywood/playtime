@@ -1,5 +1,7 @@
 # PlayTime
 
+[![CI/CD Pipeline](https://github.com/USERNAME/REPO-NAME/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/REPO-NAME/actions/workflows/ci.yml)
+
 Because musicians need to lean and practice pieces, and they need structure to practice.
 
 Notable studies into accelerated learning have helped define techniques that can be used in a session structure which will work well to help Musicians get the most out of their practice time. 

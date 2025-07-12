@@ -6,14 +6,17 @@
   "scripts": {
     "test": "jest tests/acceptance/",
     "test:watch": "jest tests/acceptance/ --watch",
+    "test:acceptance": "jest tests/acceptance/",
     "serve": "npx http-server . -p 3000",
     "start": "npm run serve"
-  },  "devDependencies": {
+  },
+  "devDependencies": {
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "http-server": "^14.1.1",
     "@playwright/test": "^1.40.0"
-  },  "jest": {
+  },
+  "jest": {
     "testEnvironment": "jsdom",
     "testMatch": ["**/tests/**/*.test.js"],
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],

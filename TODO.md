@@ -11,7 +11,12 @@ We have successfully established the Outside-In TDD foundation with working acce
 - [x] **Build automation** - PSake build system with comprehensive tasks
 - [x] **Tech choices installed** - All dependencies ready (PDF.js, IndexedDB mocks)
 - [x] **Complete test conversion** - ✅ ALL Playwright → JSDOM syntax converted!
-- [ ] **Fix PSake StartServer hanging** - Clean up build system for smooth CI/CD
+- [x] **GitHub Actions CI/CD Pipeline** - ✅ Automated testing on every commit/PR
+  - [x] Created `.github/workflows/ci.yml` with comprehensive pipeline
+  - [x] Multi-Node testing (18.x, 20.x), build checks, security audit
+  - [x] Added build status badge to README
+  - [x] Tests run in clean Node.js environment with `npm ci` + `npm test`
+- [ ] **Fix PSake StartServer hanging** - Clean up build system for local development
 
 ### 🎯 2. Sandbox Clicky Prototype for UAT
 **Goal:** Get something clickable ASAP for user feedback
