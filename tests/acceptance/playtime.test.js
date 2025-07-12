@@ -9,11 +9,65 @@ describe('PlayTime Music Practice App', () => {
     });
 
     beforeEach(async () => {
-        // Load the app HTML content using JSDOM
+        // Clean up first
+        document.head.innerHTML = '';
+        document.body.innerHTML = '';
+        
+        // Load the app HTML content and set up DOM properly
         const fs = require('fs');
         const path = require('path');
-        const htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
-        document.documentElement.innerHTML = htmlContent;
+        let htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
+        
+        // Remove script tags to prevent interference in test environment
+        htmlContent = htmlContent.replace(/<script[^>]*>.*?<\/script>/gi, '');
+        htmlContent = htmlContent.replace(/<script[^>]*\/>/gi, '');
+        
+        // Extract head and body content from the HTML file manually
+        const headMatch = htmlContent.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+        const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        
+        if (headMatch) {
+            document.head.innerHTML = headMatch[1];
+        }
+        
+        if (bodyMatch) {
+            document.body.innerHTML = bodyMatch[1];
+        }
+        
+        // Verify DOM elements are present BEFORE continuing
+        const pdfCanvas = document.querySelector('#pdf-canvas');
+        const fileInput = document.querySelector('input[type="file"]');
+        const pdfViewer = document.querySelector('.pdf-viewer-container');
+        
+        if (!pdfCanvas || !fileInput || !pdfViewer) {
+            throw new Error(`Missing required DOM elements after setup`);
+        }
+        
+        // Mock the PlayTime modules that main.js depends on
+        global.window.PlayTimeDB = { init: jest.fn().mockResolvedValue(true) };
+        global.window.PlayTimePDFViewer = { init: jest.fn().mockResolvedValue(true) };
+        global.window.PlayTimeHighlighting = { init: jest.fn().mockResolvedValue(true) };
+        
+        // Load and execute the main application script
+        const mainJsPath = path.join(__dirname, '../../scripts/main.js');
+        const mainJsContent = fs.readFileSync(mainJsPath, 'utf8');
+        eval(mainJsContent);
+        
+        // Trigger DOMContentLoaded event to initialize the app
+        const domContentLoadedEvent = new Event('DOMContentLoaded');
+        document.dispatchEvent(domContentLoadedEvent);
+        
+        // Wait for initialization to complete
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
+        // Verify elements still exist AFTER app initialization
+        const postInitCanvas = document.querySelector('#pdf-canvas');
+        const postInitInput = document.querySelector('input[type="file"]');
+        const postInitViewer = document.querySelector('.pdf-viewer-container');
+        
+        if (!postInitCanvas || !postInitInput || !postInitViewer) {
+            throw new Error(`DOM elements missing after app initialization`);
+        }
         
         // Clear IndexedDB for clean test state using JSDOM
         await new Promise((resolve) => {

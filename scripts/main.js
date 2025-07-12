@@ -1,8 +1,6 @@
 // PlayTime Main Application Entry Point
 // This file will be implemented during Outside-In development
 
-console.log('🎵 PlayTime application loading...');
-
 // Constants for file types and messages
 const FILE_TYPES = {
     PDF: 'application/pdf'
@@ -23,12 +21,21 @@ function isValidPDFFile(file) {
 function updatePDFViewerStatus(pdfViewer, message, isError = false) {
     if (!pdfViewer) return;
     
-    pdfViewer.textContent = message;
+    // Find or create a status element instead of replacing all content
+    let statusElement = pdfViewer.querySelector('.status-message');
+    if (!statusElement) {
+        statusElement = document.createElement('div');
+        statusElement.className = 'status-message';
+        pdfViewer.appendChild(statusElement);
+    }
+    
+    statusElement.textContent = message;
+    
     // Future: could add CSS classes for styling
     if (isError) {
-        pdfViewer.setAttribute('data-status', 'error');
+        statusElement.setAttribute('data-status', 'error');
     } else {
-        pdfViewer.setAttribute('data-status', 'success');
+        statusElement.setAttribute('data-status', 'success');
     }
 }
 
@@ -57,12 +64,12 @@ async function initializeFileUpload() {
         }
     });
     
-    console.log('✅ File upload handler initialized');
+    // File upload handler initialized
 }
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 PlayTime application starting...');
+    // Application starting
     
     try {
         // Initialize file upload handler first (driven by failing tests)
@@ -73,8 +80,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         await window.PlayTimePDFViewer.init();
         await window.PlayTimeHighlighting.init();
         
-        console.log('✅ PlayTime application ready!');
-        console.log('📝 Implementation needed - use failing tests as guidance');
+        // Application ready
         
         // Show status in the UI
         const statusElement = document.createElement('div');
