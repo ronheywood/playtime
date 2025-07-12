@@ -60,7 +60,14 @@ describe('PlayTime Music Practice App', () => {
             }),
             getAllPDFs: jest.fn().mockImplementation(() => Promise.resolve([...savedPdfs])) // Return a copy
         };
-        global.window.PlayTimePDFViewer = { init: jest.fn().mockResolvedValue(true) };
+        
+        // Mock PDF viewer with loadPDF and renderPage methods
+        global.window.PlayTimePDFViewer = { 
+            init: jest.fn().mockResolvedValue(true),
+            loadPDF: jest.fn().mockResolvedValue(true),
+            renderPage: jest.fn().mockResolvedValue(true)
+        };
+        
         global.window.PlayTimeHighlighting = { init: jest.fn().mockResolvedValue(true) };
         
         // Load and execute the main application script

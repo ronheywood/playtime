@@ -68,6 +68,23 @@ async function initializeFileUpload(database = null) {
                     console.warn('❌ Failed to save PDF to database:', error);
                 }
             }
+            
+            // Load PDF into viewer for display
+            if (window.PlayTimePDFViewer && window.PlayTimePDFViewer.loadPDF) {
+                try {
+                    console.log('🔄 Loading PDF into viewer...');
+                    await window.PlayTimePDFViewer.loadPDF(file);
+                    
+                    // Auto-render first page
+                    await window.PlayTimePDFViewer.renderPage(1);
+                    console.log('✅ PDF successfully loaded and rendered');
+                } catch (error) {
+                    console.error('❌ Failed to load PDF into viewer:', error);
+                    updatePDFViewerStatus(pdfViewer, 'Error loading PDF: ' + error.message, true);
+                }
+            } else {
+                console.warn('❌ PDF Viewer not available');
+            }
         } else {
             updatePDFViewerStatus(pdfViewer, MESSAGES.ERROR_INVALID_FILE, true);
         }

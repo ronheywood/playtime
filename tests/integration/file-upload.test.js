@@ -132,4 +132,73 @@ describe('File Upload Integration', () => {
         expect(savedPdfs[0].name).toBe('integration-test.pdf');
         expect(savedPdfs[0].type).toBe('application/pdf');
     });
+    
+    test('should load PDF into viewer when valid file is uploaded', async () => {
+        // Arrange
+        const fileInput = document.querySelector('#pdf-upload');
+        const pdfViewer = document.querySelector('.pdf-viewer-container');
+        
+        // Mock the PDF viewer
+        const mockPDFViewer = {
+            loadPDF: jest.fn(() => Promise.resolve()),
+            renderPage: jest.fn(() => Promise.resolve()),
+            init: jest.fn(() => Promise.resolve())
+        };
+        global.window.PlayTimePDFViewer = mockPDFViewer;
+        
+        // Act - Upload a valid PDF file
+        const mockFile = new File(['mock pdf content'], 'viewer-test.pdf', { type: 'application/pdf' });
+        Object.defineProperty(fileInput, 'files', {
+            value: [mockFile],
+            writable: false,
+        });
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // Allow time for async operations
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Assert
+        expect(mockPDFViewer.loadPDF).toHaveBeenCalledWith(mockFile);
+        expect(mockPDFViewer.renderPage).toHaveBeenCalledWith(1);
+        
+        // Cleanup
+        delete global.window.PlayTimePDFViewer;
+    });
+    
+    test('should handle PDF viewer loading errors gracefully', async () => {
+        // Arrange
+        const fileInput = document.querySelector('#pdf-upload');
+        const pdfViewer = document.querySelector('.pdf-viewer-container');
+        
+        // Mock the PDF viewer to throw an error
+        const mockPDFViewer = {
+            loadPDF: jest.fn(() => Promise.reject(new Error('Failed to load PDF'))),
+            renderPage: jest.fn(() => Promise.resolve()),
+            init: jest.fn(() => Promise.resolve())
+        };
+        global.window.PlayTimePDFViewer = mockPDFViewer;
+        
+        // Act - Upload a PDF file that will fail to load
+        const mockFile = new File(['mock pdf content'], 'error-test.pdf', { type: 'application/pdf' });
+        Object.defineProperty(fileInput, 'files', {
+            value: [mockFile],
+            writable: false,
+        });
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // Allow time for async operations
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Assert
+        expect(mockPDFViewer.loadPDF).toHaveBeenCalledWith(mockFile);
+        expect(mockPDFViewer.renderPage).not.toHaveBeenCalled(); // Should not be called if loadPDF fails
+        
+        // Check error message in UI
+        const statusElement = pdfViewer.querySelector('.status-message');
+        expect(statusElement.textContent).toContain('Error loading PDF');
+        expect(statusElement.getAttribute('data-status')).toBe('error');
+        
+        // Cleanup
+        delete global.window.PlayTimePDFViewer;
+    });
 });
