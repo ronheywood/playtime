@@ -4,9 +4,10 @@
   "description": "PlayTime - Music Practice Application Prototype",
   "main": "index.html",
   "scripts": {
-    "test": "jest tests/acceptance/",
-    "test:watch": "jest tests/acceptance/ --watch",
+    "test": "jest",
     "test:acceptance": "jest tests/acceptance/",
+    "test:integration": "jest tests/integration/",
+    "test:watch": "jest --watch",
     "serve": "npx http-server . -p 3000",
     "start": "npm run serve"
   },
@@ -20,8 +21,21 @@
     "testEnvironment": "jsdom",
     "testMatch": ["**/tests/**/*.test.js"],
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "testPathIgnorePatterns": ["tests/integration/"],
     "moduleNameMapper": {
       "\\.(css|less|scss)$": "identity-obj-proxy"
-    }
+    },
+    "projects": [
+      {
+        "displayName": "acceptance",
+        "testMatch": ["<rootDir>/tests/acceptance/**/*.test.js"],
+        "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]
+      },
+      {
+        "displayName": "integration", 
+        "testMatch": ["<rootDir>/tests/integration/**/*.test.js"],
+        "testEnvironment": "node"
+      }
+    ]
   }
 }

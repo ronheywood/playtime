@@ -3,11 +3,38 @@
 
 console.log('🎵 PlayTime application loading...');
 
+// File Upload Handler - Implementation based on integration tests
+function initializeFileUpload() {
+    const fileInput = document.querySelector('#pdf-upload');
+    const pdfViewer = document.querySelector('.pdf-viewer-container');
+    
+    if (fileInput && pdfViewer) {
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.type === 'application/pdf') {
+                    pdfViewer.textContent = `Selected: ${file.name}`;
+                    console.log('✅ PDF file selected:', file.name);
+                } else {
+                    pdfViewer.textContent = 'Error: Please select a PDF file';
+                    console.warn('❌ Invalid file type:', file.type);
+                }
+            }
+        });
+        console.log('✅ File upload handler initialized');
+    } else {
+        console.warn('❌ File upload elements not found');
+    }
+}
+
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 PlayTime application starting...');
     
     try {
+        // Initialize file upload handler first (driven by failing tests)
+        initializeFileUpload();
+        
         // Initialize all modules (placeholders for now)
         await window.PlayTimeDB.init();
         await window.PlayTimePDFViewer.init();
