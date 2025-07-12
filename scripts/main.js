@@ -42,7 +42,7 @@ function updatePDFViewerStatus(pdfViewer, message, isError = false) {
 }
 
 // File Upload Handler - Refactored with better error handling and reusability
-async function initializeFileUpload() {
+async function initializeFileUpload(database = null) {
     const fileInput = document.querySelector('#pdf-upload');
     const pdfViewer = document.querySelector('.pdf-viewer-container');
     
@@ -62,11 +62,13 @@ async function initializeFileUpload() {
         if (isValidPDFFile(file)) {
             updatePDFViewerStatus(pdfViewer, MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
             
-            // Save to database
-            try {
-                await window.PlayTimeDB.savePDF(file);
-            } catch (error) {
-                console.warn('❌ Failed to save PDF to database:', error);
+            // Save to database if available
+            if (database && database.savePDF) {
+                try {
+                    await database.savePDF(file);
+                } catch (error) {
+                    console.warn('❌ Failed to save PDF to database:', error);
+                }
             }
         } else {
             updatePDFViewerStatus(pdfViewer, MESSAGES.ERROR_INVALID_FILE, true);
@@ -82,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     try {
         // Initialize file upload handler first (driven by failing tests)
-        await initializeFileUpload();
+        await initializeFileUpload(window.PlayTimeDB);
         
         // Initialize all modules (placeholders for now)
         await window.PlayTimeDB.init();

@@ -2,6 +2,7 @@
 // Tests the interaction between file input and PDF viewer display
 
 describe('File Upload Integration', () => {
+    let mockDatabase;
     
     beforeEach(() => {
         // Mock File constructor (this is already available in JSDOM but we override for consistency)
@@ -15,7 +16,7 @@ describe('File Upload Integration', () => {
         
         // Set up minimal database for integration testing
         const savedPdfs = [];
-        global.window.PlayTimeDB = {
+        mockDatabase = {
             savePDF: function(file) {
                 savedPdfs.push({
                     name: file.name,
@@ -32,6 +33,9 @@ describe('File Upload Integration', () => {
             }
         };
         
+        // Make database available globally for main.js
+        global.window.PlayTimeDB = mockDatabase;
+        
         // Load and initialize main.js for integration testing
         const path = require('path');
         const fs = require('fs');
@@ -39,14 +43,15 @@ describe('File Upload Integration', () => {
         const mainJsContent = fs.readFileSync(mainJsPath, 'utf8');
         eval(mainJsContent);
         
-        // Initialize the file upload handler
-        initializeFileUpload();
+        // Initialize the file upload handler with dependency injection
+        initializeFileUpload(mockDatabase);
     });
     
     afterEach(() => {
         // Clean up
         delete global.File;
         delete global.window.PlayTimeDB;
+        mockDatabase = null;
     });
     
     test('should display filename in PDF viewer when file is selected', () => {
@@ -54,15 +59,7 @@ describe('File Upload Integration', () => {
         const fileInput = document.querySelector('#pdf-upload');
         const pdfViewer = document.querySelector('.pdf-viewer-container');
         
-        // Create a simple file upload handler (this is what we need to implement)
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                pdfViewer.textContent = `Selected: ${file.name}`;
-            }
-        });
-        
-        // Act
+        // Act - Use the real main.js file upload handler
         const mockFile = new File(['mock pdf content'], 'test-score.pdf', { type: 'application/pdf' });
         Object.defineProperty(fileInput, 'files', {
             value: [mockFile],
@@ -78,22 +75,8 @@ describe('File Upload Integration', () => {
         // Arrange
         const fileInput = document.querySelector('#pdf-upload');
         const pdfViewer = document.querySelector('.pdf-viewer-container');
-        let errorShown = false;
         
-        // File upload handler with validation
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                if (file.type === 'application/pdf') {
-                    pdfViewer.textContent = `Selected: ${file.name}`;
-                } else {
-                    pdfViewer.textContent = 'Error: Please select a PDF file';
-                    errorShown = true;
-                }
-            }
-        });
-        
-        // Act - try to upload a non-PDF file
+        // Act - Use the real main.js file upload handler with invalid file
         const invalidFile = new File(['not a pdf'], 'document.txt', { type: 'text/plain' });
         Object.defineProperty(fileInput, 'files', {
             value: [invalidFile],
@@ -103,7 +86,6 @@ describe('File Upload Integration', () => {
         
         // Assert
         expect(pdfViewer.textContent).toContain('Error: Please select a PDF file');
-        expect(errorShown).toBe(true);
     });
     
     test('should clear previous selection when new file is chosen', () => {
@@ -114,15 +96,7 @@ describe('File Upload Integration', () => {
         // Set up initial state
         pdfViewer.textContent = 'Previous content';
         
-        // File upload handler
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file && file.type === 'application/pdf') {
-                pdfViewer.textContent = `Selected: ${file.name}`;
-            }
-        });
-        
-        // Act
+        // Act - Use the real main.js file upload handler
         const newFile = new File(['new pdf'], 'new-score.pdf', { type: 'application/pdf' });
         Object.defineProperty(fileInput, 'files', {
             value: [newFile],
@@ -130,9 +104,10 @@ describe('File Upload Integration', () => {
         });
         fileInput.dispatchEvent(new Event('change', { bubbles: true }));
         
-        // Assert
-        expect(pdfViewer.textContent).toBe('Selected: new-score.pdf');
-        expect(pdfViewer.textContent).not.toContain('Previous content');
+        // Assert - Check the status message element (real implementation)
+        const statusElement = pdfViewer.querySelector('.status-message');
+        expect(statusElement.textContent).toBe('Selected: new-score.pdf');
+        expect(statusElement.getAttribute('data-status')).toBe('success');
     });
     
     test('should save uploaded PDF file to database', async () => {
