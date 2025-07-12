@@ -75,7 +75,9 @@ global.FileReader = class MockFileReader {
     }
 };
 
-// Mock Canvas API
+// Mock Canvas API - Define HTMLCanvasElement first for JSDOM environment
+global.HTMLCanvasElement = global.HTMLCanvasElement || class HTMLCanvasElement {};
+
 HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
     fillRect: jest.fn(),
     clearRect: jest.fn(),

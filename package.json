@@ -29,6 +29,7 @@
       {
         "displayName": "acceptance",
         "testMatch": ["<rootDir>/tests/acceptance/**/*.test.js"],
+        "testEnvironment": "jsdom",
         "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]
       },
       {

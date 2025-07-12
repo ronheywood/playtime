@@ -12,7 +12,8 @@ describe('PlayTime Music Practice App', () => {
         // Load the app HTML content using JSDOM
         const fs = require('fs');
         const path = require('path');
-        const htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');        document.documentElement.innerHTML = htmlContent;
+        const htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
+        document.documentElement.innerHTML = htmlContent;
         
         // Clear IndexedDB for clean test state using JSDOM
         await new Promise((resolve) => {
