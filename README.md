@@ -1,6 +1,6 @@
 # PlayTime
 
-[![CI/CD Pipeline](https://github.com/USERNAME/REPO-NAME/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/REPO-NAME/actions/workflows/ci.yml)
+[![CI/CD Pipeline](https://github.com/ronheywood/playtime/actions/workflows/ci.yml/badge.svg)](https://github.com/ronheywood/playtime/actions/workflows/ci.yml)
 
 Because musicians need to lean and practice pieces, and they need structure to practice.
 
