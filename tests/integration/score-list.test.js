@@ -12,15 +12,12 @@ describe('PlayTime Score List Integration', () => {
 
     beforeEach(() => {
         jest.resetModules();
-        
         // Mock console methods to avoid noise in tests
         jest.spyOn(console, 'log').mockImplementation(() => {});
         jest.spyOn(console, 'warn').mockImplementation(() => {});
         jest.spyOn(console, 'error').mockImplementation(() => {});
-        
         // Setup DOM structure
         TestHelpers.setupCompleteDOM();
-        
         // Mock logger
         mockLogger = {
             info: jest.fn(),
@@ -28,15 +25,14 @@ describe('PlayTime Score List Integration', () => {
             error: jest.fn(),
             loading: jest.fn()
         };
-
-        // Mock database
+        // Mock database using new abstraction
         mockDatabase = {
-            getAllPDFs: jest.fn(),
-            getPDF: jest.fn(),
-            savePDF: jest.fn(),
+            getAll: jest.fn(),
+            get: jest.fn(),
+            save: jest.fn(),
+            delete: jest.fn(),
             init: jest.fn()
         };
-
         // Load score list component
         scoreListModule = require('../../scripts/score-list.js');
     });
@@ -67,25 +63,22 @@ describe('PlayTime Score List Integration', () => {
         const mockPDFs = [
             {
                 id: '1',
-                filename: 'sample-score.pdf',
+                name: 'sample-score.pdf',
                 uploadDate: new Date('2024-01-01').toISOString()
             },
             {
                 id: '2',
-                filename: 'another-score.pdf',
+                name: 'another-score.pdf',
                 uploadDate: new Date('2024-01-02').toISOString()
             }
         ];
-        mockDatabase.getAllPDFs.mockResolvedValue(mockPDFs);
-
+        mockDatabase.getAll.mockResolvedValue(mockPDFs);
         // Act
         await playTimeScoreList.refresh();
-
         // Assert
         const scoresList = document.querySelector('#scores-list');
         const scoreItems = scoresList.querySelectorAll('.score-item');
-        
-        expect(mockDatabase.getAllPDFs).toHaveBeenCalled();
+        expect(mockDatabase.getAll).toHaveBeenCalled();
         expect(scoreItems).toHaveLength(2);
         expect(scoresList.textContent).toContain('sample-score.pdf');
         expect(scoresList.textContent).toContain('another-score.pdf');
@@ -94,11 +87,9 @@ describe('PlayTime Score List Integration', () => {
     test('should handle empty score list gracefully', async () => {
         // Arrange
         const playTimeScoreList = scoreListModule(mockDatabase, mockLogger);
-        mockDatabase.getAllPDFs.mockResolvedValue([]);
-
+        mockDatabase.getAll.mockResolvedValue([]);
         // Act
         await playTimeScoreList.refresh();
-
         // Assert
         const scoresList = document.querySelector('#scores-list');
         expect(scoresList.textContent).toContain('No scores yet. Upload a PDF to get started!');
@@ -109,18 +100,15 @@ describe('PlayTime Score List Integration', () => {
         const playTimeScoreList = scoreListModule(mockDatabase, mockLogger);
         const mockPDF = {
             id: '1',
-            filename: 'test-score.pdf',
+            name: 'test-score.pdf',
             data: new ArrayBuffer(100),
             uploadDate: new Date().toISOString()
         };
-        mockDatabase.getPDF.mockResolvedValue(mockPDF);
-
+        mockDatabase.get.mockResolvedValue(mockPDF);
         // Act
         await playTimeScoreList.loadScore('1');
-
         // Assert
-        expect(mockDatabase.getPDF).toHaveBeenCalledWith('1');
-        
+        expect(mockDatabase.get).toHaveBeenCalledWith('1');
         const currentTitle = document.querySelector('.current-score-title');
         expect(currentTitle.textContent).toContain('Current Score: test-score.pdf');
     });
@@ -128,14 +116,11 @@ describe('PlayTime Score List Integration', () => {
     test('should handle database errors gracefully', async () => {
         // Arrange
         const playTimeScoreList = scoreListModule(mockDatabase, mockLogger);
-        mockDatabase.getAllPDFs.mockRejectedValue(new Error('Database error'));
-
+        mockDatabase.getAll.mockRejectedValue(new Error('Database error'));
         // Act
         await playTimeScoreList.refresh();
-
         // Assert
         expect(mockLogger.error).toHaveBeenCalledWith('Failed to refresh score list:', expect.any(Error));
-        
         const scoresList = document.querySelector('#scores-list');
         expect(scoresList.textContent).toContain('Error loading scores');
     });
@@ -146,27 +131,23 @@ describe('PlayTime Score List Integration', () => {
         const mockPDFs = [
             {
                 id: '1',
-                filename: 'sample-score.pdf',
+                name: 'sample-score.pdf',
                 uploadDate: new Date().toISOString()
             }
         ];
-        mockDatabase.getAllPDFs.mockResolvedValue(mockPDFs);
-        mockDatabase.getPDF.mockResolvedValue({
+        mockDatabase.getAll.mockResolvedValue(mockPDFs);
+        mockDatabase.get.mockResolvedValue({
             id: '1',
-            filename: 'sample-score.pdf',
+            name: 'sample-score.pdf',
             data: new ArrayBuffer(100)
         });
-
         await playTimeScoreList.refresh();
-
         // Act
         const scoreItem = document.querySelector('.score-item');
         scoreItem.click();
-
         // Wait for async operations
         await new Promise(resolve => setTimeout(resolve, 10));
-
         // Assert
-        expect(mockDatabase.getPDF).toHaveBeenCalledWith('1');
+        expect(mockDatabase.get).toHaveBeenCalledWith('1');
     });
 });

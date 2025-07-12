@@ -51,29 +51,30 @@ function createPlayTimeScoreList(database, logger = console) {
                 return;
             }
             
-            if (!_database || !_database.getAllPDFs) {
+            if (!_database || !_database.getAll) {
                 _logger.warn(SCORE_LIST_CONFIG.MESSAGES.DATABASE_NOT_AVAILABLE);
                 scoresList.innerHTML = `<p>${SCORE_LIST_CONFIG.MESSAGES.NO_SCORES_AVAILABLE}</p>`;
                 return;
             }
             
             try {
-                const pdfs = await _database.getAllPDFs();
-                
+                const pdfs = await _database.getAll();
                 if (pdfs.length === 0) {
                     scoresList.innerHTML = `<p>${SCORE_LIST_CONFIG.MESSAGES.NO_SCORES_YET}</p>`;
                     return;
                 }
-                
                 // Create score items HTML
                 const scoreItems = pdfs.map(pdf => this._createScoreItemHTML(pdf)).join('');
                 scoresList.innerHTML = scoreItems;
-                
                 // Attach event listeners for score selection
                 this._attachClickHandlers(scoresList);
-                
                 _logger.info(`Score list refreshed with ${pdfs.length} items`);
-                
+                // Auto-select the first score if present and none is currently selected
+                const currentTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
+                if (pdfs.length > 0 && currentTitle && !currentTitle.textContent.includes(pdfs[0].name || pdfs[0].filename)) {
+                    // Select the first score by default after refresh
+                    await this.loadScore(pdfs[0].id);
+                }
             } catch (error) {
                 _logger.error('Failed to refresh score list:', error);
                 scoresList.innerHTML = `<p>${SCORE_LIST_CONFIG.MESSAGES.ERROR_LOADING_SCORES}</p>`;
@@ -86,31 +87,25 @@ function createPlayTimeScoreList(database, logger = console) {
          * @param {Function} onScoreLoaded - Optional callback when score is loaded
          */
         loadScore: async function(pdfId, onScoreLoaded = null) {
-            if (!_database || !_database.getPDF) {
+            if (!_database || !_database.get) {
                 _logger.error('Database not available for loading score');
                 return;
             }
-            
             try {
-                const pdf = await _database.getPDF(pdfId);
+                const pdf = await _database.get(pdfId);
                 if (!pdf) {
                     _logger.error('PDF not found:', pdfId);
                     return;
                 }
-                
                 // Update current score title
-                this._updateCurrentScoreTitle(pdf.filename);
-                
+                this._updateCurrentScoreTitle(pdf.name || pdf.filename);
                 // Load into PDF viewer if available
                 await this._loadIntoPDFViewer(pdf);
-                
                 // Call optional callback
                 if (onScoreLoaded && typeof onScoreLoaded === 'function') {
                     onScoreLoaded(pdf);
                 }
-                
-                _logger.info(`Score loaded: ${pdf.filename}`);
-                
+                _logger.info(`Score loaded: ${pdf.name || pdf.filename}`);
             } catch (error) {
                 _logger.error('Failed to load score into viewer:', error);
             }
@@ -149,7 +144,7 @@ function createPlayTimeScoreList(database, logger = console) {
             const uploadDate = new Date(pdf.uploadDate).toLocaleDateString();
             return `
                 <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_ITEM}" data-pdf-id="${pdf.id}">
-                    <span class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_NAME}">${pdf.filename}</span>
+                    <span class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_NAME}">${pdf.name || pdf.filename}</span>
                     <span class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_DATE}">${uploadDate}</span>
                 </div>
             `;

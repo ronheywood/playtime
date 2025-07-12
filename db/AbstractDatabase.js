@@ -7,4 +7,6 @@ class AbstractDatabase {
     async delete(id) { throw new Error('Not implemented'); }
 }
 
-export default AbstractDatabase;
+// Use CommonJS for Node.js/tests, ES module for browser
+// (You must use only one in a given environment)
+module.exports = AbstractDatabase;

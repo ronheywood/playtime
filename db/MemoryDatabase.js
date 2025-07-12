@@ -16,7 +16,12 @@ class MemoryDatabase extends AbstractDatabase {
     async save(item) {
         if (!this._initialized) throw new Error('Database not initialized');
         if (!item) return;
-        const id = item.id || this._nextId++;
+        // Always assign a unique string ID if not present
+        let id = item.id;
+        if (!id) {
+            id = String(this._nextId++);
+            item.id = id;
+        }
         const toSave = { ...item, id };
         this._store.set(id, toSave);
         return id;

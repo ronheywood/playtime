@@ -43,37 +43,9 @@ describe('PlayTime Music Practice App', () => {
             throw new Error(`🚨 TEST SETUP FAILED: Missing required elements. Canvas: ${!!pdfCanvas}, Input: ${!!fileInput}, Viewer: ${!!pdfViewer}`);
         }
         
-        // Mock the PlayTime modules that main.js depends on
-        // Use a simple in-memory database like the integration test
-        // Reset for each test to avoid state pollution
-        const savedPdfs = [];
-        let pdfIdCounter = 1; // Use counter instead of Date.now() for consistent unique IDs
-        
-        // Setup create functions that main.js expects
-        global.window.createPlayTimeDB = (logger) => ({
-            init: jest.fn().mockResolvedValue(true),
-            savePDF: jest.fn().mockImplementation(async (file) => {
-                const pdf = {
-                    id: (pdfIdCounter++).toString(), // Use counter for unique IDs
-                    name: file.name,  // Use 'name' for compatibility with existing tests
-                    filename: file.name,  // Also include 'filename' for score list component
-                    data: new ArrayBuffer(100), // Mock data
-                    uploadDate: new Date().toISOString()
-                };
-                savedPdfs.push(pdf);
-                return Promise.resolve(pdf);
-            }),
-            getAllPDFs: jest.fn().mockImplementation(() => Promise.resolve([...savedPdfs])), // Return a copy
-            getPDF: jest.fn().mockImplementation((id) => {
-                const pdf = savedPdfs.find(p => p.id === id);
-                return Promise.resolve(pdf);
-            }),
-            clear: jest.fn().mockImplementation(() => {
-                savedPdfs.length = 0; // Clear the array
-                pdfIdCounter = 1; // Reset counter
-                return Promise.resolve();
-            })
-        });
+        // Use the real in-memory database implementation for acceptance tests
+        const MemoryDatabase = require('../../db/MemoryDatabase');
+        global.window.createPlayTimeDB = (logger) => new MemoryDatabase();
 
         // Mock PDF viewer with loadPDF and renderPage methods
         global.window.createPlayTimePDFViewer = (logger) => ({ 
@@ -154,20 +126,20 @@ describe('PlayTime Music Practice App', () => {
                 // Arrange
                 const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
                 const fileInput = document.querySelector('input[type="file"]');
-                
+
                 // Act - Simulate file upload
                 Object.defineProperty(fileInput, 'files', {
                     value: [mockFile],
                     writable: false,
                 });
                 fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                
+
                 // Allow time for async operations
                 await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Verify the PDF is stored using our mock database
-                const storedPdfs = await global.window.PlayTimeDB.getAllPDFs();
-                
+
+                // Verify the PDF is stored using our mock database (new DB abstraction)
+                const storedPdfs = await global.window.PlayTimeDB.getAll();
+
                 // Assert - Check that the file was saved (accounting for potential duplicates from multiple event listeners)
                 expect(storedPdfs.length).toBeGreaterThanOrEqual(1);
                 expect(storedPdfs[0].name).toBe('sample-score.pdf');
@@ -176,35 +148,49 @@ describe('PlayTime Music Practice App', () => {
 
         describe('User Story 1.2: View & Select Existing Score', () => {
             test('As a musician, I want to see a list of all scores I have previously added', async () => {
-                // Clear any existing data from previous tests
-                await global.window.PlayTimeDB.clear();
-                
+                // Clear any existing data from previous tests (new DB abstraction)
+                if (global.window.PlayTimeDB.getAll) {
+                    const all = await global.window.PlayTimeDB.getAll();
+                    if (all && all.length) {
+                        for (const item of all) {
+                            if (item && item.id) {
+                                await global.window.PlayTimeDB.delete(item.id);
+                            }
+                        }
+                    }
+                }
+
                 // Clear the DOM score list as well
                 const scoresListElement = document.querySelector('#scores-list');
                 if (scoresListElement) {
                     scoresListElement.innerHTML = '';
                 }
-                
+
                 // Refresh the score list to ensure it starts empty
                 if (global.window.PlayTimeScoreList) {
                     await global.window.PlayTimeScoreList.refresh();
                 }
-                
+
                 // Directly add PDFs to the database (simulating file uploads)
                 const mockFile1 = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
                 const mockFile2 = new File(['mock pdf content 2'], 'another-score.pdf', { type: 'application/pdf' });
-                
-                await global.window.PlayTimeDB.savePDF(mockFile1);
-                await global.window.PlayTimeDB.savePDF(mockFile2);
-                
+
+                if (global.window.PlayTimeDB.save) {
+                    await global.window.PlayTimeDB.save(mockFile1);
+                    await global.window.PlayTimeDB.save(mockFile2);
+                } else if (global.window.PlayTimeDB.savePDF) {
+                    await global.window.PlayTimeDB.savePDF(mockFile1);
+                    await global.window.PlayTimeDB.savePDF(mockFile2);
+                }
+
                 // Refresh the score list to show the uploaded PDFs
                 if (global.window.PlayTimeScoreList) {
                     await global.window.PlayTimeScoreList.refresh();
                 }
-                
+
                 // Wait for DOM updates
                 await new Promise(resolve => setTimeout(resolve, 10));
-                
+
                 // Act & Assert
                 const scoresList = document.querySelector('#scores-list');
                 expect(scoresList).toBeTruthy();
@@ -215,27 +201,57 @@ describe('PlayTime Music Practice App', () => {
             });
 
             test('As a musician, I want to select a score from my list to open and view its content', async () => {
-                // Arrange - Upload a PDF first
-                const fileInput = document.querySelector('input[type="file"]');
-                const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
-                Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
+
+                // Arrange - Upload two PDFs, replacing the file input between uploads to avoid redefining 'files'
+                let fileInput = document.querySelector('input[type="file"]');
+                const mockFile1 = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
+                const mockFile2 = new File(['mock pdf content 2'], 'another-score.pdf', { type: 'application/pdf' });
+
+                // First upload
+                Object.defineProperty(fileInput, 'files', { value: [mockFile1], writable: false });
                 fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                
-                // Wait for async operations to complete
-                await new Promise(resolve => setTimeout(resolve, 50));
-                
-                // Act
-                const scoreItem = document.querySelector('.score-item[data-pdf-id]');
-                scoreItem?.click();
-                
-                // Wait for score loading to complete
+                if (global.window.PlayTimeScoreList) {
+                    await global.window.PlayTimeScoreList.refresh();
+                }
                 await new Promise(resolve => setTimeout(resolve, 20));
-                
+
+                // Add the second file directly to the DB abstraction
+                if (global.window.PlayTimeDB.save) {
+                    await global.window.PlayTimeDB.save(mockFile2);
+                } else if (global.window.PlayTimeDB.savePDF) {
+                    await global.window.PlayTimeDB.savePDF(mockFile2);
+                }
+                if (global.window.PlayTimeScoreList) {
+                    await global.window.PlayTimeScoreList.refresh();
+                }
+                await new Promise(resolve => setTimeout(resolve, 20));
+
+                // Wait for the target score item to appear in the DOM
+                let targetScore = null;
+                for (let i = 0; i < 20; i++) {
+                    const scoreItems = document.querySelectorAll('.score-item[data-pdf-id]');
+                    targetScore = Array.from(scoreItems).find(item => item.textContent.includes('another-score.pdf'));
+                    if (targetScore) break;
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+                expect(targetScore).toBeTruthy();
+
+                // Act: Click the target score item
+                targetScore.click();
+
+                // Wait for the UI to update (current score title)
+                let currentScoreTitle = null;
+                for (let i = 0; i < 20; i++) {
+                    currentScoreTitle = document.querySelector('.current-score-title');
+                    if (currentScoreTitle && currentScoreTitle.textContent.includes('another-score.pdf')) break;
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+
                 // Assert
                 const pdfCanvas = document.querySelector('#pdf-canvas');
-                const currentScoreTitle = document.querySelector('.current-score-title');
                 expect(pdfCanvas).toBeTruthy();
-                expect(currentScoreTitle?.textContent).toContain('sample-score.pdf');
+                expect(currentScoreTitle).toBeTruthy();
+                expect(currentScoreTitle.textContent).toContain('another-score.pdf');
             });
         });
     });

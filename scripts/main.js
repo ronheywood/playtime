@@ -119,11 +119,10 @@ async function initializeFileUpload(database = null) {
         if (isValidPDFFile(file)) {
             updatePDFViewerStatus(pdfViewer, CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
             
-            // Save to database if available
-            // TODO: Extract to separate function for better testability
-            if (database && database.savePDF) {
+            // Save to database if available (use new DB abstraction)
+            if (database && database.save) {
                 try {
-                    await database.savePDF(file);
+                    await database.save(file);
                     // Refresh the score list to show the newly added PDF using the score list component
                     if (window.PlayTimeScoreList) {
                         await window.PlayTimeScoreList.refresh();
