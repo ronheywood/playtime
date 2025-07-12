@@ -10,8 +10,8 @@ We have successfully established the Outside-In TDD foundation with working acce
 - [x] **Working test pipeline** - Jest + JSDOM acceptance tests running
 - [x] **Build automation** - PSake build system with comprehensive tasks
 - [x] **Tech choices installed** - All dependencies ready (PDF.js, IndexedDB mocks)
+- [x] **Complete test conversion** - ✅ ALL Playwright → JSDOM syntax converted!
 - [ ] **Fix PSake StartServer hanging** - Clean up build system for smooth CI/CD
-- [ ] **Complete test conversion** - Finish converting Playwright → JSDOM syntax
 
 ### 🎯 2. Sandbox Clicky Prototype for UAT
 **Goal:** Get something clickable ASAP for user feedback
