@@ -61,6 +61,6 @@ describe('Application Initialization', () => {
         
         await TestHelpers.waitFor();
         
-        expect(console.warn).toHaveBeenCalledWith('❌ File upload elements not found');
+        expect(console.warn).toHaveBeenCalledWith('❌', 'Required elements not found');
     });
 });

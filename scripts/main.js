@@ -13,7 +13,7 @@
  * 6. Inline CSS styles mixed with JavaScript logic
  * 
  * 📋 SPECIFIC ISSUES TO ADDRESS:
- * - Extract configuration objects for selectors and constants
+ * ✅ Extract configuration objects for selectors and constants
  * - Create consistent error handling utility
  * - Break down large functions (especially initializeFileUpload)
  * - Add JSDoc type documentation
@@ -21,30 +21,45 @@
  * - Add more thorough parameter validation
  */
 
-// Constants for file types and messages
-// TODO: Move to configuration object to avoid magic strings
-const FILE_TYPES = {
-    PDF: 'application/pdf'
+// Configuration objects for selectors and constants
+const CONFIG = {
+    // DOM Selectors
+    SELECTORS: {
+        FILE_INPUT: '#pdf-upload',
+        PDF_VIEWER: '.pdf-viewer-container',
+        PREV_BUTTON: '#prev-page-btn',
+        NEXT_BUTTON: '#next-page-btn',
+        STATUS_MESSAGE: '.status-message'
+    },
+    
+    // File Types
+    FILE_TYPES: {
+        PDF: 'application/pdf'
+    },
+    
+    // User Messages
+    MESSAGES: {
+        ERROR_INVALID_FILE: 'Error: Please select a PDF file',
+        SUCCESS_FILE_SELECTED: 'Selected: ',
+        ERROR_NO_FILE: 'No file selected',
+        ERROR_ELEMENTS_NOT_FOUND: 'Required elements not found',
+        ERROR_PDF_VIEWER_UNAVAILABLE: 'PDF Viewer not available',
+        ERROR_NAVIGATION_UNAVAILABLE: 'PDF Viewer navigation methods not available'
+    },
+    
+    // Application Settings
+    SETTINGS: {
+        DEFAULT_PAGE: 1,
+        STATUS_ELEMENT_CLASS: 'status-message',
+        ERROR_STATUS: 'error',
+        SUCCESS_STATUS: 'success'
+    }
 };
-
-const MESSAGES = {
-    ERROR_INVALID_FILE: 'Error: Please select a PDF file',
-    SUCCESS_FILE_SELECTED: 'Selected: ',
-    ERROR_NO_FILE: 'No file selected'
-};
-
-// TODO: Add DOM selector configuration object
-// const SELECTORS = {
-//     FILE_INPUT: '#pdf-upload',
-//     PDF_VIEWER: '.pdf-viewer-container',
-//     PREV_BUTTON: '#prev-page-btn',
-//     NEXT_BUTTON: '#next-page-btn'
-// };
 
 // File validation helper
 // TODO: Add more comprehensive validation (file size, MIME type verification)
 function isValidPDFFile(file) {
-    return file && file.type === FILE_TYPES.PDF;
+    return file && file.type === CONFIG.FILE_TYPES.PDF;
 }
 
 // UI update helper for better extensibility
@@ -55,21 +70,20 @@ function updatePDFViewerStatus(pdfViewer, message, isError = false) {
     if (!pdfViewer) return;
     
     // Find or create a status element instead of replacing all content
-    let statusElement = pdfViewer.querySelector('.status-message');
+    let statusElement = pdfViewer.querySelector(CONFIG.SELECTORS.STATUS_MESSAGE);
     if (!statusElement) {
         statusElement = document.createElement('div');
-        statusElement.className = 'status-message';
+        statusElement.className = CONFIG.SETTINGS.STATUS_ELEMENT_CLASS;
         pdfViewer.appendChild(statusElement);
     }
     
     statusElement.textContent = message;
     
-    // Future: could add CSS classes for styling
-    // TODO: Use CSS classes instead of data attributes for better styling control
+    // Use configuration constants for status attributes
     if (isError) {
-        statusElement.setAttribute('data-status', 'error');
+        statusElement.setAttribute('data-status', CONFIG.SETTINGS.ERROR_STATUS);
     } else {
-        statusElement.setAttribute('data-status', 'success');
+        statusElement.setAttribute('data-status', CONFIG.SETTINGS.SUCCESS_STATUS);
     }
 }
 
@@ -82,13 +96,13 @@ function updatePDFViewerStatus(pdfViewer, message, isError = false) {
 //   - loadPDFIntoViewer(file, pdfViewer)
 //   - updateFileUploadUI(filename, pdfViewer)
 async function initializeFileUpload(database = null) {
-    // TODO: Use configuration object for selectors instead of hardcoded strings
-    const fileInput = document.querySelector('#pdf-upload');
-    const pdfViewer = document.querySelector('.pdf-viewer-container');
+    // Use configuration object for selectors instead of hardcoded strings
+    const fileInput = document.querySelector(CONFIG.SELECTORS.FILE_INPUT);
+    const pdfViewer = document.querySelector(CONFIG.SELECTORS.PDF_VIEWER);
     
     if (!fileInput || !pdfViewer) {
         // ISSUE: Inconsistent error handling - some places use warn, others error
-        console.warn('❌ File upload elements not found');
+        console.warn('❌', CONFIG.MESSAGES.ERROR_ELEMENTS_NOT_FOUND);
         return;
     }
 
@@ -96,12 +110,12 @@ async function initializeFileUpload(database = null) {
         const file = event.target.files[0];
         
         if (!file) {
-            console.warn('❌ No file selected');
+            console.warn('❌', CONFIG.MESSAGES.ERROR_NO_FILE);
             return;
         }
         
         if (isValidPDFFile(file)) {
-            updatePDFViewerStatus(pdfViewer, MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
+            updatePDFViewerStatus(pdfViewer, CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
             
             // Save to database if available
             // TODO: Extract to separate function for better testability
@@ -121,19 +135,18 @@ async function initializeFileUpload(database = null) {
                     console.log('🔄 Loading PDF into viewer...');
                     await window.PlayTimePDFViewer.loadPDF(file);
                     
-                    // Auto-render first page
-                    // TODO: Make default page configurable
-                    await window.PlayTimePDFViewer.renderPage(1);
+                    // Use configuration for default page
+                    await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
                     console.log('✅ PDF successfully loaded and rendered');
                 } catch (error) {
                     console.error('❌ Failed to load PDF into viewer:', error);
                     updatePDFViewerStatus(pdfViewer, 'Error loading PDF: ' + error.message, true);
                 }
             } else {
-                console.warn('❌ PDF Viewer not available');
+                console.warn('❌', CONFIG.MESSAGES.ERROR_PDF_VIEWER_UNAVAILABLE);
             }
         } else {
-            updatePDFViewerStatus(pdfViewer, MESSAGES.ERROR_INVALID_FILE, true);
+            updatePDFViewerStatus(pdfViewer, CONFIG.MESSAGES.ERROR_INVALID_FILE, true);
         }
     });
     
@@ -151,9 +164,9 @@ async function initializeFileUpload(database = null) {
  * IMPROVEMENT NEEDED: DOM selectors should be configurable
  */
 function initializePageNavigation(pdfViewer = null) {
-    // TODO: Extract selectors to configuration
-    const prevPageBtn = document.querySelector('#prev-page-btn');
-    const nextPageBtn = document.querySelector('#next-page-btn');
+    // Use configuration for button selectors
+    const prevPageBtn = document.querySelector(CONFIG.SELECTORS.PREV_BUTTON);
+    const nextPageBtn = document.querySelector(CONFIG.SELECTORS.NEXT_BUTTON);
     
     if (!prevPageBtn || !nextPageBtn) {
         console.warn('❌ Page navigation buttons not found');
@@ -162,7 +175,7 @@ function initializePageNavigation(pdfViewer = null) {
     
     // TODO: Add more specific validation for required methods
     if (!pdfViewer || !pdfViewer.prevPage || !pdfViewer.nextPage) {
-        console.warn('❌ PDF Viewer navigation methods not available');
+        console.warn('❌', CONFIG.MESSAGES.ERROR_NAVIGATION_UNAVAILABLE);
         return;
     }
     
