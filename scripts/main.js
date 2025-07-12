@@ -1,6 +1,8 @@
 // PlayTime Main Application Entry Point
 // This file will be implemented during Outside-In development
 
+console.log('🎵 PlayTime application loading...');
+
 // Constants for file types and messages
 const FILE_TYPES = {
     PDF: 'application/pdf'
@@ -49,7 +51,7 @@ async function initializeFileUpload() {
         return;
     }
 
-    fileInput.addEventListener('change', (event) => {
+    fileInput.addEventListener('change', async (event) => {
         const file = event.target.files[0];
         
         if (!file) {
@@ -59,17 +61,24 @@ async function initializeFileUpload() {
         
         if (isValidPDFFile(file)) {
             updatePDFViewerStatus(pdfViewer, MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
+            
+            // Save to database
+            try {
+                await window.PlayTimeDB.savePDF(file);
+            } catch (error) {
+                console.warn('❌ Failed to save PDF to database:', error);
+            }
         } else {
             updatePDFViewerStatus(pdfViewer, MESSAGES.ERROR_INVALID_FILE, true);
         }
     });
     
-    // File upload handler initialized
+    console.log('✅ File upload handler initialized');
 }
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async function() {
-    // Application starting
+    console.log('🚀 PlayTime application starting...');
     
     try {
         // Initialize file upload handler first (driven by failing tests)
@@ -80,7 +89,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         await window.PlayTimePDFViewer.init();
         await window.PlayTimeHighlighting.init();
         
-        // Application ready
+        console.log('✅ PlayTime application ready!');
+        console.log('📝 Implementation needed - use failing tests as guidance');
         
         // Show status in the UI
         const statusElement = document.createElement('div');

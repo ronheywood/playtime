@@ -12,11 +12,41 @@ describe('File Upload Integration', () => {
                 this.size = chunks.reduce((size, chunk) => size + chunk.length, 0);
             }
         };
+        
+        // Set up minimal database for integration testing
+        const savedPdfs = [];
+        global.window.PlayTimeDB = {
+            savePDF: function(file) {
+                savedPdfs.push({
+                    name: file.name,
+                    type: file.type,
+                    size: file.size
+                });
+                return Promise.resolve();
+            },
+            getAllPDFs: function() {
+                return Promise.resolve(savedPdfs);
+            },
+            init: function() {
+                return Promise.resolve();
+            }
+        };
+        
+        // Load and initialize main.js for integration testing
+        const path = require('path');
+        const fs = require('fs');
+        const mainJsPath = path.join(__dirname, '../../scripts/main.js');
+        const mainJsContent = fs.readFileSync(mainJsPath, 'utf8');
+        eval(mainJsContent);
+        
+        // Initialize the file upload handler
+        initializeFileUpload();
     });
     
     afterEach(() => {
         // Clean up
         delete global.File;
+        delete global.window.PlayTimeDB;
     });
     
     test('should display filename in PDF viewer when file is selected', () => {
@@ -103,5 +133,28 @@ describe('File Upload Integration', () => {
         // Assert
         expect(pdfViewer.textContent).toBe('Selected: new-score.pdf');
         expect(pdfViewer.textContent).not.toContain('Previous content');
+    });
+    
+    test('should save uploaded PDF file to database', async () => {
+        // Arrange
+        const fileInput = document.querySelector('#pdf-upload');
+        const pdfViewer = document.querySelector('.pdf-viewer-container');
+        
+        // Act - Use the actual file upload handler from main.js
+        const mockFile = new File(['mock pdf content'], 'integration-test.pdf', { type: 'application/pdf' });
+        Object.defineProperty(fileInput, 'files', {
+            value: [mockFile],
+            writable: false,
+        });
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // Allow time for async database operations
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Assert - Check if PDF was saved to database
+        const savedPdfs = await window.PlayTimeDB.getAllPDFs();
+        expect(savedPdfs).toHaveLength(1);
+        expect(savedPdfs[0].name).toBe('integration-test.pdf');
+        expect(savedPdfs[0].type).toBe('application/pdf');
     });
 });
