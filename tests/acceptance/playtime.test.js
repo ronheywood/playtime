@@ -51,27 +51,32 @@ describe('PlayTime Music Practice App', () => {
 
             test('As a musician, I want the uploaded PDF to be saved locally in my browser', async () => {
                 // Arrange
-                const testPdfPath = 'tests/fixtures/sample-score.pdf';
+                const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
+                const fileInput = document.querySelector('input[type="file"]');
                 
-                // Act
-                await page.locator('input[type="file"]').setInputFiles(testPdfPath);
-                await page.waitForTimeout(1000); // Allow time for saving
+                // Act - Simulate file upload
+                Object.defineProperty(fileInput, 'files', {
+                    value: [mockFile],
+                    writable: false,
+                });
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                 
-                // Verify the PDF is stored in IndexedDB
-                const storedPdfs = await page.evaluate(async () => {
-                    return new Promise((resolve) => {
-                        const request = indexedDB.open('PlayTimeDB', 1);
-                        request.onsuccess = (event) => {
-                            const db = event.target.result;
-                            const transaction = db.transaction(['pdfFiles'], 'readonly');
-                            const store = transaction.objectStore('pdfFiles');
-                            const getAllRequest = store.getAll();
-                            getAllRequest.onsuccess = () => resolve(getAllRequest.result);
-                        };
-                    });
+                // Allow time for async operations
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Verify the PDF is stored in IndexedDB (using our mock)
+                const storedPdfs = await new Promise((resolve) => {
+                    const request = global.indexedDB.open('PlayTimeDB', 1);
+                    request.onsuccess = (event) => {
+                        const db = event.target.result;
+                        const transaction = db.transaction(['pdfFiles'], 'readonly');
+                        const store = transaction.objectStore('pdfFiles');
+                        const getAllRequest = store.getAll();
+                        getAllRequest.onsuccess = () => resolve(getAllRequest.result);
+                    };
                 });
                 
-                // Assert
+                // Assert - These will fail until we implement the storage functionality
                 expect(storedPdfs).toHaveLength(1);
                 expect(storedPdfs[0].name).toBe('sample-score.pdf');
             });

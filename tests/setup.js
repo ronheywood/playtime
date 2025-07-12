@@ -5,7 +5,36 @@
 
 // Mock IndexedDB for testing
 global.indexedDB = {
-    open: jest.fn(),
+    open: jest.fn(() => {
+        const mockRequest = {
+            onsuccess: null,
+            onerror: null,
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn()
+        };
+        // Simulate async success callback
+        setTimeout(() => {
+            if (mockRequest.onsuccess) {
+                const mockEvent = {
+                    target: {
+                        result: {
+                            transaction: jest.fn(() => ({
+                                objectStore: jest.fn(() => ({
+                                    getAll: jest.fn(() => ({
+                                        onsuccess: null,
+                                        // Return empty array for now - tests will fail as expected
+                                        result: []
+                                    }))
+                                }))
+                            }))
+                        }
+                    }
+                };
+                mockRequest.onsuccess(mockEvent);
+            }
+        }, 0);
+        return mockRequest;
+    }),
     deleteDatabase: jest.fn(() => {
         const mockRequest = {
             onsuccess: null,
