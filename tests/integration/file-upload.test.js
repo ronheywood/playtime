@@ -1,34 +1,10 @@
 // Integration Test: File Upload Handler
 // Tests the interaction between file input and PDF viewer display
 
-// Setup polyfills first (before JSDOM import)
-const { TextEncoder, TextDecoder } = require('util');
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
-
-const { JSDOM } = require('jsdom');
-
 describe('File Upload Integration', () => {
-    let dom;
     
     beforeEach(() => {
-        // Set up DOM environment
-        dom = new JSDOM(`
-            <!DOCTYPE html>
-            <html>
-            <body>
-                <input type="file" id="pdf-upload" accept="application/pdf">
-                <div class="pdf-viewer-container"></div>
-                <canvas id="pdf-canvas"></canvas>
-                <div class="current-score-title"></div>
-            </body>
-            </html>
-        `);
-        
-        global.document = dom.window.document;
-        global.window = dom.window;
-        
-        // Mock File constructor
+        // Mock File constructor (this is already available in JSDOM but we override for consistency)
         global.File = class File {
             constructor(chunks, filename, options = {}) {
                 this.name = filename;
@@ -39,8 +15,7 @@ describe('File Upload Integration', () => {
     });
     
     afterEach(() => {
-        delete global.document;
-        delete global.window;
+        // Clean up
         delete global.File;
     });
     
@@ -63,7 +38,7 @@ describe('File Upload Integration', () => {
             value: [mockFile],
             writable: false,
         });
-        fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
         
         // Assert
         expect(pdfViewer.textContent).toContain('test-score.pdf');
@@ -94,7 +69,7 @@ describe('File Upload Integration', () => {
             value: [invalidFile],
             writable: false,
         });
-        fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
         
         // Assert
         expect(pdfViewer.textContent).toContain('Error: Please select a PDF file');
@@ -123,7 +98,7 @@ describe('File Upload Integration', () => {
             value: [newFile],
             writable: false,
         });
-        fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
         
         // Assert
         expect(pdfViewer.textContent).toBe('Selected: new-score.pdf');

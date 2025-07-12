@@ -100,8 +100,10 @@ HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
 
 // Setup DOM before each test
 beforeEach(() => {
-    // Load the main HTML structure
-    document.body.innerHTML = `
+    // Only set up DOM if document is available (i.e., in JSDOM environment)
+    if (typeof document !== 'undefined') {
+        // Load the main HTML structure
+        document.body.innerHTML = `
         <header>
             <h1>PlayTime</h1>
         </header>
@@ -136,6 +138,7 @@ beforeEach(() => {
             </section>
         </main>
     `;
+    }
 });
 
 // Helper functions for testing

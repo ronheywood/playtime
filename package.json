@@ -35,7 +35,8 @@
       {
         "displayName": "integration", 
         "testMatch": ["<rootDir>/tests/integration/**/*.test.js"],
-        "testEnvironment": "node"
+        "testEnvironment": "jsdom",
+        "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]
       }
     ]
   }
