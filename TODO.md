@@ -16,12 +16,12 @@ We have successfully established the Outside-In TDD foundation with working acce
   - [x] Multi-Node testing (18.x, 20.x), build checks, security audit
   - [x] Added build status badge to README
   - [x] Tests run in clean Node.js environment with `npm ci` + `npm test`
-- [ ] **Fix PSake StartServer hanging** - Clean up build system for local development
+- [x] **Fix PSake StartServer hanging** - ✅ Fixed! Replaced Start-Process with Start-Job for reliable server management
 
 ### 🎯 2. Sandbox Clicky Prototype for UAT
 **Goal:** Get something clickable ASAP for user feedback
-- [ ] **Convert next failing test** (2nd test - IndexedDB storage)
-- [ ] **Minimal file upload that works** - Just show filename in viewer
+- [x] **Minimal file upload that works** - ✅ File upload handler implemented and tested
+- [ ] **Connect file upload to acceptance tests** - Make first acceptance test pass
 - [ ] **Basic PDF display** - Static PDF rendering to canvas
 - [ ] **Simple section highlighting** - Draw colored rectangles
 - [ ] **Demo-ready prototype** - Enough functionality for user testing

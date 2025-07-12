@@ -137,8 +137,12 @@ Task StartServer -depends ValidateTests {
         Write-Host "⏳ Starting server on port $ServerPort..." -ForegroundColor Yellow
     }
     
-    # Start server in background using Start-Process (detached)
-    $serverProcess = Start-Process -FilePath "cmd" -ArgumentList "/c", "npm", "run", "serve" -WorkingDirectory $ProjectRoot -WindowStyle Hidden -PassThru
+    # Start server in background using Start-Job (more reliable than Start-Process)
+    $serverJob = Start-Job -ScriptBlock {
+        param($ProjectRoot)
+        Set-Location $ProjectRoot
+        & npm run serve
+    } -ArgumentList $ProjectRoot
     
     # Wait for server to start responding
     $attempts = 0
@@ -149,15 +153,16 @@ Task StartServer -depends ValidateTests {
         $attempts++
         try {
             $testResponse = Invoke-WebRequest -Uri $ServerUrl -TimeoutSec 3 -ErrorAction Stop
-            Write-Host "✅ Server started successfully at $ServerUrl (PID: $($serverProcess.Id))" -ForegroundColor Green
+            Write-Host "✅ Server started successfully at $ServerUrl (Job ID: $($serverJob.Id))" -ForegroundColor Green
             
-            # Store the process ID in a global variable for cleanup
-            $global:ServerProcessId = $serverProcess.Id
+            # Store the job ID in a global variable for cleanup
+            $global:ServerJobId = $serverJob.Id
             return
         }
         catch {
             if ($attempts -eq $maxAttempts) {
-                Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue
+                Stop-Job -Id $serverJob.Id -ErrorAction SilentlyContinue
+                Remove-Job -Id $serverJob.Id -Force -ErrorAction SilentlyContinue
                 throw "❌ Server failed to start after $maxAttempts attempts"
             }
             Write-Host "." -NoNewline -ForegroundColor Gray
@@ -223,15 +228,17 @@ Task Watch -depends Install {
         # Start server in background if not running
         Invoke-psake StartServer
         
-        # Run tests in watch mode
-        $watchCommand = "cmd /c npm run test:watch"
-        Invoke-Expression $watchCommand
+        # For watch mode, we'll just run tests once and recommend using npm directly
+        Write-Host "⚡ Running tests once. For continuous watching, use: npm run test:watch" -ForegroundColor Yellow
+        $testCommand = "cmd /c npm run test"
+        Invoke-Expression $testCommand
+        
+        Write-Host "" -ForegroundColor Gray
+        Write-Host "💡 TIP: For true watch mode, run 'npm run test:watch' in a separate terminal" -ForegroundColor Cyan
+        Write-Host "💡 Server is running at $ServerUrl - use 'Invoke-psake StopServer' when done" -ForegroundColor Cyan
     }
     catch {
-        Write-Host "❌ Watch mode interrupted" -ForegroundColor Red
-    }
-    finally {
-        Invoke-psake StopServer
+        Write-Host "❌ Watch mode interrupted: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
@@ -240,7 +247,21 @@ Task StopServer {
     Write-Host "⏹️ Stopping development server..." -ForegroundColor Cyan
     
     try {
-        # First try to stop using the stored process ID
+        # First try to stop using the stored job ID
+        if ($global:ServerJobId) {
+            try {
+                Stop-Job -Id $global:ServerJobId -ErrorAction Stop
+                Remove-Job -Id $global:ServerJobId -Force -ErrorAction Stop
+                Write-Host "✅ Server stopped (Job ID: $global:ServerJobId)" -ForegroundColor Green
+                $global:ServerJobId = $null
+                return
+            }
+            catch {
+                Write-Host "⚠️ Could not stop server by Job ID, trying other methods..." -ForegroundColor Yellow
+            }
+        }
+        
+        # Fallback: try to stop using the stored process ID (for backward compatibility)
         if ($global:ServerProcessId) {
             try {
                 Stop-Process -Id $global:ServerProcessId -Force -ErrorAction Stop
@@ -253,7 +274,7 @@ Task StopServer {
             }
         }
         
-        # Fallback: find and stop processes using the port
+        # Final fallback: find and stop processes using the port
         $processes = Get-NetTCPConnection -LocalPort $ServerPort -ErrorAction SilentlyContinue | 
                     Select-Object -ExpandProperty OwningProcess | 
                     Get-Process -Id { $_ } -ErrorAction SilentlyContinue
@@ -281,7 +302,21 @@ Task Dev -depends StartServer, Test {
     Write-Host "2. Implement minimal code to make tests pass" -ForegroundColor Gray
     Write-Host "3. Refactor and repeat" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "Run 'Invoke-psake Watch' for continuous testing" -ForegroundColor Cyan
+    Write-Host "Development workflow commands:" -ForegroundColor Cyan
+    Write-Host "  npm run test:watch    - Continuous test watching" -ForegroundColor Gray
+    Write-Host "  Invoke-psake StopServer - Stop the development server" -ForegroundColor Gray
+    Write-Host "  Invoke-psake Clean    - Clean and restart environment" -ForegroundColor Gray
+}
+
+# Quick development startup (server only)
+Task Serve -depends StartServer {
+    Write-Host "🎵 PlayTime server started!" -ForegroundColor Green
+    Write-Host "🌐 Application: $ServerUrl" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Commands:" -ForegroundColor Yellow
+    Write-Host "  npm test              - Run tests once" -ForegroundColor Gray
+    Write-Host "  npm run test:watch    - Continuous test watching" -ForegroundColor Gray
+    Write-Host "  Invoke-psake StopServer - Stop server when done" -ForegroundColor Gray
 }
 
 # CI task - full build and test pipeline
@@ -305,7 +340,8 @@ Task Help {
     Write-Host "  AcceptanceTest - Run acceptance tests only" -ForegroundColor Cyan
     Write-Host "  StartServer  - Start development server" -ForegroundColor Magenta
     Write-Host "  StopServer   - Stop development server" -ForegroundColor Red
-    Write-Host "  Watch        - Run tests in watch mode" -ForegroundColor Yellow
+    Write-Host "  Watch        - Run tests once and start server" -ForegroundColor Yellow
+  Write-Host "  Serve        - Start development server only" -ForegroundColor Magenta
     Write-Host "  Dev          - Start server and run tests (development)" -ForegroundColor Green
     Write-Host "  CI           - Full CI pipeline" -ForegroundColor Blue
     Write-Host "  Help         - Show this help" -ForegroundColor White
