@@ -1,12 +1,9 @@
 
-// IndexedDBDatabase.js
-import AbstractDatabase from '../db/AbstractDatabase.js';
-
 const DB_NAME = 'PlayTimeDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'pdfFiles';
 
-export default class IndexedDBDatabase extends AbstractDatabase {
+export default class IndexedDBDatabase extends window.AbstractDatabase {
     // Abstract method: save(item)
     async save(file) {
         this.logger.info('💾 Saving PDF:', file?.name);

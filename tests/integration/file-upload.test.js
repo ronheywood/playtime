@@ -15,7 +15,7 @@ describe('File Upload Integration', () => {
         // Set up minimal database for integration testing
         const savedPdfs = [];
         mockDatabase = {
-            savePDF: function(file) {
+            save: function(file) {
                 savedPdfs.push({
                     name: file.name,
                     type: file.type,
@@ -23,7 +23,7 @@ describe('File Upload Integration', () => {
                 });
                 return Promise.resolve();
             },
-            getAllPDFs: function() {
+            getAll: function() {
                 return Promise.resolve(savedPdfs);
             },
             init: function() {
@@ -90,7 +90,7 @@ describe('File Upload Integration', () => {
         // Wait for async file processing to complete
         await TestHelpers.waitFor(200);
         
-        const savedPdfs = await window.PlayTimeDB.getAllPDFs();
+        const savedPdfs = await window.PlayTimeDB.getAll();
         expect(savedPdfs).toHaveLength(1);
         expect(savedPdfs[0].name).toBe('integration-test.pdf');
         expect(savedPdfs[0].type).toBe(TEST_CONSTANTS.PDF_MIME_TYPE);
