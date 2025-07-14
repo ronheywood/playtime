@@ -3,7 +3,7 @@ const DB_NAME = 'PlayTimeDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'pdfFiles';
 
-export default class IndexedDBDatabase extends window.AbstractDatabase {
+export class IndexedDBDatabase extends window.AbstractDatabase {
     // Abstract method: save(item)
     async save(file) {
         this.logger.info('💾 Saving PDF:', file?.name);
@@ -178,9 +178,19 @@ export default class IndexedDBDatabase extends window.AbstractDatabase {
         });
     }
 
+
     get _dbConn() {
         return this._db;
     }
+}
+
+/**
+ * Factory function to create a new IndexedDBDatabase instance
+ * @param {Object} logger - Logger instance to use for logging (optional)
+ * @returns {IndexedDBDatabase}
+ */
+export function createIndexedDBDatabase(logger = console) {
+    return new IndexedDBDatabase(logger);
 }
 
 

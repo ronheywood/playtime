@@ -217,13 +217,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         const appLogger = window.logger || console;
         
         // Create module instances with injected functions
-        // DB: allow test injection, fallback to IndexedDBDatabase if not provided
+        // DB: allow test injection, fallback to IndexedDBDatabase factory if not provided
         if (typeof window.createPlayTimeDB === 'function') {
             window.PlayTimeDB = window.createPlayTimeDB(appLogger);
         } else {
-            // Fallback: dynamically import IndexedDBDatabase (ES module)
+            // Fallback: dynamically import IndexedDBDatabase (ES module) and use the factory
             const module = await import('../db/IndexedDBDatabase.js');
-            window.PlayTimeDB = new module.default(appLogger);
+            // Use the factory if available, else fallback to constructor (for legacy support)
+            if (typeof module.createIndexedDBDatabase === 'function') {
+                window.PlayTimeDB = module.createIndexedDBDatabase(appLogger);
+            } else if (typeof module.IndexedDBDatabase === 'function') {
+                window.PlayTimeDB = new module.IndexedDBDatabase(appLogger);
+            } else {
+                throw new Error('IndexedDBDatabase module does not export a usable factory or class');
+            }
         }
 
         if (typeof window.createPlayTimePDFViewer === 'function') {
