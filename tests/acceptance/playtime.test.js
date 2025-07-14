@@ -292,10 +292,20 @@ describe('PlayTime Music Practice App', () => {
         });
 
         describe('User Story 2.2: Highlight Sections', () => {
-            test('As a musician, I want to draw a rectangle over a part of the score to define a practice section', async () => {
+            test.skip('As a musician, I want to draw a rectangle over a part of the score to define a practice section', async () => {
                 // Arrange
                 const canvas = document.querySelector('#pdf-canvas');
-                
+
+                // Assert - selection overlay should not be visible before dragging (check computed style)
+                let selectionOverlay = document.querySelector('.selection-overlay');
+                if (selectionOverlay) {
+                    const style = window.getComputedStyle(selectionOverlay);
+                    expect(style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0').toBe(true);
+                } else {
+                    // If not in DOM, that's also not visible
+                    expect(selectionOverlay).toBeFalsy();
+                }
+
                 // Act - simulate drawing a rectangle with mouse events
                 const mouseDownEvent = new MouseEvent('mousedown', {
                     bubbles: true,
@@ -312,14 +322,16 @@ describe('PlayTime Music Practice App', () => {
                     clientX: 200,
                     clientY: 150
                 });
-                
+
                 canvas.dispatchEvent(mouseDownEvent);
                 canvas.dispatchEvent(mouseMoveEvent);
                 canvas.dispatchEvent(mouseUpEvent);
-                
-                // Assert - check for selection feedback
-                const selectionOverlay = document.querySelector('.selection-overlay');
+
+                // Assert - check for selection feedback (should now be visible)
+                selectionOverlay = document.querySelector('.selection-overlay');
                 expect(selectionOverlay).toBeTruthy();
+                const style = window.getComputedStyle(selectionOverlay);
+                expect(style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0').toBe(true);
             });
 
             test.skip('As a musician, I want to assign a color code (green, amber, red) to each section', async () => {

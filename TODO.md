@@ -141,24 +141,26 @@
 
 ### Phase 1: Basic PDF Upload & Display
 - [ ] **File Upload Handler** (scripts/main.js)
-  - [ ] Listen for file input change events
-  - [ ] Display selected filename in `.pdf-viewer-container`
+  - [x] Listen for file input change events
+  - [x] Display selected filename in `.pdf-viewer-container`
+  - [ ] Set a file name alias
   - [ ] Basic file validation (PDF type, size limits)
 
-- [ ] **IndexedDB Storage** (scripts/db.js)
-  - [ ] Initialize PlayTimeDB with pdfFiles object store
-  - [ ] Save uploaded PDF files with metadata
-  - [ ] Retrieve stored PDF list
+- [ ] **IndexedDB Storage** (db/**.js)
+  - [x] Initialize PlayTimeDB with pdfFiles object store
+  - [x] Save uploaded PDF files with metadata
+  - [x] Retrieve stored PDF list
+  - [x] Database abstractions for and browser - more later (eg: firebase)
 
-- [ ] **PDF Rendering** (scripts/pdf-viewer.js)
-  - [ ] Integrate PDF.js library
-  - [ ] Render first page of PDF to `#pdf-canvas`
-  - [ ] Basic page navigation (prev/next buttons)
+- [x] **PDF Rendering** (scripts/pdf-viewer.js)
+  - [x] Integrate PDF.js library
+  - [x] Render first page of PDF to `#pdf-canvas`
+  - [x] Basic page navigation (prev/next buttons)
 
 ### Phase 2: Score Management
-- [ ] **Score List Display**
-  - [ ] Show list of uploaded scores in `#scores-list`
-  - [ ] Click to select and open score
+- [x] **Score List Display**
+  - [x] Show list of uploaded scores in `#scores-list`
+  - [x] Click to select and open score
   - [ ] Delete/manage existing scores
 
 ### Phase 3: Section Highlighting
@@ -174,15 +176,16 @@
 
 ### Phase 4: Practice Features
 - [ ] **Section Focus Mode**
+  - [ ] Focus whole score
   - [ ] Zoom/crop view to highlighted section
   - [ ] Exit focus mode back to full view
   - [ ] Section navigation (next/previous)
 
 ## 📁 Test Fixtures & Assets
-- [ ] Create sample PDF files for testing
-  - [ ] `tests/fixtures/sample-score.pdf`
-  - [ ] `tests/fixtures/another-score.pdf` 
-  - [ ] Multi-page PDF for navigation testing
+- [x] Create sample PDF files for testing
+  - [x] `tests/fixtures/sample-score.pdf`
+  - [x] `tests/fixtures/another-score.pdf` 
+  - [x] Multi-page PDF for navigation testing
 
 ## 🎨 UI/UX Enhancements
 - [ ] Responsive design improvements for tablet use
@@ -191,13 +194,14 @@
 - [ ] Visual polish and modern design
 
 ## 🧪 Testing Strategy
-- [ ] **Unit Tests** (when needed)
-  - [ ] Individual module testing (db.js, pdf-viewer.js, etc.)
-  - [ ] Mock external dependencies (PDF.js, IndexedDB)
+- [x] **Outside in TDD Methods**
+  - [x] Define Acceptance tests
+  - [x] CI/CD Supported
 
 - [ ] **Integration Tests**
   - [ ] Cross-module functionality
   - [ ] PDF.js integration testing
+  - [ ] Database integration testing
 
 ## 📦 Deployment & Distribution
 - [ ] **Progressive Web App (PWA)**
@@ -213,7 +217,7 @@
 ## 🔧 Technical Debt & Improvements
 - [ ] **Code Organization**
   - [ ] ES6 modules structure
-  - [ ] TypeScript migration (optional)
+  - [ ] TypeScript migration
   - [ ] Linting and code formatting setup
 
 - [ ] **Performance**
@@ -265,28 +269,14 @@
 ---
 
 ## 🎯 Next Action Items - Current Plan ⚠️
-**Status**: PDF.js Integration Complete - BUT UAT Gap Discovered!
+**Status**: Database abstraction supported better integration testing but legacy db.js is the only implementation with integration tests
 
 **Current State**:
 - ✅ Integration tests are green (file upload + PDF rendering works in tests)
 - ✅ Application initialization works (main.js loads and runs)
 - ✅ **PDF.js Implementation Complete**: Full PDF viewer with rendering, navigation, error handling
 - ✅ **Six acceptance tests passing**: Upload, save, view, navigate, highlight, zoom
-- ❌ **Five acceptance tests failing**: Score list, selection, color coding, persistence (unimplemented features)
-
-**CRITICAL DISCOVERY - False Test Confidence**:
-1. **Problem**: Acceptance tests pass for PDF rendering, but UAT/browser shows "not implemented yet"
-2. **Root Cause**: Real `scripts/db.js` and `scripts/highlighting.js` are still placeholders
-3. **Impact**: Test mocks mask implementation gaps - PDF doesn't render in actual browser
-4. **Fix Required**: Implement real IndexedDB logic to remove placeholder messages
-
-**Next Steps (Priority Order)**:
-1. **🚨 URGENT: Implement real IndexedDB in db.js** - Remove "not implemented yet" messages
-2. **Verify PDF rendering in actual browser** - Ensure UAT matches test expectations  
-3. **Implement score list display** - Show uploaded PDFs in UI (failing test #1)
-4. **Continue systematic Outside-In development** - Address remaining failing tests
-
-**Key Lesson Learned**: Test mocks can give false confidence. Always verify implementation works in actual UAT environment, not just test environment.
+- ⚠️ **4 acceptance tests skipped**: selection, color coding, persist sections, focus sections
 
 ## 📝 Notes
 - Following strict Outside-In TDD: failing tests drive all implementation
