@@ -353,7 +353,14 @@ const TestHelpers = {
 module.exports = TestHelpers;
 
 /**
- * Create a real IndexedDBDatabase instance using the ES module factory
+ * Create a real IndexedDBDatabase instance using the ES module factory.
+ *
+ * This helper enables direct integration testing of the concrete IndexedDBDatabase implementation.
+ * It uses dynamic import, so your test runner must support ESM (see Jest docs for ESM support).
+ *
+ * @example
+ *   const db = await TestHelpers.createIndexedDBDatabase(logger);
+ *
  * @param {Object} logger - Logger instance to use for logging
  * @returns {Promise<Object>} IndexedDBDatabase instance
  */

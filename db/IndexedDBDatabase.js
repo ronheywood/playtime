@@ -185,7 +185,15 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
 }
 
 /**
- * Factory function to create a new IndexedDBDatabase instance
+ * Factory function to create a new IndexedDBDatabase instance.
+ *
+ * This enables dependency injection and testability for the PlayTime app.
+ * Use this factory in production code, and inject a different factory (e.g., for MemoryDatabase) in tests.
+ *
+ * @example
+ *   import { createIndexedDBDatabase } from './db/IndexedDBDatabase.js';
+ *   const db = createIndexedDBDatabase(logger);
+ *
  * @param {Object} logger - Logger instance to use for logging (optional)
  * @returns {IndexedDBDatabase}
  */
