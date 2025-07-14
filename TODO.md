@@ -261,15 +261,22 @@
 - [x] **Scale Calculation** - Automatic canvas sizing for optimal PDF display
 - [x] **Error Handling** - Graceful handling of invalid PDFs and loading failures
 
-### ⚠️ Gap Between Test and UAT Environment
-- [x] **Identified False Test Confidence** - Acceptance tests pass but UAT fails
-- [x] **Root Cause Analysis** - Placeholder db.js and highlighting.js block real functionality
-- [ ] **Fix Required** - Remove "not implemented yet" messages from production code
-
 ---
 
 ## 🎯 Next Action Items - Current Plan ⚠️
-**Status**: Database abstraction supported better integration testing but legacy db.js is the only implementation with integration tests
+**Status**: Database abstraction supported better integration testing 
+
+## NOTE: IndexedDBDatabase ESM Limitation
+
+Due to Node and Jest limitations, there is currently **no way to directly test the ESM `IndexedDBDatabase.js` implementation from CommonJS-based tests** (even with dynamic import and experimental flags). Jest will not parse ESM files unless the entire test suite, helpers, and configuration are migrated to ESM and Jest is fully configured for ESM support.
+
+**To test the real IndexedDBDatabase.js implementation, a full ESM migration is required:**
+- Convert all test files and helpers to ESM (`import`/`export` syntax, `.js` extensions, no `require`).
+- Update Jest config for ESM (see https://jestjs.io/docs/ecmascript-modules).
+- Only then can you import and test ESM modules like `IndexedDBDatabase.js`.
+
+Until then, tests using the CommonJS factory or wrapper will NOT exercise the new ESM code.
+
 
 **Current State**:
 - ✅ Integration tests are green (file upload + PDF rendering works in tests)
