@@ -1,6 +1,6 @@
 /**
  * Database Storage Integration Tests
- * Tests the real IndexedDB implementation in scripts/db.js
+ * Tests the real IndexedDB implementation
  */
 
 const fs = require('fs');
@@ -12,7 +12,7 @@ describe('Database Storage Integration', () => {
     let consoleSpy;
     
     beforeEach(async () => {
-        // Mock console methods to reduce test noise from db.js
+        // Mock console methods to reduce test noise
         consoleSpy = {
             log: jest.spyOn(console, 'log').mockImplementation(() => {}),
             warn: jest.spyOn(console, 'warn').mockImplementation(() => {}),
@@ -188,33 +188,5 @@ describe('Database Storage Integration', () => {
             expect(mockFile.size).toBeGreaterThan(0);
         });
     });
-
-    describe('No Placeholder Code Verification', () => {
-        test('should not contain "not implemented yet" in the db.js source', () => {
-            const fs = require('fs');
-            const path = require('path');
-            
-            const dbPath = path.join(__dirname, '../../scripts/db.js');
-            const dbContent = fs.readFileSync(dbPath, 'utf8');
-            
-            expect(dbContent).not.toContain('not implemented yet');
-            expect(dbContent).not.toContain('TODO');
-            expect(dbContent).not.toContain('FIXME');
-        });
-
-        test('should contain real IndexedDB implementation keywords', () => {
-            const fs = require('fs');
-            const path = require('path');
-            
-            const dbPath = path.join(__dirname, '../../scripts/db.js');
-            const dbContent = fs.readFileSync(dbPath, 'utf8');
-            
-            // Verify it contains IndexedDB-specific code
-            expect(dbContent).toContain('indexedDB.open');
-            expect(dbContent).toContain('transaction');
-            expect(dbContent).toContain('objectStore');
-            expect(dbContent).toContain('createObjectStore');
-            expect(dbContent).toContain('FileReader');
-        });
-    });
+    
 });

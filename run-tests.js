@@ -40,7 +40,7 @@ if (missingFiles.length > 0) {
     }
     
     // Create placeholder JavaScript files
-    const jsFiles = ['main.js', 'db.js', 'pdf-viewer.js', 'highlighting.js'];
+    const jsFiles = ['main.js', 'pdf-viewer.js', 'highlighting.js'];
     jsFiles.forEach(file => {
         const filePath = path.join('scripts', file);
         if (!fs.existsSync(filePath)) {
