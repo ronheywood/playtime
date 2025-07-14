@@ -38,8 +38,8 @@ describe('Database Storage Integration', () => {
                 deleteReq.onerror = () => resolve(); // Continue even if delete fails
             });
         }
-        
-        // Load the db.js factory function and create instance with silent logger
+
+        // Fallback to the original PlayTimeDB factory (CommonJS, no ESM import)
         PlayTimeDB = TestHelpers.createPlayTimeDB(silentLogger);
     });
 

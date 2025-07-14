@@ -351,3 +351,20 @@ const TestHelpers = {
 };
 
 module.exports = TestHelpers;
+
+/**
+ * Create a real IndexedDBDatabase instance using the ES module factory
+ * @param {Object} logger - Logger instance to use for logging
+ * @returns {Promise<Object>} IndexedDBDatabase instance
+ */
+TestHelpers.createIndexedDBDatabase = async (logger = console) => {
+    // Use dynamic import to load the ES module
+    const module = await import('../../db/IndexedDBDatabase.js');
+    if (typeof module.createIndexedDBDatabase === 'function') {
+        return module.createIndexedDBDatabase(logger);
+    } else if (typeof module.IndexedDBDatabase === 'function') {
+        return new module.IndexedDBDatabase(logger);
+    } else {
+        throw new Error('IndexedDBDatabase module does not export a usable factory or class');
+    }
+};
