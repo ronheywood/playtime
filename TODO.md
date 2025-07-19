@@ -1,6 +1,6 @@
 # PlayTime TODO List
 
-## 🎉 SUCCESS: Database Integration Complete & UAT Verified!
+## SUCCESS: Database Integration Complete & UAT Verified!
 
 **✅ ACHIEVEMENT UNLOCKED**: PDF upload and rendering now works in both test and UAT environments!
 
@@ -8,7 +8,7 @@
 
 ---
 
-## � SUCCESS: Page Navigation Feature Complete!
+## SUCCESS: Page Navigation Feature Complete!
 
 **✅ ACHIEVEMENT UNLOCKED**: Page navigation buttons now actually work!
 
@@ -22,53 +22,12 @@
 
 ---
 
-## 🎯 NEXT TARGET: Score Selection Feature (Score List & Selection)
-
-**Why This Is The Most Valuable Next Feature:**
-
-1. **Core User Workflow**: Complete the PDF management experience - users upload but can't see/select scores
-2. **High User Value**: Makes the app feel complete and professional  
-3. **Clear Failing Tests**: Score list display and selection tests are ready to drive implementation
-4. **Foundation Feature**: Required before advanced features like highlights and practice modes
-
-**Current Failing Tests:**
-1. **Score list display** - Missing .score-item elements 
-2. **Select score from list** - Missing `.current-score-title` element
-
-**Implementation Approach:**
-- Add score list UI to display uploaded PDFs from IndexedDB
-- Implement score selection functionality (click to load PDF)
-- Show current score title/metadata
-- Connect selection to PDF viewer for seamless score switching
-
----
-
-## 📊 Current Test Status
-
-**✅ PASSING TESTS (6):**
-- Upload a PDF score from my device  
-- Save uploaded PDF locally in browser  
-- View the pages of my selected PDF score clearly on the screen 
-- Basic page navigation for multi-page scores *(false positive - buttons exist but don't work)*
-- Draw a rectangle over a part of the score to define a practice section 
-- Zoom in on the selected section for focused practice 
-
-**❌ FAILING TESTS (5) - Ready for Implementation:**
-1. **Score list display** - Missing .score-item elements 
-2. **Select score from list** - Missing `.current-score-title` element
-3. **Color code sections** - Missing `.highlight[data-color="green"]` element
-4. **Persist highlights** - Missing `.highlight[data-color="amber"]` element
-5. **Select highlighted sections** - Missing `.selected` class functionality
-
----
-
 ## 🚀 Implementation Priority Queue
 
-1. **🎯 CURRENT: Fix Page Navigation** - Make prev/next buttons actually work
-2. **Score Selection** - Add score list UI and selection functionality  
-3. **Color Coding** - Implement highlight color assignment
-4. **Highlight Persistence** - Save/load highlights to IndexedDB
-5. **Section Selection** - Make highlights clickable/selectable
+1. **Score Selection** - Add score list UI and selection functionality  
+2. **Color Coding** - Implement highlight color assignment
+3. **Highlight Persistence** - Save/load highlights to IndexedDB
+4. **Section Selection** - Make highlights clickable/selectable
 
 ---
 
@@ -93,12 +52,12 @@
 - Draw a rectangle over a part of the score to define a practice section 
 - Zoom in on the selected section for focused practice 
 
-❌ **FAILING TESTS (5) - CLEAN ASSERTIONS, NO RUNTIME ERRORS:**
-1. **Score list display** - Missing .score-item elements (feature not implemented yet)  
-2. **Select score from list** - Missing `.current-score-title` element
-3. **Color code sections** - Missing `.highlight[data-color="green"]` element
-4. **Persist highlights** - Missing `.highlight[data-color="amber"]` element
-5. **Select highlighted sections** - Missing `.selected` class functionality
+❌ **FAILING TESTS (3) - CLEAN ASSERTIONS, NO RUNTIME ERRORS:**
+
+1. **Select score from list** - Missing `.current-score-title` element
+2. **Color code sections** - Missing `.highlight[data-color="green"]` element
+3. **Persist highlights** - Missing `.highlight[data-color="amber"]` element
+4. **Select highlighted sections** - Missing `.selected` class functionality
 
 ## 📋 Priorities by Value (XP/Agile Approach)
 
@@ -120,7 +79,7 @@
 - [x] **Connect file upload to acceptance tests** - ✅ FIRST ACCEPTANCE TEST PASSING!
 - [x] **Basic PDF display** - ✅ PDF.js integration implemented in tests, but blocked in UAT by placeholder db.js
 - [x] **⚠️ Fix PDF display in UAT** - Remove "not implemented yet" messages from db.js
-- [ ] **Multi page pdf navigation** - next and previous page buttons
+- [x] **Multi page pdf navigation** - next and previous page buttons
 - [ ] **Simple section highlighting** - Draw colored rectangles
 - [ ] **Demo-ready prototype** - Enough functionality for user testing
 
@@ -128,11 +87,12 @@
 **Following the map order:** Activity 1 → Activity 2 → Activity 3
 
 #### Activity 1: Manage Music Scores
-- [ ] **1.1 Add New Score** (File upload + local storage)
-- [ ] **1.2 View & Select Existing Score** (Score list + selection)
+- [x] **1.1 Add New Score** (File upload + local storage)
+- [x] **1.2 View & Select Existing Score** (Score list + selection)
 
 #### Activity 2: Analyze & Mark Up Score  
-- [ ] **2.1 View PDF Score** (PDF.js integration + navigation)
+- [x] **2.1 View PDF Score** (PDF.js integration + navigation)
+- [ ] **2.2 Focus on whole PDF Score** (Remove UI elements so the musician is not distracted)
 - [ ] **2.2 Highlight Sections** (Drawing interface + color coding)
 - [ ] **2.3 Persist Highlights** (Save/load highlights)
 
@@ -176,7 +136,7 @@
 
 ### Phase 4: Practice Features
 - [ ] **Section Focus Mode**
-  - [ ] Focus whole score
+  - [ ] Focus whole score (See todo-focus-mode.html for an example)
   - [ ] Zoom/crop view to highlighted section
   - [ ] Exit focus mode back to full view
   - [ ] Section navigation (next/previous)
@@ -253,29 +213,6 @@
 - [x] Placeholder JavaScript modules created
 
 ### PDF Rendering Implementation ✅
-- [x] **PDF.js Integration** - Complete PDF viewer with page rendering and navigation
-- [x] **Integration Tests** - Comprehensive tests for PDF loading, rendering, error handling
-- [x] **File Upload to PDF Connection** - File upload triggers PDF viewer with dependency injection
-- [x] **Canvas Integration** - PDF pages render to HTML5 canvas element
-- [x] **Page Navigation** - Previous/next page functionality with boundary handling
-- [x] **Scale Calculation** - Automatic canvas sizing for optimal PDF display
-- [x] **Error Handling** - Graceful handling of invalid PDFs and loading failures
-
----
-
-## 🎯 Next Action Items - Current Plan ⚠️
-**Status**: Database abstraction supported better integration testing 
-
-## NOTE: IndexedDBDatabase ESM Limitation
-
-Due to Node and Jest limitations, there is currently **no way to directly test the ESM `IndexedDBDatabase.js` implementation from CommonJS-based tests** (even with dynamic import and experimental flags). Jest will not parse ESM files unless the entire test suite, helpers, and configuration are migrated to ESM and Jest is fully configured for ESM support.
-
-**To test the real IndexedDBDatabase.js implementation, a full ESM migration is required:**
-- Convert all test files and helpers to ESM (`import`/`export` syntax, `.js` extensions, no `require`).
-- Update Jest config for ESM (see https://jestjs.io/docs/ecmascript-modules).
-- Only then can you import and test ESM modules like `IndexedDBDatabase.js`.
-
-Until then, tests using the CommonJS factory or wrapper will NOT exercise the new ESM code.
 
 
 **Current State**:
