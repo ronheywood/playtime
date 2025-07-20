@@ -176,7 +176,7 @@ function createPlayTimeScoreList(database, logger = console) {
         _updateCurrentScoreTitle: function(filename) {
             const currentTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
             if (currentTitle) {
-                currentTitle.textContent = `Current Score: ${filename}`;
+                currentTitle.textContent = `${filename}`;
             }
         },
 

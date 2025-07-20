@@ -53,6 +53,7 @@
             flex-direction: column;
             gap: 20px;
             position: relative; /* For the focus mode button */
+            overflow-y: auto; /* Enable scrolling for sidebar content */
         }
         .top-bar {
             width: 100%;
@@ -120,6 +121,72 @@
             background-color: rgba(0, 0, 0, 0.8);
         }
 
+        /* Custom styles for library section to fit within Tailwind structure */
+        .library-section-in-sidebar {
+            background: none; /* Remove background as sidebar already has one */
+            padding: 0; /* Remove padding as sidebar already has one */
+            box-shadow: none; /* Remove shadow */
+            margin-bottom: 0;
+            opacity: 1; /* Ensure full opacity when integrated */
+            max-height: none; /* Remove height limits */
+            overflow: visible;
+        }
+
+        .library-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        #add-score-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #pdf-upload {
+            display: none;
+        }
+
+        label[for="pdf-upload"] {
+            display: block;
+            padding: 0.5rem 1rem;
+            background-color: #3498db; /* Blue for consistency */
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s;
+            font-size: 0.9rem; /* Slightly smaller for sidebar */
+            white-space: nowrap; /* Prevent text wrap */
+        }
+
+        label[for="pdf-upload"]:hover {
+            background-color: #2980b9;
+        }
+
+        .score-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 0.9em;
+            color: #334155;
+        }
+
+        .score-item:hover {
+            background-color: #d5dbdb;
+        }
+
+        .score-item.selected {
+            background-color: #4f46e5; /* Use primary indigo for selected */
+            color: white;
+        }
+
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .app-container {
@@ -184,9 +251,9 @@
             <div class="text-gray-700">
                 <h3 class="font-bold text-lg mb-2">Page Navigation</h3>
                 <div class="flex items-center justify-between">
-                    <button class="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">&lt;</button>
+                    <button class="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">◀</button>
                     <span>Page 1 of 3</span>
-                    <button class="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">&gt;</button>
+                    <button class="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">▶</button>
                 </div>
             </div>
 
@@ -195,19 +262,51 @@
                 <p>A whole new world.pdf</p>
             </div>
 
+            <!-- Mark Section Confidence Controls -->
             <div class="text-gray-700">
                 <h3 class="font-bold text-lg mb-2">Mark Section Confidence:</h3>
                 <div class="flex gap-2">
-                    <span class="w-6 h-6 rounded-full bg-red-500 cursor-pointer hover:opacity-80 transition-opacity"></span>
-                    <span class="w-6 h-6 rounded-full bg-orange-400 cursor-pointer hover:opacity-80 transition-opacity"></span>
-                    <span class="w-6 h-6 rounded-full bg-green-500 cursor-pointer hover:opacity-80 transition-opacity"></span>
+                    <span id="color-red" data-color="red" title="Need Study (Red)" class="w-6 h-6 rounded-full bg-red-500 cursor-pointer hover:opacity-80 transition-opacity"></span>
+                    <span id="color-orange" data-color="orange" title="Unsure (Orange)" class="w-6 h-6 rounded-full bg-orange-400 cursor-pointer hover:opacity-80 transition-opacity"></span>
+                    <span id="color-green" data-color="green" title="Confident (Green)" class="w-6 h-6 rounded-full bg-green-500 cursor-pointer hover:opacity-80 transition-opacity"></span>
                 </div>
             </div>
 
             <div class="flex-grow"></div> <!-- Spacer -->
 
+            <!-- Scores Library Section (includes Add a Score) - Integrated into Sidebar -->
+            <section id="library-section" class="library-section-in-sidebar text-gray-700">
+                <div class="library-header-row">
+                    <h2 class="text-lg font-bold">Your Scores</h2>
+                    <div id="add-score-controls">
+                        <input type="file" id="pdf-upload" accept="application/pdf" aria-label="Upload PDF score">
+                        <label for="pdf-upload" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md cursor-pointer text-sm transition-colors shadow-sm">Add a Score</label>
+                    </div>
+                </div>
+                <div id="scores-list" class="mt-2 space-y-2">
+                    <!-- Dynamic content: list of uploaded scores will appear here -->
+                    <!-- Example Scores -->
+                    <div class="score-item bg-gray-100 hover:bg-gray-200 rounded-md p-2 cursor-pointer transition-colors shadow-sm">
+                        <p class="font-medium">A Whole New World</p>
+                        <p class="text-xs text-gray-500">Composer: Alan Menken</p>
+                    </div>
+                    <div class="score-item bg-gray-100 hover:bg-gray-200 rounded-md p-2 cursor-pointer transition-colors shadow-sm selected">
+                        <p class="font-medium">Canon in D</p>
+                        <p class="text-xs text-gray-500">Composer: Johann Pachelbel</p>
+                    </div>
+                    <div class="score-item bg-gray-100 hover:bg-gray-200 rounded-md p-2 cursor-pointer transition-colors shadow-sm">
+                        <p class="font-medium">Für Elise</p>
+                        <p class="text-xs text-gray-500">Composer: Ludwig van Beethoven</p>
+                    </div>
+                    <div class="score-item bg-gray-100 hover:bg-gray-200 rounded-md p-2 cursor-pointer transition-colors shadow-sm">
+                        <p class="font-medium">Moonlight Sonata (1st Mvt)</p>
+                        <p class="text-xs text-gray-500">Composer: Ludwig van Beethoven</p>
+                    </div>
+                </div>
+            </section>
+
             <!-- Example of other sidebar tools -->
-            <div class="text-gray-700">
+            <div class="text-gray-700 mt-4"> <!-- Added margin-top to separate from library -->
                 <h3 class="font-bold text-lg mb-2">Practice Tools</h3>
                 <ul class="space-y-1">
                     <li class="flex items-center gap-2 text-sm text-gray-600">
@@ -277,8 +376,20 @@
                     focusModeToggle.style.padding = '10px 15px';
                     focusModeToggle.style.fontSize = '1em';
                     focusModeToggle.style.borderRadius = '8px';
-                    focusModeToggle.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+                    focusModeToggle.style.box-shadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
                 }
+            });
+
+            // Add event listeners for score items to simulate selection
+            document.querySelectorAll('.score-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    // Remove 'selected' from all items
+                    document.querySelectorAll('.score-item').forEach(i => i.classList.remove('selected'));
+                    // Add 'selected' to the clicked item
+                    item.classList.add('selected');
+                    // Update current score title (for demonstration)
+                    document.querySelector('.current-score-title').textContent = item.querySelector('p:first-child').textContent + '.pdf';
+                });
             });
         });
     </script>

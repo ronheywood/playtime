@@ -110,7 +110,7 @@ describe('PlayTime Score List Integration', () => {
         // Assert
         expect(mockDatabase.get).toHaveBeenCalledWith('1');
         const currentTitle = document.querySelector('.current-score-title');
-        expect(currentTitle.textContent).toContain('Current Score: test-score.pdf');
+        expect(currentTitle.textContent).toContain('test-score.pdf');
     });
 
     test('should handle database errors gracefully', async () => {
