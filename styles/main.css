@@ -203,25 +203,13 @@ body {
 .btn-sm {
     height: 2.25rem;
     padding: 0 0.75rem;
+    font-size: 0.75rem;
 }
 
 .btn-icon {
     height: 2.5rem;
     width: 2.5rem;
     padding: 0;
-}
-
-/* Card styling */
-.card {
-    border-radius: 0.5rem;
-    border: 1px solid hsl(var(--border));
-    background-color: hsl(var(--card));
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    transition: all 0.2s;
-}
-
-.card:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* Badge styling */
@@ -241,6 +229,71 @@ body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
 }
+
+/* Enhanced card styling */
+.card {
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Score card specific styling */
+.score-card {
+    cursor: pointer;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.score-card:hover {
+    background-color: hsl(var(--muted) / 0.5);
+}
+
+.score-card.active {
+    background-color: hsl(var(--primary) / 0.1);
+    border-color: hsl(var(--primary));
+}
+
+/* Confidence button styling */
+.confidence-btn {
+    transition: all 0.2s ease;
+    position: relative;
+    outline: none;
+}
+
+.confidence-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.confidence-btn:focus {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+}
+
+.confidence-btn.selected {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 3px hsl(var(--background)), 0 0 0 5px currentColor;
+}
+
+/* Practice confidence color utilities */
+.bg-practice-confident { background-color: hsl(var(--practice-confident)); }
+.bg-practice-unsure { background-color: hsl(var(--practice-unsure)); }
+.bg-practice-needs-work { background-color: hsl(var(--practice-needs-work)); }
+
+.border-practice-confident { border-color: hsl(var(--practice-confident)); }
+.border-practice-unsure { border-color: hsl(var(--practice-unsure)); }
+.border-practice-needs-work { border-color: hsl(var(--practice-needs-work)); }
+
+.bg-practice-confident-20 { background-color: hsl(var(--practice-confident) / 0.2); }
+.bg-practice-unsure-20 { background-color: hsl(var(--practice-unsure) / 0.2); }
+.bg-practice-needs-work-20 { background-color: hsl(var(--practice-needs-work) / 0.2); }
 
 /* Sheet music - always light for readability */
 .sheet-music {
