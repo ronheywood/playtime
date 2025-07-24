@@ -1,9 +1,78 @@
-/* PlayTime - Main Styles */
+/* PlayTime - Main Styles with Dark Mode Support */
 
+/* Light mode (default) */
+:root {
+    --background: 240 10% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --border: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --practice-confident: 142 76% 36%;
+    --practice-unsure: 43 96% 56%;
+    --practice-needs-work: 0 84% 60%;
+}
+
+/* Dark mode */
+.dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --border: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --practice-confident: 142 76% 50%;
+    --practice-unsure: 43 96% 70%;
+    --practice-needs-work: 0 84% 70%;
+}
+
+/* Theme-aware utility classes */
+.bg-background { background-color: hsl(var(--background)); }
+.bg-card { background-color: hsl(var(--card)); }
+.bg-card-50 { background-color: hsl(var(--card) / 0.5); }
+.bg-muted { background-color: hsl(var(--muted)); }
+.bg-muted-20 { background-color: hsl(var(--muted) / 0.2); }
+.bg-secondary { background-color: hsl(var(--secondary)); }
+
+.text-foreground { color: hsl(var(--foreground)); }
+.text-card-foreground { color: hsl(var(--card-foreground)); }
+.text-primary { color: hsl(var(--primary)); }
+.text-muted-foreground { color: hsl(var(--muted-foreground)); }
+.text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
+
+.border-border { border-color: hsl(var(--border)); }
+.border-practice-confident { border-color: hsl(var(--practice-confident)); }
+.border-practice-unsure { border-color: hsl(var(--practice-unsure)); }
+.border-practice-needs-work { border-color: hsl(var(--practice-needs-work)); }
+
+.ring-primary { box-shadow: 0 0 0 2px hsl(var(--primary)); }
+
+/* Practice confidence colors */
+.bg-practice-confident-20 { background-color: hsl(var(--practice-confident) / 0.2); }
+.bg-practice-unsure-20 { background-color: hsl(var(--practice-unsure) / 0.2); }
+.bg-practice-needs-work-20 { background-color: hsl(var(--practice-needs-work) / 0.2); }
+
+/* Smooth transitions for all elements */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
 
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #f0f2f5;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     display: flex;
     justify-content: center;
     align-items: center;
@@ -11,6 +80,7 @@ body {
     margin: 0;
     padding: 20px;
     box-sizing: border-box;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .app-container {
@@ -18,14 +88,14 @@ body {
     width: 100%;
     max-width: 1200px;
     height: 80vh; /* Adjust height for demonstration */
-    background-color: #ffffff;
+    background-color: hsl(var(--card));
     border-radius: 12px;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
 .sheet-music-view {
     flex-grow: 1;
-    background-color: #ffffff;
+    background-color: hsl(var(--card));
     display: flex;
     justify-content: center;
     align-items: center;
@@ -42,8 +112,8 @@ body {
 
 .sidebar {
     width: 280px;
-    background-color: #f8fafc;
-    border-left: 1px solid #e2e8f0;
+    background-color: hsl(var(--muted));
+    border-left: 1px solid hsl(var(--border));
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -51,24 +121,120 @@ body {
     position: relative; /* For the focus mode button */
     overflow-y: auto; /* Enable scrolling for sidebar content */
 }
+/* Custom button styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--ring));
+}
+
+.btn:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.btn-default {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.btn-default:hover {
+    background-color: hsl(var(--primary) / 0.9);
+}
+
+.btn-outline {
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+.btn-outline:hover {
+    background-color: hsl(var(--muted));
+}
+
+.btn-sm {
+    height: 2.25rem;
+    padding: 0 0.75rem;
+}
+
+.btn-icon {
+    height: 2.5rem;
+    width: 2.5rem;
+    padding: 0;
+}
+
+/* Card styling */
+.card {
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card));
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Badge styling */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0.125rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+}
+
+.badge-outline {
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+/* Sheet music - always light for readability */
+.sheet-music {
+    background-color: white !important;
+    color: black !important;
+}
+
+.sheet-music * {
+    color: black !important;
+}
+
 .top-bar {
     width: 100%;
     padding: 15px 20px;
-    background-color: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
+    background-color: hsl(var(--card));
+    border-bottom: 1px solid hsl(var(--border));
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-weight: 600;
-    color: #334155;
+    color: hsl(var(--foreground));
     border-radius: 12px 12px 0 0; /* Rounded top corners */
 }
+
 .focus-mode-button-trigger {
     position: absolute;
     top: 20px; /* Adjust as needed */
     right: 20px; /* Adjust as needed */
-    background-color: #4f46e5; /* Indigo */
-    color: white;
+    background-color: hsl(var(--primary)); /* Use theme primary */
+    color: hsl(var(--primary-foreground));
     padding: 10px 15px;
     border-radius: 8px;
     font-weight: 600;
@@ -78,7 +244,7 @@ body {
     z-index: 10; /* Ensure it's above the music */
 }
 .focus-mode-button-trigger:hover {
-    background-color: #4338ca; /* Darker indigo */
+    background-color: hsl(var(--primary) / 0.9); /* Use theme hover */
     transform: translateY(-1px);
 }
 .focus-mode-button-trigger:active {
