@@ -295,6 +295,15 @@ body {
 .bg-practice-unsure-20 { background-color: hsl(var(--practice-unsure) / 0.2); }
 .bg-practice-needs-work-20 { background-color: hsl(var(--practice-needs-work) / 0.2); }
 
+/* Dark mode toggle button */
+#theme-toggle {
+    transition: all 0.2s ease;
+}
+
+#theme-toggle:hover {
+    transform: scale(1.05);
+}
+
 /* Sheet music - always light for readability */
 .sheet-music {
     background-color: white !important;

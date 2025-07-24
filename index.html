@@ -87,6 +87,12 @@
                 <div class="flex items-center gap-2">
                     <h2 class="font-medium text-foreground">PlayTime: Structure your music practice for accelerated learning</h2>
                 </div>
+                
+                <!-- Dark Mode Toggle -->
+                <button id="theme-toggle" class="btn btn-outline btn-icon" title="Toggle dark mode">
+                    <span id="sun-icon" class="text-lg">☀️</span>
+                    <span id="moon-icon" class="text-lg hidden">🌙</span>
+                </button>
             </div>
 
             <!-- Sheet Music Display Area -->
@@ -119,6 +125,7 @@
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="scripts/logger.js"></script>
+    <script src="scripts/theme.js"></script>
     <script src="scripts/score.js"></script>
     <script type="module" src="db/AbstractDatabase.js"></script>
     <script type="module" src="db/IndexedDBDatabase.js"></script>
