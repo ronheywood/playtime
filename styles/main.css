@@ -73,53 +73,89 @@ body {
     font-family: 'Inter', sans-serif;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
     margin: 0;
-    padding: 20px;
+    padding: 0;
     box-sizing: border-box;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.app-container {
-    display: flex;
-    width: 100%;
-    max-width: 1200px;
-    height: 80vh; /* Adjust height for demonstration */
+/* Updated layout structure */
+.min-h-screen { min-height: 100vh; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 0.5rem; }
+.gap-4 { gap: 1rem; }
+.w-80 { width: 20rem; }
+.w-full { width: 100%; }
+.w-6 { width: 1.5rem; }
+.h-6 { height: 1.5rem; }
+.h-14 { height: 3.5rem; }
+.p-0 { padding: 0; }
+.p-4 { padding: 1rem; }
+.p-8 { padding: 2rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.text-sm { font-size: 0.875rem; }
+.text-lg { font-size: 1.125rem; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.rounded-full { border-radius: 9999px; }
+.cursor-pointer { cursor: pointer; }
+.hidden { display: none; }
+.overflow-auto { overflow: auto; }
+.overflow-y-auto { overflow-y: auto; }
+.space-y-2 > * + * { margin-top: 0.5rem; }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+.max-w-4xl { max-width: 56rem; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.transition-opacity { transition: opacity 0.2s; }
+.hover\:opacity-80:hover { opacity: 0.8; }
+
+/* Score items styling */
+.score-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
     background-color: hsl(var(--card));
-    border-radius: 12px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-}
-.sheet-music-view {
-    flex-grow: 1;
-    background-color: hsl(var(--card));
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    position: relative; /* For the overlay button */
-}
-.sheet-music-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9em;
+    color: hsl(var(--foreground));
 }
 
-.sidebar {
-    width: 280px;
+.score-item:hover {
     background-color: hsl(var(--muted));
-    border-left: 1px solid hsl(var(--border));
-    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.score-item.selected {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--primary));
+}
+
+/* PDF Viewer - Updated for new layout */
+.pdf-viewer-container {
+    position: relative;
+    overflow: hidden;
+    background: white; /* Always light for sheet music readability */
     display: flex;
-    flex-direction: column;
-    gap: 20px;
-    position: relative; /* For the focus mode button */
-    overflow-y: auto; /* Enable scrolling for sidebar content */
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 60vh;
+    height: 100%;
+    flex: 1 1 auto;
+    margin: 0 auto;
+    padding: 2rem;
+    border-radius: 0.5rem;
 }
 /* Custom button styles */
 .btn {
@@ -438,7 +474,6 @@ label[for="pdf-upload"]:hover {
     background: #f8f8f8;
     box-shadow: 0 2px 16px rgba(44,62,80,0.10);
     border-radius: 6px;
-    vertical-align: top;
 }
 
 .selection-overlay {

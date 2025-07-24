@@ -11,49 +11,46 @@
 
 </head>
 <body>
-    
-    <div id="app" class="app-container">
-        <!-- Top Bar (Visible in normal mode, hidden in focus mode) -->
-        <div class="top-bar absolute top-0 left-0 right-0 z-10 rounded-t-xl">
-            <span class="text-lg">PlayTime: Structure your music practice for accelerated learning</span>
-            <!-- This is where the "Focus Mode" toggle button would be in the main UI -->
-        </div>   
-
-        <!-- PDF Viewer Section -->
-        <section class="sheet-music-view relative flex-grow" id="viewer-section">
-            
-                    <div class="pdf-viewer-container">
-                        <canvas id="pdf-canvas"></canvas>
-                        <div class="selection-overlay" style="display: none;"></div>
-                    </div>
-                    <div id="selected-message"></div>
-                    <!-- Practice Focus Controls -->
-                    <div class="practice-controls">
-                        <button id="focus-section-btn" style="display: none;">Focus on Section</button>
-                        <button id="exit-focus-btn" style="display: none;">Exit Focus</button>
-                    </div>
-                    
-        </section>
-
-        <div class="sidebar">
-            <div class="viewer-controls text-gray-700">
-                <h3 class="font-bold text-lg mb-2">Page Navigation</h3>
-                <div class="flex items-center justify-between nav-controls-row">
-                    <button id="prev-page-btn" aria-label="Previous page" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">◀</button>
-                    <span id="page-info">Page 1 of 1</span>
-                    <button id="next-page-btn" aria-label="Next page" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">▶</button>
+    <div id="app" class="min-h-screen bg-background flex">
+        <!-- Left Sidebar - Score Library & Controls -->
+        <div class="sidebar w-80 border-r border-border bg-card-50 flex flex-col">
+            <!-- Header -->
+            <div class="p-4 border-b border-border">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-lg font-semibold text-foreground">PlayTime Practice</span>
+                </div>
+                
+                <!-- File Upload -->
+                <div id="add-score-controls">
+                    <input type="file" id="pdf-upload" accept="application/pdf" aria-label="Upload PDF score" class="hidden">
+                    <label for="pdf-upload" class="btn btn-default w-full mb-3 cursor-pointer">
+                        Add a Score
+                    </label>
                 </div>
             </div>
-            
-            <div class="text-gray-700">
-                <h3 class="font-bold text-lg mb-2">Current Score</h3>
-                <div class="current-score-title"></div>
+
+            <!-- Current Score Info -->
+            <div class="p-4 border-b border-border">
+                <div class="text-sm text-muted-foreground mb-1">Current Score</div>
+                <div class="current-score-title font-medium text-sm mb-2 text-foreground"></div>
+                
+                <!-- Page Navigation -->
+                <div class="flex items-center justify-between mb-4">
+                    <button id="prev-page-btn" aria-label="Previous page" class="btn btn-outline btn-icon">
+                        ◀
+                    </button>
+                    
+                    <span id="page-info" class="text-sm font-medium text-foreground">Page 1 of 1</span>
+                    
+                    <button id="next-page-btn" aria-label="Next page" class="btn btn-outline btn-icon">
+                        ▶
+                    </button>
+                </div>
             </div>
 
-            <!-- Highlighting Controls -->
-            
-            <div class="text-gray-700">
-                <h3 class="font-bold text-lg mb-2">Mark Section Confidence:</h3>
+            <!-- Mark Section Confidence -->
+            <div class="p-4 border-b border-border">
+                <div class="text-sm font-medium mb-3 text-foreground">Mark Section Confidence:</div>
                 <div class="flex gap-2">
                     <span id="color-red" data-color="red" title="Need Study (Red)" class="w-6 h-6 rounded-full bg-red-500 cursor-pointer hover:opacity-80 transition-opacity"></span>
                     <span id="color-amber" data-color="amber" title="Unsure (Amber)" class="w-6 h-6 rounded-full bg-orange-400 cursor-pointer hover:opacity-80 transition-opacity"></span>
@@ -61,39 +58,48 @@
                 </div>
             </div>
 
-            <!-- Scores Library Section (includes Add a Score) - Integrated into Sidebar -->
-            <section id="library-section" class="library-section-in-sidebar text-gray-700">
-                <div class="library-header-row">
-                    <h2 class="text-lg font-bold">Your Scores</h2>
-                    <div id="add-score-controls">
-                        <input type="file" id="pdf-upload" accept="application/pdf" aria-label="Upload PDF score">
-                        <label for="pdf-upload" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md cursor-pointer text-sm transition-colors shadow-sm">Add a Score</label>
+            <!-- Your Scores List -->
+            <div class="flex-1 overflow-y-auto">
+                <div class="p-4">
+                    <div class="text-sm font-medium mb-3 text-foreground">Your Scores</div>
+                    <div id="scores-list" class="space-y-2">
+                        <!-- Dynamic content: list of uploaded scores will appear here -->
                     </div>
                 </div>
-                <div id="scores-list" class="mt-2 space-y-2">
-                    <!-- Dynamic content: list of uploaded scores will appear here -->
-                    <!-- Example Scores
-                    <div class="score-item bg-gray-100 hover:bg-gray-200 rounded-md p-2 cursor-pointer transition-colors shadow-sm">
-                        <p class="font-medium">A Whole New World</p>
-                        <p class="text-xs text-gray-500">Composer: Alan Menken</p>
-                    </div>
-                    <div class="score-item bg-gray-100 hover:bg-gray-200 rounded-md p-2 cursor-pointer transition-colors shadow-sm selected">
-                        <p class="font-medium">Canon in D</p>
-                        <p class="text-xs text-gray-500">Composer: Johann Pachelbel</p>
-                    </div>
-                    <div class="score-item bg-gray-100 hover:bg-gray-200 rounded-md p-2 cursor-pointer transition-colors shadow-sm">
-                        <p class="font-medium">Für Elise</p>
-                        <p class="text-xs text-gray-500">Composer: Ludwig van Beethoven</p>
-                    </div>
-                    <div class="score-item bg-gray-100 hover:bg-gray-200 rounded-md p-2 cursor-pointer transition-colors shadow-sm">
-                        <p class="font-medium">Moonlight Sonata (1st Mvt)</p>
-                        <p class="text-xs text-gray-500">Composer: Ludwig van Beethoven</p>
-                    </div>
-                    -->
-                </div>
-            </section>
+            </div>
         </div>
-    </div> <!-- End App Container -->
+
+        <!-- Main Content - Sheet Music Viewer -->
+        <div class="flex-1 flex flex-col">
+            <!-- Top Toolbar -->
+            <div class="h-14 border-b border-border bg-card-50 flex items-center justify-between px-4">
+                <div class="flex items-center gap-2">
+                    <h2 class="font-medium text-foreground">PlayTime: Structure your music practice for accelerated learning</h2>
+                </div>
+            </div>
+
+            <!-- Sheet Music Display Area -->
+            <div class="flex-1 bg-muted-20 p-8 overflow-auto" id="viewer-section">
+                <div class="max-w-4xl mx-auto">
+                    <div class="card shadow-lg">
+                        <div class="p-0">
+                            <!-- PDF Canvas Container -->
+                            <div class="pdf-viewer-container">
+                                <canvas id="pdf-canvas"></canvas>
+                                <div class="selection-overlay" style="display: none;"></div>
+                            </div>
+                            <div id="selected-message"></div>
+                            <!-- Practice Focus Controls -->
+                            <div class="practice-controls">
+                                <button id="focus-section-btn" style="display: none;">Focus on Section</button>
+                                <button id="exit-focus-btn" style="display: none;">Exit Focus</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
