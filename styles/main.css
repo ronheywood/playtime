@@ -203,6 +203,23 @@ body {
     /* padding controlled by responsive rules at the end of file */
 }
 
+/* Non-breaking status message placement inside viewer */
+.pdf-viewer-container .status-message {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.625rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    font-size: 0.8125rem;
+}
+.pdf-viewer-container .status-message[data-status="error"] {
+    border-color: hsl(var(--practice-needs-work));
+}
+
 #pdf-canvas {
     display: block;
     max-width: 100%;

@@ -89,6 +89,58 @@ function updatePDFViewerStatus(pdfViewer, message, isError = false) {
     }
 }
 
+// --- refactor helpers (no behavior change) ---
+async function loadPDFIntoViewer(file) {
+    if (!window.PlayTimePDFViewer || typeof window.PlayTimePDFViewer.loadPDF !== 'function') return;
+    logger.loading('Loading PDF into viewer...');
+    await window.PlayTimePDFViewer.loadPDF(file);
+    await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
+}
+
+function getPagesFromViewerSafe() {
+    try {
+        if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getTotalPages === 'function') {
+            const total = window.PlayTimePDFViewer.getTotalPages();
+            if (Number.isFinite(total) && total > 0) return total;
+        }
+    } catch (_) {}
+    return undefined;
+}
+
+async function saveFileWithMeta(database, file, pagesMeta) {
+    if (!database || typeof database.save !== 'function') return;
+    try {
+        await database.save(file, { pages: pagesMeta });
+        if (window.PlayTimeScoreList && typeof window.PlayTimeScoreList.refresh === 'function') {
+            await window.PlayTimeScoreList.refresh();
+        }
+    } catch (error) {
+        logger.error('Failed to save PDF to database:', error);
+    }
+}
+
+async function handleFileSelection(file, pdfViewerEl, database) {
+    if (!isValidPDFFile(file)) {
+        updatePDFViewerStatus(pdfViewerEl, CONFIG.MESSAGES.ERROR_INVALID_FILE, true);
+        return;
+    }
+
+    updatePDFViewerStatus(pdfViewerEl, CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
+
+    // Load into viewer first so we can compute page count
+    try {
+        await loadPDFIntoViewer(file);
+    } catch (error) {
+        logger.error('Failed to load PDF into viewer:', error);
+        updatePDFViewerStatus(pdfViewerEl, 'Error loading PDF: ' + (error?.message || String(error)), true);
+        return; // abort save if viewer failed
+    }
+
+    const pagesMeta = getPagesFromViewerSafe();
+    await saveFileWithMeta(database, file, pagesMeta);
+    logger.info('PDF successfully loaded and rendered');
+}
+
 // File Upload Handler - Refactored with better error handling and reusability
 // MAJOR ISSUE: This function violates Single Responsibility Principle!
 // It handles: file validation, database saving, PDF loading, UI updates
@@ -110,53 +162,11 @@ async function initializeFileUpload(database = null) {
 
     fileInput.addEventListener('change', async (event) => {
         const file = event.target.files[0];
-        
         if (!file) {
             logger.warn(CONFIG.MESSAGES.ERROR_NO_FILE);
             return;
         }
-        
-        if (isValidPDFFile(file)) {
-            updatePDFViewerStatus(pdfViewer, CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
-            
-            // Load into viewer first so we can compute page count
-            if (window.PlayTimePDFViewer && window.PlayTimePDFViewer.loadPDF) {
-                try {
-                    logger.loading('Loading PDF into viewer...');
-                    await window.PlayTimePDFViewer.loadPDF(file);
-                    await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
-                } catch (error) {
-                    logger.error('Failed to load PDF into viewer:', error);
-                    updatePDFViewerStatus(pdfViewer, 'Error loading PDF: ' + error.message, true);
-                    return; // abort save if viewer failed
-                }
-            }
-
-            // Determine total pages if viewer exposes it
-            let pagesMeta = undefined;
-            try {
-                if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getTotalPages === 'function') {
-                    const total = window.PlayTimePDFViewer.getTotalPages();
-                    if (Number.isFinite(total) && total > 0) pagesMeta = total;
-                }
-            } catch (_) {}
-            
-            // Save to database if available (use new DB signature with meta)
-            if (database && database.save) {
-                try {
-                    await database.save(file, { pages: pagesMeta });
-                    if (window.PlayTimeScoreList) {
-                        await window.PlayTimeScoreList.refresh();
-                    }
-                } catch (error) {
-                    logger.error('Failed to save PDF to database:', error);
-                }
-            }
-            
-            logger.info('PDF successfully loaded and rendered');
-        } else {
-            updatePDFViewerStatus(pdfViewer, CONFIG.MESSAGES.ERROR_INVALID_FILE, true);
-        }
+        await handleFileSelection(file, pdfViewer, database);
     });
     
     // File upload handler initialized
@@ -177,14 +187,19 @@ function initializePageNavigation(pdfViewer = null) {
     const prevPageBtn = document.querySelector(CONFIG.SELECTORS.PREV_BUTTON);
     const nextPageBtn = document.querySelector(CONFIG.SELECTORS.NEXT_BUTTON);
     
+    // resolve logger safely (supports Node tests and browser)
+    const log = (typeof window !== 'undefined' && window.logger)
+        ? window.logger
+        : (typeof logger !== 'undefined' ? logger : console);
+    
     if (!prevPageBtn || !nextPageBtn) {
-        logger.warn('Page navigation buttons not found');
+        log.warn('Page navigation buttons not found');
         return;
     }
     
     // TODO: Add more specific validation for required methods
     if (!pdfViewer || !pdfViewer.prevPage || !pdfViewer.nextPage) {
-        logger.warn(CONFIG.MESSAGES.ERROR_NAVIGATION_UNAVAILABLE);
+        log.warn(CONFIG.MESSAGES.ERROR_NAVIGATION_UNAVAILABLE);
         return;
     }
     
@@ -194,7 +209,7 @@ function initializePageNavigation(pdfViewer = null) {
         try {
             await pdfViewer.prevPage();
         } catch (error) {
-            logger.error('Failed to navigate to previous page:', error);
+            log.error('Failed to navigate to previous page:', error);
         }
     });
     
@@ -202,11 +217,11 @@ function initializePageNavigation(pdfViewer = null) {
         try {
             await pdfViewer.nextPage();
         } catch (error) {
-            logger.error('Failed to navigate to next page:', error);
+            log.error('Failed to navigate to next page:', error);
         }
     });
     
-    logger.info('Page navigation buttons initialized');
+    log.info('Page navigation buttons initialized');
 }
 
 // Initialize confidence controls (accessibility + UX)
@@ -240,6 +255,7 @@ function initializeConfidenceControls() {
 // Initialize the application when DOM is ready
 // ISSUE: This function also does too much - initialization AND UI creation
 // TODO: Split into initializeApplication() and createDevStatusElement()
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
 document.addEventListener('DOMContentLoaded', async function() {
     // Application starting
     
@@ -321,6 +337,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         logger.error('Failed to initialize PlayTime:', error);
     }
 });
+}
 
 // Export for testing
 // TODO: Consider using ES6 modules (export/import) instead of CommonJS
