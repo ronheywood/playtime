@@ -10,13 +10,18 @@
     "test:unit": "jest tests/unit/",
     "test:watch": "jest --watch",
     "serve": "npx http-server . -p 3000",
-    "start": "npm run serve"
+    "start": "npm run serve",
+    "playwright:install": "npx playwright install --with-deps",
+    "screenshots": "node scripts/capture-screenshots.mjs",
+    "test:visual": "playwright test -c playwright.config.ts",
+    "test:visual:update": "playwright test -c playwright.config.ts --update-snapshots"
   },
   "devDependencies": {
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "http-server": "^14.1.1",
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.40.0",
+    "playwright": "^1.40.0"
   },
   "jest": {
     "testEnvironment": "jsdom",
