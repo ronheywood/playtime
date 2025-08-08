@@ -34,7 +34,8 @@ describe('PlayTime Score List Integration', () => {
             init: jest.fn()
         };
         // Load score list component
-        scoreListModule = require('../../scripts/score-list.js');
+        scoreListModule = require('../../scripts/score-list.js').createPlayTimeScoreList;
+        scoreListConfig = require('../../scripts/score-list.js').SCORE_LIST_CONFIG;
     });
 
     afterEach(() => {
@@ -98,6 +99,7 @@ describe('PlayTime Score List Integration', () => {
     test('should load selected score into viewer', async () => {
         // Arrange
         const playTimeScoreList = scoreListModule(mockDatabase, mockLogger);
+        
         const mockPDF = {
             id: '1',
             name: 'test-score.pdf',
@@ -109,7 +111,7 @@ describe('PlayTime Score List Integration', () => {
         await playTimeScoreList.loadScore('1');
         // Assert
         expect(mockDatabase.get).toHaveBeenCalledWith('1');
-        const currentTitle = document.querySelector('.current-score-title');
+        const currentTitle = document.querySelector(scoreListConfig.SELECTORS.CURRENT_SCORE_TITLE);
         expect(currentTitle.textContent).toContain('test-score.pdf');
     });
 

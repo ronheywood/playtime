@@ -11,6 +11,12 @@
 
 </head>
 <body>
+    <!-- Add floating Dark Mode Toggle to match prototype -->
+    <button id="theme-toggle" class="theme-toggle btn btn-outline btn-icon" title="Toggle dark mode">
+        <span id="sun-icon" class="text-lg">☀️</span>
+        <span id="moon-icon" class="text-lg hidden">🌙</span>
+    </button>
+
     <div id="app" class="min-h-screen bg-background flex">
         <!-- Left Sidebar - Score Library & Controls -->
         <div class="sidebar w-80 border-r border-border bg-card-50 flex flex-col">
@@ -32,8 +38,8 @@
             <!-- Current Score Info -->
             <div class="p-4 border-b border-border">
                 <div class="text-sm text-muted-foreground mb-1">Current Score</div>
-                <div class="current-score-title font-medium text-sm mb-2 text-foreground"></div>
-                
+                <div data-role="current-score-title" class="current-score-title font-medium text-sm mb-2 text-foreground"></div>
+
                 <!-- Page Navigation -->
                 <div class="flex items-center justify-between gap-3 mb-4">
                     <button id="prev-page-btn" aria-label="Previous page" class="btn btn-outline btn-icon transition-all hover:scale-105">
@@ -85,19 +91,16 @@
             <!-- Top Toolbar -->
             <div class="h-14 border-b border-border bg-card-50 flex items-center justify-between px-4">
                 <div class="flex items-center gap-2">
-                    <h2 class="font-medium text-foreground">PlayTime: Structure your music practice for accelerated learning</h2>
+                    <h2 class="font-medium text-foreground" data-role="current-score-title" >&nbsp;</h2>
                 </div>
                 
-                <!-- Dark Mode Toggle -->
-                <button id="theme-toggle" class="btn btn-outline btn-icon" title="Toggle dark mode">
-                    <span id="sun-icon" class="text-lg">☀️</span>
-                    <span id="moon-icon" class="text-lg hidden">🌙</span>
-                </button>
+                <!-- Remove inline toggle from toolbar (now floating) -->
+                <!-- (intentionally left blank to preserve spacing/alignment) -->
             </div>
 
             <!-- Sheet Music Display Area -->
             <div class="flex-1 bg-muted-20 p-8 overflow-auto" id="viewer-section">
-                <div class="max-w-4xl mx-auto">
+                <div class="responsive-viewer">
                     <div class="card shadow-lg">
                         <div class="p-0">
                             <!-- PDF Canvas Container -->

@@ -120,7 +120,7 @@ beforeEach(() => {
                     <button id="prev-page-btn">◀</button>
                     <span id="page-info">Page 1 of 1</span>
                     <button id="next-page-btn">▶</button>
-                    <div class="current-score-title"></div>
+                    <div data-role="current-score-title" class="current-score-title"></div>
                 </div>
                 <div class="pdf-viewer-container">
                     <canvas id="pdf-canvas"></canvas>
