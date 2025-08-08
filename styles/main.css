@@ -303,7 +303,6 @@ body {
 .confidence-btn {
     transition: all 0.2s ease;
     position: relative;
-    outline: none;
 }
 
 .confidence-btn:hover {
@@ -328,23 +327,35 @@ body {
 #color-amber i[data-lucide="circle"] { color: hsl(var(--practice-unsure)); }
 #color-red i[data-lucide="circle"] { color: hsl(var(--practice-needs-work)); }
 
-/* Optional: lighten filled background so icon stands out */
+/* Confidence component */
+#confidence-controls { width: 100%; }
+.confidence-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    justify-content: flex-start;
+    border: 1px solid hsl(var(--border));
+    background: transparent;
+    color: hsl(var(--foreground));
+}
+.confidence-btn:hover { background-color: hsl(var(--muted) / 0.2); }
+.confidence-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--primary)); }
+.confidence-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 9999px;
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.06);
+}
+/* Fine-tune dot tint rings per color */
+#color-green .confidence-dot { background-color: hsl(var(--practice-confident)); box-shadow: 0 0 0 6px hsl(var(--practice-confident) / 0.18); }
+#color-amber .confidence-dot { background-color: hsl(var(--practice-unsure));    box-shadow: 0 0 0 6px hsl(var(--practice-unsure) / 0.18); }
+#color-red .confidence-dot   { background-color: hsl(var(--practice-needs-work)); box-shadow: 0 0 0 6px hsl(var(--practice-needs-work) / 0.18); }
+
+/* Keep legacy IDs background hints subtle (if used elsewhere) */
 #color-green { background-color: hsl(var(--practice-confident) / 0.12); }
 #color-amber { background-color: hsl(var(--practice-unsure) / 0.12); }
 #color-red { background-color: hsl(var(--practice-needs-work) / 0.12); }
-
-/* Practice confidence color utilities */
-.bg-practice-confident { background-color: hsl(var(--practice-confident)); }
-.bg-practice-unsure { background-color: hsl(var(--practice-unsure)); }
-.bg-practice-needs-work { background-color: hsl(var(--practice-needs-work)); }
-
-.border-practice-confident { border-color: hsl(var(--practice-confident)); }
-.border-practice-unsure { border-color: hsl(var(--practice-unsure)); }
-.border-practice-needs-work { border-color: hsl(var(--practice-needs-work)); }
-
-.bg-practice-confident-20 { background-color: hsl(var(--practice-confident) / 0.2); }
-.bg-practice-unsure-20 { background-color: hsl(var(--practice-unsure) / 0.2); }
-.bg-practice-needs-work-20 { background-color: hsl(var(--practice-needs-work) / 0.2); }
 
 /* Dark mode toggle button */
 #theme-toggle {
