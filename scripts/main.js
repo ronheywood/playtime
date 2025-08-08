@@ -205,6 +205,34 @@ function initializePageNavigation(pdfViewer = null) {
     logger.info('Page navigation buttons initialized');
 }
 
+// Initialize confidence controls (accessibility + UX)
+function initializeConfidenceControls() {
+    const ids = ['color-green', 'color-amber', 'color-red'];
+    const buttons = ids
+        .map(id => document.getElementById(id))
+        .filter(Boolean);
+    if (buttons.length === 0) return; // not present in test DOM sometimes
+
+    const setPressed = (activeBtn) => {
+        buttons.forEach(btn => {
+            const isActive = btn === activeBtn;
+            btn.setAttribute('aria-pressed', String(isActive));
+            btn.classList.toggle('selected', isActive);
+        });
+    };
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            setPressed(btn);
+            const color = btn.getAttribute('data-color');
+            // Optional: notify highlighting module if it exposes an API
+            if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.setActiveColor === 'function') {
+                try { window.PlayTimeHighlighting.setActiveColor(color); } catch (_) {}
+            }
+        });
+    });
+}
+
 // Initialize the application when DOM is ready
 // ISSUE: This function also does too much - initialization AND UI creation
 // TODO: Split into initializeApplication() and createDevStatusElement()
@@ -260,6 +288,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Initialize page navigation buttons
         initializePageNavigation(window.PlayTimePDFViewer);
         
+        // Initialize confidence controls
+        initializeConfidenceControls();
+        
         // Application ready
         
         // MAJOR ISSUE: Inline CSS styles mixed with JavaScript logic!
@@ -269,7 +300,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         statusElement.style.cssText = `
             position: fixed;
             top: 10px;
-            right: 10px;
+            right: 150px;
             background: #ff6b35;
             color: white;
             padding: 10px;

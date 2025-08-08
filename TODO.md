@@ -157,3 +157,40 @@
 - Each feature should have working acceptance test before implementation
 - Keep implementations minimal - just enough to make tests pass
 - Refactor only when tests are green
+
+# UI Refinement TODO (Elegant, Clean, Sophisticated)
+
+## Theme Tokens
+- [x] Adjust dark palette to deep charcoal with higher readable contrast (done in styles/main.css)
+- [ ] Ensure muted-foreground meets WCAG AA
+- [x] Keep practice colors for dots; use subtle tints for backgrounds only
+
+## Typography
+- [ ] Apply typographic scale (12/14/16/20/24)
+- [x] Tighten heading letter-spacing (-0.003em), labels +0.01em
+- [x] Set line-height: body 1.6, headings 1.25
+- [x] Use tabular numbers for dates and page badges
+
+## Icons
+- [x] Reduce decorative icons in sidebar header
+- [x] Ensure lucide stroke-width: 1.5; size 16 in dense areas
+
+## Components
+- [x] Score item: selected uses subtle ring and background tint
+- [x] Pages badge: outline or soft fill in dark mode
+- [x] Confidence buttons: aria-pressed, subtle hover, ring focus
+- [x] Confidence controls JS initialization (toggles pressed/selected)
+- [ ] Wire setActiveColor into highlighting module API (non-breaking)
+
+## Layout & Spacing
+- [x] Sidebar gutter consistency (16/24/32)
+- [x] Card internal gap tightened; padding 12–14px
+- [x] Toolbar stays minimal (3.5rem) with essential actions only
+
+## Accessibility
+- [x] Keyboard focus visible across all controls
+- [x] Score list items keyboard-activatable (tabindex + Enter/Space)
+
+## Next up
+- [x] Icon audit (retain only essentials, 16px in dense areas)
+- [x] Final sidebar/header spacing check on tablet widths

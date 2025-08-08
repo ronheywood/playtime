@@ -66,16 +66,12 @@ function createPlayTimeScoreList(database, logger = console) {
                     scoresList.innerHTML = `<p>${SCORE_LIST_CONFIG.MESSAGES.NO_SCORES_YET}</p>`;
                     return;
                 }
-                // Create score items HTML
                 const scoreItems = pdfs.map(pdf => this._createScoreItemHTML(pdf)).join('');
                 scoresList.innerHTML = scoreItems;
-                // Attach event listeners for score selection
                 this._attachClickHandlers(scoresList);
                 _logger.info(`Score list refreshed with ${pdfs.length} items`);
-                // Auto-select the first score if present and none is currently selected
                 const currentTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
                 if (pdfs.length > 0 && currentTitle && !currentTitle.textContent.includes(pdfs[0].name || pdfs[0].filename)) {
-                    // Select the first score by default after refresh
                     await this.loadScore(pdfs[0].id);
                 }
             } catch (error) {
@@ -100,11 +96,10 @@ function createPlayTimeScoreList(database, logger = console) {
                     _logger.error('PDF not found:', pdfId);
                     return;
                 }
-                // Update current score title
                 this._updateCurrentScoreTitle(pdf.name || pdf.filename);
-                // Load into PDF viewer if available
                 await this._loadIntoPDFViewer(pdf);
-                // Call optional callback
+                // Mark selected item in the list for accessibility and UI state
+                this._markSelectedItem(pdf.id);
                 if (onScoreLoaded && typeof onScoreLoaded === 'function') {
                     onScoreLoaded(pdf);
                 }
@@ -152,10 +147,10 @@ function createPlayTimeScoreList(database, logger = console) {
                 .trim()
                 .replace(/\b\w/g, c => c.toUpperCase());
             const pagesBadge = typeof pdf.pages === 'number'
-                ? `<span class="badge ${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_PAGES}">${pdf.pages} pages</span>`
+                ? `<span class="badge badge-outline ${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_PAGES}">${pdf.pages} pages</span>`
                 : '';
             return `
-                <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_ITEM}" data-pdf-id="${pdf.id}">
+                <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_ITEM}" data-pdf-id="${pdf.id}" role="button" tabindex="0" aria-current="false">
                     <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_META}">
                         <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_TITLE}">${prettyTitle}</div>
                         <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_FILENAME}">${rawName}</div>
@@ -174,12 +169,17 @@ function createPlayTimeScoreList(database, logger = console) {
             scoresList.querySelectorAll(`.${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_ITEM}`).forEach(item => {
                 item.addEventListener('click', () => {
                     const pdfId = item.dataset.pdfId;
-                    
-                    // Use custom handler if set, otherwise use default
                     if (this._customSelectionHandler) {
                         this._customSelectionHandler(pdfId, item);
                     } else {
                         this.loadScore(pdfId);
+                    }
+                });
+                // Keyboard activation
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        item.click();
                     }
                 });
             });
@@ -206,6 +206,20 @@ function createPlayTimeScoreList(database, logger = console) {
                 const blob = new Blob([pdf.data], { type: 'application/pdf' });
                 await window.PlayTimePDFViewer.loadPDF(blob);
             }
+        },
+
+        /**
+         * Mark selected item in the list for accessibility and UI state
+         * @private
+         */
+        _markSelectedItem: function(pdfId) {
+            const listEl = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.SCORES_LIST);
+            if (!listEl) return;
+            listEl.querySelectorAll(`.${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_ITEM}`).forEach(el => {
+                const isActive = el.getAttribute('data-pdf-id') === String(pdfId);
+                el.classList.toggle('selected', isActive);
+                el.setAttribute('aria-current', isActive ? 'true' : 'false');
+            });
         }
     };
 }

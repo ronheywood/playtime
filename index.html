@@ -25,7 +25,8 @@
             <!-- Header -->
             <div class="p-4 border-b border-border">
                 <div class="flex items-center gap-2 mb-4">
-                    <i data-lucide="music-3" class="w-4 h-4"></i>
+                    <!-- Remove decorative icon to reduce visual noise -->
+                    <!-- <i data-lucide="music-3" class="w-4 h-4"></i> -->
                     <span class="text-lg font-semibold text-foreground">PlayTime Practice</span>
                 </div>
                 
@@ -46,7 +47,7 @@
 
                 <!-- Page Navigation -->
                 <div class="flex items-center justify-between gap-3 mb-4">
-                    <button id="prev-page-btn" aria-label="Previous page" class="btn btn-outline btn-icon transition-all hover:scale-105">
+                    <button id="prev-page-btn" aria-label="Previous page" class="btn btn-outline btn-icon">
                         <i data-lucide="chevron-left" class="w-4 h-4"></i>
                     </button>
                     
@@ -54,7 +55,7 @@
                         <span id="page-info" class="badge-outline page-badge">Page 1 of 1</span>
                     </div>
                     
-                    <button id="next-page-btn" aria-label="Next page" class="btn btn-outline btn-icon transition-all hover:scale-105">
+                    <button id="next-page-btn" aria-label="Next page" class="btn btn-outline btn-icon">
                         <i data-lucide="chevron-right" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -64,16 +65,16 @@
             <div class="p-4 border-b border-border">
                 <div class="text-sm font-medium mb-3 text-foreground">Mark Section Confidence:</div>
                 <div class="flex flex-col gap-2" id="confidence-controls">
-                    <button id="color-green" data-color="green" type="button" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Confident">
-                        <span class="confidence-dot bg-practice-confident" aria-hidden="true"></span>
+                    <button id="color-green" data-color="green" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Confident">
+                        <span class="confidence-dot" aria-hidden="true"></span>
                         <span class="confidence-label">Confident</span>
                     </button>
-                    <button id="color-amber" data-color="amber" type="button" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Unsure">
-                        <span class="confidence-dot bg-practice-unsure" aria-hidden="true"></span>
+                    <button id="color-amber" data-color="amber" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Unsure">
+                        <span class="confidence-dot" aria-hidden="true"></span>
                         <span class="confidence-label">Unsure</span>
                     </button>
-                    <button id="color-red" data-color="red" type="button" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Needs Work">
-                        <span class="confidence-dot bg-practice-needs-work" aria-hidden="true"></span>
+                    <button id="color-red" data-color="red" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Needs Work">
+                        <span class="confidence-dot" aria-hidden="true"></span>
                         <span class="confidence-label">Needs Work</span>
                     </button>
                 </div>
@@ -83,7 +84,7 @@
             <div class="flex-1 overflow-y-auto">
                 <div class="p-4">
                     <div class="text-sm font-medium mb-3 text-foreground">Your Scores</div>
-                    <div id="scores-list" class="space-y-2">
+                    <div id="scores-list" role="list" aria-label="Your Scores" class="space-y-2">
                         <!-- Dynamic content: list of uploaded scores will appear here -->
                     </div>
                 </div>

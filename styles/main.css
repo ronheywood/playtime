@@ -17,26 +17,52 @@
     --practice-confident: 142 76% 36%;
     --practice-unsure: 43 96% 56%;
     --practice-needs-work: 0 84% 60%;
+    --gutter-1: 1rem;   /* 16px */
+    --gutter-2: 1.5rem; /* 24px */
+    --gutter-3: 2rem;   /* 32px */
 }
 
 /* Dark mode */
 .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --border: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --practice-confident: 142 76% 50%;
-    --practice-unsure: 43 96% 70%;
-    --practice-needs-work: 0 84% 70%;
+    --background: 222 16% 12%;
+    --foreground: 210 18% 92%;
+    --card: 222 16% 14%;
+    --card-foreground: 210 18% 92%;
+    --primary: 223 64% 62%;
+    --primary-foreground: 222 16% 12%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 210 18% 92%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 12% 70%;
+    --border: 220 14% 22%;
+    --ring: 223 64% 62%;
+    /* practice colors remain meaningful but we keep dots solid and backgrounds subtle */
+    --practice-confident: 142 62% 46%;
+    --practice-unsure: 43 86% 58%;
+    --practice-needs-work: 0 74% 60%;
 }
+
+/* Typography refinements */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-size: 16px;
+    line-height: 1.6;
+}
+.score-title,
+.current-score-title { line-height: 1.25; letter-spacing: -0.003em; }
+.score-filename,
+.score-date { font-size: 0.8125rem; letter-spacing: 0.01em; line-height: 1.45; }
+.score-date,
+.page-badge { font-feature-settings: "tnum" 1; }
+
+/* Icon refinement */
+.lucide { stroke-width: 1.5px; }
 
 /* Theme-aware utility classes */
 .bg-background { background-color: hsl(var(--background)); }
@@ -149,6 +175,7 @@ body {
 .score-item.selected {
     border-color: hsl(var(--primary));
     box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25);
+    background-color: hsl(var(--primary) / 0.06);
 }
 
 /* Left meta: title + filename + pages badge */
@@ -269,6 +296,9 @@ body {
     color: hsl(var(--foreground));
 }
 
+/* Soften badge fill in dark mode */
+.dark .badge { background-color: hsl(var(--secondary) / 0.55); }
+
 /* Enhanced card styling */
 .card {
     border-radius: 0.5rem;
@@ -301,31 +331,19 @@ body {
 
 /* Confidence button styling */
 .confidence-btn {
-    transition: all 0.2s ease;
+    transition: background-color 0.18s ease, box-shadow 0.18s ease;
     position: relative;
 }
 
-.confidence-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.confidence-btn:hover { transform: none; box-shadow: none; background-color: hsl(var(--muted) / 0.2); }
+.confidence-btn:focus { outline: none; }
+.confidence-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--primary)); }
+.confidence-btn.selected,
+.confidence-btn[aria-pressed="true"] {
+    transform: none;
+    box-shadow: 0 0 0 2px hsl(var(--primary));
+    background-color: hsl(var(--muted) / 0.25);
 }
-
-.confidence-btn:focus {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
-}
-
-.confidence-btn.selected {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 3px hsl(var(--background)), 0 0 0 5px currentColor;
-}
-
-.confidence-btn i[data-lucide="circle"] {
-    display: inline-block;
-}
-#color-green i[data-lucide="circle"] { color: hsl(var(--practice-confident)); }
-#color-amber i[data-lucide="circle"] { color: hsl(var(--practice-unsure)); }
-#color-red i[data-lucide="circle"] { color: hsl(var(--practice-needs-work)); }
 
 /* Confidence component */
 #confidence-controls { width: 100%; }
@@ -456,9 +474,9 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.25rem 0.5rem;
+    padding: 0.1875rem 0.5rem; /* tighter vertical rhythm */
     border-radius: 0.375rem;
-    font-size: 0.8125rem;
+    font-size: 0.8125rem; /* 13px */
 }
 
 /* Icon alignment helpers (avoid Tailwind) */
@@ -534,6 +552,11 @@ body {
         right: 15px;
     }
 }
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .sidebar > .p-4 { padding: var(--gutter-2); }
+  .h-14 { height: 3.5rem; }
+  .btn-icon .lucide { width: 1rem; height: 1rem; }
+}
 
 @media (min-width: 900px) and (orientation: portrait) {
     main {
@@ -588,3 +611,16 @@ body {
 .pdf-viewer-container { padding: 0.75rem; }
 @media (min-width: 768px) { .pdf-viewer-container { padding: 1rem; } }
 @media (min-width: 1280px) { .pdf-viewer-container { padding: 1.25rem; } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* Sidebar section padding rhythm */
+.sidebar > .p-4 { padding: var(--gutter-2); }
+
+/* Score list spacing and focus */
+#scores-list { gap: 0.5rem; }
+@media (min-width: 768px) { #scores-list { gap: 0.75rem; } }
+.score-item { padding: 0.75rem 0.875rem; outline: none; }
+.score-item:focus-visible { box-shadow: 0 0 0 2px hsl(var(--primary)); }
