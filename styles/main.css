@@ -122,29 +122,43 @@ body {
 .transition-opacity { transition: opacity 0.2s; }
 .hover\:opacity-80:hover { opacity: 0.8; }
 
-/* Score items styling */
+/* Score items styling - upgraded to card-like list */
+#scores-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
 .score-item {
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1rem;
     background-color: hsl(var(--card));
     border: 1px solid hsl(var(--border));
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.9em;
-    color: hsl(var(--foreground));
+    border-radius: 0.75rem;
+    transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .score-item:hover {
     background-color: hsl(var(--muted));
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-color: hsl(var(--border));
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
 .score-item.selected {
-    background-color: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
     border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25);
 }
+
+/* Left meta: title + filename + pages badge */
+.score-meta { display: grid; grid-template-columns: auto; row-gap: 0.25rem; }
+.score-title { font-weight: 600; color: hsl(var(--foreground)); }
+.score-filename { font-size: 0.85rem; color: hsl(var(--muted-foreground)); }
+.score-pages { background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); border-radius: 9999px; padding: 0.125rem 0.5rem; font-size: 0.75rem; font-weight: 600; width: fit-content; }
+
+/* Right column: date */
+.score-date { color: hsl(var(--muted-foreground)); font-size: 0.85rem; margin-left: 1rem; white-space: nowrap; }
 
 /* PDF Viewer - Updated for new layout */
 .pdf-viewer-container {
