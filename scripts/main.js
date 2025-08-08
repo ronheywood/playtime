@@ -42,7 +42,7 @@ const CONFIG = {
     // User Messages
     MESSAGES: {
         ERROR_INVALID_FILE: 'Error: Please select a PDF file',
-        SUCCESS_FILE_SELECTED: 'Selected: ',
+        SUCCESS_FILE_SELECTED: 'Added: ',
         ERROR_NO_FILE: 'No file selected',
         ERROR_ELEMENTS_NOT_FOUND: 'Required elements not found',
         ERROR_PDF_VIEWER_UNAVAILABLE: 'PDF Viewer not available',
@@ -67,9 +67,9 @@ function isValidPDFFile(file) {
 // UI update helper for better extensibility
 // ISSUE: This function does too much - creating elements AND updating content
 // TODO: Split into separate functions for element creation and content updates
-// TODO: Add parameter validation for pdfViewer
 function updatePDFViewerStatus(pdfViewer, message, isError = false) {
-    if (!pdfViewer) return;
+    // stricter param validation (tiny TODO fix)
+    if (!pdfViewer || typeof pdfViewer.querySelector !== 'function' || typeof pdfViewer.appendChild !== 'function') return;
     
     // Find or create a status element instead of replacing all content
     let statusElement = pdfViewer.querySelector(CONFIG.SELECTORS.STATUS_MESSAGE);
@@ -141,21 +141,13 @@ async function handleFileSelection(file, pdfViewerEl, database) {
     logger.info('PDF successfully loaded and rendered');
 }
 
-// File Upload Handler - Refactored with better error handling and reusability
-// MAJOR ISSUE: This function violates Single Responsibility Principle!
-// It handles: file validation, database saving, PDF loading, UI updates
-// TODO: Break into smaller functions:
-//   - handleFileSelection(file, database, pdfViewer)
-//   - validateAndSaveFile(file, database)
-//   - loadPDFIntoViewer(file, pdfViewer)
-//   - updateFileUploadUI(filename, pdfViewer)
+// File Upload Handler entry point (logic decomposed into helpers above)
 async function initializeFileUpload(database = null) {
     // Use configuration object for selectors instead of hardcoded strings
     const fileInput = document.querySelector(CONFIG.SELECTORS.FILE_INPUT);
     const pdfViewer = document.querySelector(CONFIG.SELECTORS.PDF_VIEWER);
     
     if (!fileInput || !pdfViewer) {
-        // ISSUE: Inconsistent error handling - some places use warn, others error
         logger.warn(CONFIG.MESSAGES.ERROR_ELEMENTS_NOT_FOUND);
         return;
     }
@@ -168,19 +160,13 @@ async function initializeFileUpload(database = null) {
         }
         await handleFileSelection(file, pdfViewer, database);
     });
-    
-    // File upload handler initialized
 }
 
 // Page Navigation Handler - Connect UI buttons to PDF viewer
-// TODO: Add JSDoc type documentation
-// TODO: Add more thorough parameter validation (check for required methods)
-// TODO: Use configuration object for button selectors
 /**
- * GOOD: Function has single responsibility and clear purpose
- * GOOD: Proper error handling with try-catch blocks
- * IMPROVEMENT NEEDED: Parameter validation could be more thorough
- * IMPROVEMENT NEEDED: DOM selectors should be configurable
+ * Initialize prev/next navigation buttons for the PDF viewer.
+ * @param {{ prevPage: Function, nextPage: Function }} pdfViewer - Viewer with navigation methods
+ * @returns {void}
  */
 function initializePageNavigation(pdfViewer = null) {
     // Use configuration for button selectors
@@ -197,14 +183,11 @@ function initializePageNavigation(pdfViewer = null) {
         return;
     }
     
-    // TODO: Add more specific validation for required methods
     if (!pdfViewer || !pdfViewer.prevPage || !pdfViewer.nextPage) {
         log.warn(CONFIG.MESSAGES.ERROR_NAVIGATION_UNAVAILABLE);
         return;
     }
     
-    // Add event listeners for page navigation
-    // GOOD: Proper async/await usage and error handling
     prevPageBtn.addEventListener('click', async () => {
         try {
             await pdfViewer.prevPage();

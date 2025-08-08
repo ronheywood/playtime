@@ -18,7 +18,7 @@ if (!global.window.logger) {
   global.window.logger.setSilent(true);
 }
 
-const { isValidPDFFile, updatePDFViewerStatus, initializePageNavigation } = require('../../scripts/main');
+const { CONFIG, isValidPDFFile, updatePDFViewerStatus, initializePageNavigation } = require('../../scripts/main');
 
 describe('Main helpers', () => {
   function createMockContainer() {
@@ -58,10 +58,10 @@ describe('Main helpers', () => {
     const realCreate = global.document.createElement;
     global.document.createElement = (tag) => createMockElement();
 
-    updatePDFViewerStatus(viewer, 'Selected: test.pdf', false);
+    updatePDFViewerStatus(viewer, CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + 'test.pdf', false);
     const el = viewer.querySelector('.status-message');
     expect(el).toBeTruthy();
-    expect(el.textContent).toBe('Selected: test.pdf');
+    expect(el.textContent).toBe(CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + 'test.pdf');
     expect(el.getAttribute('data-status')).toBe('success');
 
     updatePDFViewerStatus(viewer, 'Error: bad file', true);

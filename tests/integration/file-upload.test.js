@@ -4,6 +4,7 @@
 // Import shared test utilities
 const TEST_CONSTANTS = require('../helpers/test-constants');
 const TestHelpers = require('../helpers/test-helpers');
+const { CONFIG } = require('../../scripts/main');
 
 describe('File Upload Integration', () => {
     let mockDatabase;
@@ -82,7 +83,7 @@ describe('File Upload Integration', () => {
         TestHelpers.simulateFileUpload(fileInput, newFile);
         
         const statusElement = pdfViewer.querySelector('.status-message');
-        expect(statusElement.textContent).toBe('Selected: new-score.pdf');
+        expect(statusElement.textContent).toBe(CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + 'new-score.pdf');
         expect(statusElement.getAttribute('data-status')).toBe('success');
     });
     

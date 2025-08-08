@@ -6,6 +6,7 @@
 // Import shared test utilities
 const TEST_CONSTANTS = require('../helpers/test-constants');
 const TestHelpers = require('../helpers/test-helpers');
+const { CONFIG } = require('../../scripts/main');
 
 describe('PlayTime Score List Integration', () => {
     let mockDatabase, mockLogger, scoreListModule;
@@ -172,5 +173,33 @@ describe('PlayTime Score List Integration', () => {
         const pageBadges = scoresList.querySelectorAll('.score-pages');
         expect(pageBadges.length).toBe(1);
         expect(pageBadges[0].textContent).toContain('3 pages');
+    });
+
+    test('should hide status message when selecting a score from the list', async () => {
+        // Arrange
+        const playTimeScoreList = scoreListModule(mockDatabase, mockLogger);
+        const mockPDFs = [
+            { id: '1', name: 'one.pdf', uploadDate: new Date().toISOString() }
+        ];
+        mockDatabase.getAll.mockResolvedValue(mockPDFs);
+        mockDatabase.get.mockResolvedValue({ id: '1', name: 'one.pdf', data: new ArrayBuffer(10) });
+
+        // Create a status message inside the viewer to simulate previous upload
+        const viewer = document.querySelector(scoreListConfig.SELECTORS.PDF_VIEWER);
+        const status = document.createElement('div');
+        status.className = 'status-message';
+        status.textContent = CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + 'one.pdf';
+        viewer.appendChild(status);
+
+        await playTimeScoreList.refresh();
+
+        // Act: select the score
+        const scoreItem = document.querySelector('.score-item');
+        scoreItem.click();
+        await new Promise(r => setTimeout(r, 20));
+
+        // Assert: status message should be removed/hidden
+        const removed = viewer.querySelector('.status-message');
+        expect(removed).toBeNull();
     });
 });

@@ -4,6 +4,7 @@
 // Import shared test utilities
 const TEST_CONSTANTS = require('../helpers/test-constants');
 const TestHelpers = require('../helpers/test-helpers');
+const { CONFIG } = require('../../scripts/main');
 
 describe('Application Initialization', () => {
     beforeEach(() => {
@@ -46,7 +47,7 @@ describe('Application Initialization', () => {
         const mockFile = TestHelpers.createMockPDFFile('test-file.pdf');
         TestHelpers.simulateFileUpload(fileInput, mockFile);
         
-        expect(pdfViewer.textContent).toContain('Selected: test-file.pdf');
+        expect(pdfViewer.textContent).toContain(CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + 'test-file.pdf');
     });
     
     test('should handle missing DOM elements gracefully', async () => {
