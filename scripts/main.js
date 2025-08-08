@@ -31,7 +31,7 @@ const CONFIG = {
         NEXT_BUTTON: '#next-page-btn',
         STATUS_MESSAGE: '.status-message',
         SCORES_LIST: '#scores-list',
-        CURRENT_SCORE_TITLE: '.current-score-title'
+        CURRENT_SCORE_TITLE: '[data-role="current-score-title"]'
     },
     
     // File Types

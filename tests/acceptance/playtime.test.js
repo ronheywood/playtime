@@ -3,6 +3,8 @@
  * Outside-In methodology - these tests will initially fail and drive development
  */
 
+const { SCORE_LIST_CONFIG } = require('../../scripts/score-list');
+
 describe('PlayTime Music Practice App', () => {
     beforeAll(async () => {
         // JSDOM setup is handled in tests/setup.js
@@ -57,7 +59,8 @@ describe('PlayTime Music Practice App', () => {
         global.window.PlayTimeHighlighting = { init: jest.fn().mockResolvedValue(true) };
         
         // Setup score list component
-        const createPlayTimeScoreList = require('../../scripts/score-list');
+        const createPlayTimeScoreList = require('../../scripts/score-list').createPlayTimeScoreList;
+        const SCORE_LIST_CONFIG = require('../../scripts/score-list').SCORE_LIST_CONFIG;
         global.window.createPlayTimeScoreList = createPlayTimeScoreList;
         
         // Setup logger for main.js
@@ -242,7 +245,7 @@ describe('PlayTime Music Practice App', () => {
                 // Wait for the UI to update (current score title)
                 let currentScoreTitle = null;
                 for (let i = 0; i < 20; i++) {
-                    currentScoreTitle = document.querySelector('.current-score-title');
+                    currentScoreTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
                     if (currentScoreTitle && currentScoreTitle.textContent.includes('another-score.pdf')) break;
                     await new Promise(resolve => setTimeout(resolve, 10));
                 }

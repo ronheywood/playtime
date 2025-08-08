@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayTime - Transform Your Musical Practice</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <style>
+        /* Light mode (default) */
+        :root {
+            --background: 240 10% 98%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --primary: 240 80% 20%;
+            --primary-foreground: 0 0% 98%;
+            --primary-glow: 240 100% 40%;
+            --secondary: 260 60% 25%;
+            --secondary-foreground: 0 0% 98%;
+            --muted: 240 10% 15%;
+            --muted-foreground: 240 5% 64.9%;
+            --accent: 45 100% 60%;
+            --accent-foreground: 240 10% 3.9%;
+            --success: 120 60% 50%;
+            --warning: 40 100% 50%;
+            --destructive: 0 80% 60%;
+            --destructive-foreground: 0 0% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --ring: 240 80% 20%;
+        }
+
+        /* Dark mode */
+        .dark {
+            --background: 240 10% 3.9%;
+            --foreground: 0 0% 98%;
+            --card: 240 10% 3.9%;
+            --card-foreground: 0 0% 98%;
+            --primary: 240 80% 20%;
+            --primary-foreground: 0 0% 98%;
+            --primary-glow: 240 100% 40%;
+            --secondary: 260 60% 25%;
+            --secondary-foreground: 0 0% 98%;
+            --muted: 240 10% 15%;
+            --muted-foreground: 240 5% 64.9%;
+            --accent: 45 100% 60%;
+            --accent-foreground: 240 10% 3.9%;
+            --success: 120 60% 50%;
+            --warning: 40 100% 50%;
+            --destructive: 0 80% 60%;
+            --border: 240 10% 15%;
+            --ring: 240 80% 20%;
+        }
+
+        /* Ensure body uses the theme colors */
+        body {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Theme-aware utility classes */
+        .bg-background { background-color: hsl(var(--background)); }
+        .bg-card { background-color: hsl(var(--card)); }
+        .bg-card-10 { background-color: hsl(var(--card) / 0.1); }
+        .bg-card-30 { background-color: hsl(var(--card) / 0.3); }
+        .bg-card-50 { background-color: hsl(var(--card) / 0.5); }
+        .bg-muted-20 { background-color: hsl(var(--muted) / 0.2); }
+        .bg-primary { background-color: hsl(var(--primary)); }
+        .bg-primary-10 { background-color: hsl(var(--primary) / 0.1); }
+        .bg-success { background-color: hsl(var(--success)); }
+        .bg-success-20 { background-color: hsl(var(--success) / 0.2); }
+        .bg-warning { background-color: hsl(var(--warning)); }
+        .bg-warning-20 { background-color: hsl(var(--warning) / 0.2); }
+        .bg-destructive { background-color: hsl(var(--destructive)); }
+        .bg-destructive-20 { background-color: hsl(var(--destructive) / 0.2); }
+        .bg-accent { background-color: hsl(var(--accent)); }
+        
+        .text-foreground { color: hsl(var(--foreground)); }
+        .text-card-foreground { color: hsl(var(--card-foreground)); }
+        .text-primary { color: hsl(var(--primary)); }
+        .text-primary-foreground { color: hsl(var(--primary-foreground)); }
+        .text-primary-glow { color: hsl(var(--primary-glow)); }
+        .text-secondary { color: hsl(var(--secondary)); }
+        .text-muted-foreground { color: hsl(var(--muted-foreground)); }
+        .text-accent { color: hsl(var(--accent)); }
+        .text-accent-foreground { color: hsl(var(--accent-foreground)); }
+        .text-success { color: hsl(var(--success)); }
+        .text-warning { color: hsl(var(--warning)); }
+        .text-destructive { color: hsl(var(--destructive)); }
+        
+        .border-border { border-color: hsl(var(--border)); }
+        .border-border-20 { border-color: hsl(var(--border) / 0.2); }
+        .border-primary-30 { border-color: hsl(var(--primary) / 0.3); }
+
+        /* Gradients */
+        .bg-gradient-hero {
+            background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--primary) / 0.1) 50%, hsl(var(--secondary) / 0.15) 100%);
+        }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+        }
+        
+        .bg-gradient-accent {
+            background: linear-gradient(135deg, hsl(var(--accent)), hsl(35 100% 55%));
+        }
+
+        .text-gradient {
+            background: linear-gradient(to right, hsl(var(--foreground)), hsl(var(--primary-glow)));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Shadows */
+        .shadow-glow {
+            box-shadow: 0 0 40px hsl(var(--primary-glow) / 0.4);
+        }
+
+        /* Button styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            padding: 0.5rem 1rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-hero {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+        }
+
+        .btn-hero:hover {
+            background: hsl(var(--primary) / 0.9);
+            box-shadow: 0 0 30px hsl(var(--primary) / 0.5);
+        }
+
+        .btn-practice {
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+        }
+
+        .btn-practice:hover {
+            background: hsl(var(--accent) / 0.9);
+        }
+
+        .btn-accent {
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+        }
+
+        .btn-accent:hover {
+            background: hsl(var(--accent) / 0.9);
+        }
+
+        .btn-outline {
+            border: 1px solid hsl(var(--border));
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+
+        .btn-outline:hover {
+            background-color: hsl(var(--muted));
+        }
+
+        .btn-lg {
+            padding: 1rem 2rem;
+            font-size: 1.125rem;
+        }
+
+        /* Card styles */
+        .card {
+            border-radius: 0.5rem;
+            border: 1px solid hsl(var(--border));
+            background-color: hsl(var(--card));
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: hsl(var(--primary) / 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dark mode toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            width: 2.5rem;
+            height: 2.5rem;
+            padding: 0;
+        }
+
+        /* Animations */
+        .animate-fade-in {
+            animation: fadeIn 1s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Backdrop blur effect */
+        .backdrop-blur-sm {
+            backdrop-filter: blur(4px);
+        }
+
+        /* Hero background pattern */
+        .hero-bg {
+            background-image: 
+                radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, hsl(var(--accent) / 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, hsl(var(--secondary) / 0.1) 0%, transparent 50%);
+        }
+
+        /* Smooth transitions */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dark Mode Toggle -->
+    <button onclick="toggleDarkMode()" class="theme-toggle btn btn-outline">
+        <i data-lucide="sun" class="w-4 h-4 sun-icon"></i>
+        <i data-lucide="moon" class="w-4 h-4 moon-icon hidden"></i>
+    </button>
+
+    <div class="min-h-screen bg-background">
+        <!-- Hero Section -->
+        <section class="relative min-h-screen flex items-center justify-center overflow-hidden hero-bg">
+            <!-- Gradient Overlay -->
+            <div class="absolute inset-0 bg-gradient-hero opacity-90"></div>
+            
+            <!-- Content -->
+            <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
+                <div class="animate-fade-in">
+                    <div class="flex items-center justify-center gap-3 mb-6">
+                        <div class="p-3 rounded-full bg-gradient-accent shadow-glow">
+                            <i data-lucide="music" class="w-8 h-8 text-accent-foreground"></i>
+                        </div>
+                        <h1 class="text-5xl md:text-7xl font-bold text-gradient">
+                            PlayTime
+                        </h1>
+                    </div>
+                    
+                    <p class="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+                        Transform your musical practice with structured learning techniques. 
+                        Accelerate your progress through deliberate practice strategies.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+                        <a href="practice-dark-mode-fixed.html" class="btn btn-hero btn-lg">
+                            <i data-lucide="book-open" class="w-5 h-5"></i>
+                            Start Practicing
+                        </a>
+                        <button class="btn btn-practice btn-lg" onclick="scrollToFeatures()">
+                            <i data-lucide="target" class="w-5 h-5"></i>
+                            Learn More
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                        <div class="p-6 rounded-lg bg-card-10 backdrop-blur-sm border border-border-20">
+                            <div class="w-12 h-12 rounded-full bg-success-20 flex items-center justify-center mx-auto mb-4">
+                                <div class="w-6 h-6 rounded-full bg-success"></div>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-2 text-foreground">Confident Sections</h3>
+                            <p class="text-muted-foreground">Mark areas you've mastered</p>
+                        </div>
+                        
+                        <div class="p-6 rounded-lg bg-card-10 backdrop-blur-sm border border-border-20">
+                            <div class="w-12 h-12 rounded-full bg-warning-20 flex items-center justify-center mx-auto mb-4">
+                                <div class="w-6 h-6 rounded-full bg-warning"></div>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-2 text-foreground">Unsure Areas</h3>
+                            <p class="text-muted-foreground">Identify improvement zones</p>
+                        </div>
+                        
+                        <div class="p-6 rounded-lg bg-card-10 backdrop-blur-sm border border-border-20">
+                            <div class="w-12 h-12 rounded-full bg-destructive-20 flex items-center justify-center mx-auto mb-4">
+                                <div class="w-6 h-6 rounded-full bg-destructive"></div>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-2 text-foreground">Study Sections</h3>
+                            <p class="text-muted-foreground">Focus on challenging parts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="py-20 px-6">
+            <div class="max-w-6xl mx-auto">
+                <!-- How to Use Section -->
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold mb-6 text-gradient">
+                        How to Use PlayTime
+                    </h2>
+                    <p class="text-xl text-muted-foreground max-w-3xl mx-auto">
+                        A structured approach to accelerated musical learning
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8 mb-20">
+                    <div class="card bg-card-50 backdrop-blur-sm border-border-20">
+                        <div class="p-6 text-center">
+                            <div class="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto mb-4 shadow-glow">
+                                <i data-lucide="file-text" class="w-8 h-8 text-primary-foreground"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-foreground">Add Your Music</h3>
+                            <p class="text-muted-foreground">
+                                Import PDF scores, tabs, or lead sheets of pieces you want to practice
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card bg-card-50 backdrop-blur-sm border-border-20">
+                        <div class="p-6 text-center">
+                            <div class="w-16 h-16 rounded-full bg-gradient-accent flex items-center justify-center mx-auto mb-4 shadow-glow">
+                                <i data-lucide="palette" class="w-8 h-8 text-accent-foreground"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-foreground">Color-Code Sections</h3>
+                            <p class="text-muted-foreground">
+                                Highlight sections: Green (confident), Amber (unsure), Red (needs study)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card bg-card-50 backdrop-blur-sm border-border-20">
+                        <div class="p-6 text-center">
+                            <div class="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto mb-4 shadow-glow">
+                                <i data-lucide="target" class="w-8 h-8 text-primary-foreground"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-3 text-foreground">Create Practice Plans</h3>
+                            <p class="text-muted-foreground">
+                                Arrange sections into structured practice sessions with deliberate strategies
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Practice Strategies Section -->
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold mb-6 text-gradient">
+                        Deliberate Practice Strategies
+                    </h2>
+                    <p class="text-xl text-muted-foreground max-w-3xl mx-auto">
+                        Evidence-based techniques to accelerate your musical learning
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="strategiesGrid">
+                    <!-- Strategies will be populated by JavaScript -->
+                </div>
+
+                <div class="text-center mt-16">
+                    <a href="practice-dark-mode-fixed.html" class="btn btn-accent btn-lg">
+                        Get Started with PlayTime
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-card-30 backdrop-blur-sm border-t border-border-20 py-12">
+            <div class="max-w-6xl mx-auto px-6">
+                <div class="flex items-center justify-center gap-3 mb-6">
+                    <div class="p-2 rounded-full bg-gradient-accent shadow-glow">
+                        <i data-lucide="music" class="w-6 h-6 text-accent-foreground"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gradient">
+                        PlayTime
+                    </h3>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-muted-foreground mb-4">
+                        Empowering musicians through structured practice and deliberate learning
+                    </p>
+                    <p class="text-sm text-muted-foreground">
+                        Inspired by the best: ForScore, MobileSheets, MuseScore, and PiaScore
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Practice strategies data
+        const practiceStrategies = [
+            {
+                icon: 'target',
+                title: 'Chunking',
+                description: 'Break down pieces into smaller, manageable sections. Master each section before combining them.',
+                color: 'text-success'
+            },
+            {
+                icon: 'clock',
+                title: 'Slow Practice',
+                description: 'Play at significantly slower tempo to ensure accuracy and identify tricky passages.',
+                color: 'text-primary-glow'
+            },
+            {
+                icon: 'rotate-ccw',
+                title: 'Repetition with Variation',
+                description: 'Repeat challenging sections while varying rhythm, articulation, or dynamics.',
+                color: 'text-warning'
+            },
+            {
+                icon: 'headphones',
+                title: 'Metronome Work',
+                description: 'Develop consistent timing and rhythm. Gradually increase tempo as you improve.',
+                color: 'text-secondary'
+            },
+            {
+                icon: 'mic',
+                title: 'Recording & Self-Correction',
+                description: 'Record yourself playing and listen back critically to identify improvements.',
+                color: 'text-destructive'
+            },
+            {
+                icon: 'target',
+                title: 'Targeted Problem Solving',
+                description: 'Isolate specific technical difficulties and work on them systematically.',
+                color: 'text-accent'
+            },
+            {
+                icon: 'shuffle',
+                title: 'Interleaving',
+                description: 'Mix practice of different sections or pieces to improve retention and adaptability.',
+                color: 'text-primary'
+            }
+        ];
+
+        // Dark mode functionality
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark);
+            
+            // Update icon visibility
+            const sunIcon = document.querySelector('.sun-icon');
+            const moonIcon = document.querySelector('.moon-icon');
+            
+            if (isDark) {
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            } else {
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            }
+            
+            lucide.createIcons(); // Refresh icons
+        }
+
+        // Load saved theme
+        function loadTheme() {
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                const sunIcon = document.querySelector('.sun-icon');
+                const moonIcon = document.querySelector('.moon-icon');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            }
+        }
+
+        // Scroll to features section
+        function scrollToFeatures() {
+            document.getElementById('features').scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+
+        // Render practice strategies
+        function renderStrategies() {
+            const grid = document.getElementById('strategiesGrid');
+            grid.innerHTML = '';
+
+            practiceStrategies.forEach(strategy => {
+                const card = document.createElement('div');
+                card.className = 'card bg-card-30 backdrop-blur-sm border-border-20 group';
+                
+                card.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2 rounded-lg bg-muted-20 group-hover:bg-primary-10 transition-colors ${strategy.color}">
+                                <i data-lucide="${strategy.icon}" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-foreground">${strategy.title}</h3>
+                        </div>
+                        <p class="text-sm leading-relaxed text-muted-foreground">
+                            ${strategy.description}
+                        </p>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Initialize the application
+        function init() {
+            loadTheme();
+            renderStrategies();
+            lucide.createIcons();
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

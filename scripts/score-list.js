@@ -4,31 +4,34 @@
  * Uses dependency injection for database and logger
  */
 
+// Configuration for this component
+const SCORE_LIST_CONFIG = {
+    SELECTORS: {
+        SCORES_LIST: '#scores-list',
+        CURRENT_SCORE_TITLE: '[data-role="current-score-title"]',
+        PDF_VIEWER: '.pdf-viewer-container'
+    },
+    CSS_CLASSES: {
+        SCORE_ITEM: 'score-item',
+        SCORE_META: 'score-meta',
+        SCORE_TITLE: 'score-title',
+        SCORE_FILENAME: 'score-filename',
+        SCORE_DATE: 'score-date',
+        SCORE_PAGES: 'score-pages'
+    },
+    MESSAGES: {
+        NO_SCORES_AVAILABLE: 'No scores available',
+        NO_SCORES_YET: 'No scores yet. Upload a PDF to get started!',
+        ERROR_LOADING_SCORES: 'Error loading scores',
+        SCORES_LIST_NOT_FOUND: 'Scores list element not found',
+        DATABASE_NOT_AVAILABLE: 'Database not available for score list'
+    }
+};
+
 function createPlayTimeScoreList(database, logger = console) {
     // Private state
     let _database = database;
     let _logger = logger;
-    
-    // Configuration for this component
-    const SCORE_LIST_CONFIG = {
-        SELECTORS: {
-            SCORES_LIST: '#scores-list',
-            CURRENT_SCORE_TITLE: '.current-score-title',
-            PDF_VIEWER: '.pdf-viewer-container'
-        },
-        CSS_CLASSES: {
-            SCORE_ITEM: 'score-item',
-            SCORE_NAME: 'score-name',
-            SCORE_DATE: 'score-date'
-        },
-        MESSAGES: {
-            NO_SCORES_AVAILABLE: 'No scores available',
-            NO_SCORES_YET: 'No scores yet. Upload a PDF to get started!',
-            ERROR_LOADING_SCORES: 'Error loading scores',
-            SCORES_LIST_NOT_FOUND: 'Scores list element not found',
-            DATABASE_NOT_AVAILABLE: 'Database not available for score list'
-        }
-    };
 
     return {
         /**
@@ -142,10 +145,23 @@ function createPlayTimeScoreList(database, logger = console) {
          */
         _createScoreItemHTML: function(pdf) {
             const uploadDate = new Date(pdf.uploadDate).toLocaleDateString();
+            const rawName = pdf.name || pdf.filename || '';
+            const baseName = rawName.replace(/\.pdf$/i, '');
+            const prettyTitle = baseName
+                .replace(/[\-_]+/g, ' ')
+                .trim()
+                .replace(/\b\w/g, c => c.toUpperCase());
+            const pagesBadge = typeof pdf.pages === 'number'
+                ? `<span class="badge ${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_PAGES}">${pdf.pages} pages</span>`
+                : '';
             return `
                 <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_ITEM}" data-pdf-id="${pdf.id}">
-                    <span class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_NAME}">${pdf.name || pdf.filename}</span>
-                    <span class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_DATE}">${uploadDate}</span>
+                    <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_META}">
+                        <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_TITLE}">${prettyTitle}</div>
+                        <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_FILENAME}">${rawName}</div>
+                        ${pagesBadge}
+                    </div>
+                    <div class="${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_DATE}">${uploadDate}</div>
                 </div>
             `;
         },
@@ -174,9 +190,9 @@ function createPlayTimeScoreList(database, logger = console) {
          * @private
          */
         _updateCurrentScoreTitle: function(filename) {
-            const currentTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
-            if (currentTitle) {
-                currentTitle.textContent = `${filename}`;
+            const currentTitles = document.querySelectorAll(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
+            if (currentTitles) {
+                currentTitles.forEach(t => t.textContent = `${filename}`);
             }
         },
 
@@ -196,7 +212,10 @@ function createPlayTimeScoreList(database, logger = console) {
 
 // Export for Node.js (testing) and browser
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = createPlayTimeScoreList;
+    module.exports = {
+        createPlayTimeScoreList, 
+        SCORE_LIST_CONFIG
+    };
 } else if (typeof window !== 'undefined') {
     window.createPlayTimeScoreList = createPlayTimeScoreList;
 }
