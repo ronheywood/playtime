@@ -160,10 +160,11 @@
 
 # UI Refinement TODO (Elegant, Clean, Sophisticated)
 
+## QA
+- [x] Visual baseline doc (docs/visual-baseline.md) and capture plan
+
 ## Theme Tokens
-- [x] Adjust dark palette to deep charcoal with higher readable contrast (done in styles/main.css)
-- [ ] Ensure muted-foreground meets WCAG AA
-- [x] Keep practice colors for dots; use subtle tints for backgrounds only
+- [x] URL param theme override for screenshots (?theme=dark|light)
 
 ## Typography
 - [ ] Apply typographic scale (12/14/16/20/24)

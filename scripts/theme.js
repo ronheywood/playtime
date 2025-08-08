@@ -39,9 +39,16 @@ class ThemeManager {
             try { window.lucide.createIcons(); } catch (_) {}
         }
 
+        // URL override for theme (e.g., ?theme=dark) used by headless capture scripts
+        const params = new URLSearchParams(window.location.search);
+        const urlTheme = params.get('theme');
+        const isValidUrlTheme = urlTheme === 'dark' || urlTheme === 'light';
+
         // Load saved theme preference or default to light mode
         const savedTheme = localStorage.getItem('playTime-theme') || 'light';
-        this.setTheme(savedTheme, false); // false = don't save to localStorage again
+        const initialTheme = isValidUrlTheme ? urlTheme : savedTheme;
+        // Do not persist when driven by URL param to avoid surprising users
+        this.setTheme(initialTheme, !isValidUrlTheme);
         
         // Add event listener for theme toggle
         if (this.themeToggle) {
@@ -53,7 +60,8 @@ class ThemeManager {
         mediaQuery.addEventListener('change', (e) => {
             // Only auto-switch if user hasn't set a preference
             if (!localStorage.getItem('playTime-theme')) {
-                this.setTheme(e.matches ? 'dark' : 'light', false);
+                const newTheme = e.matches ? 'dark' : 'light';
+                this.setTheme(newTheme, false);
             }
         });
     }
