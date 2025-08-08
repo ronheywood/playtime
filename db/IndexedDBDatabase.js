@@ -1,11 +1,10 @@
-
 const DB_NAME = 'PlayTimeDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'pdfFiles';
 
 export class IndexedDBDatabase extends window.AbstractDatabase {
     // Abstract method: save(item)
-    async save(file) {
+    async save(file, meta = {}) {
         this.logger.info('💾 Saving PDF:', file?.name);
         return new Promise((resolve, reject) => {
             if (!file) {
@@ -25,7 +24,9 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                     type: file.type,
                     size: file.size,
                     data: reader.result,
-                    uploadDate: new Date().toISOString()
+                    uploadDate: new Date().toISOString(),
+                    // new: optional metadata
+                    pages: Number.isFinite(meta.pages) ? Number(meta.pages) : undefined,
                 };
                 const transaction = this._db.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
@@ -65,7 +66,8 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                     name: pdf.name,
                     type: pdf.type,
                     size: pdf.size,
-                    uploadDate: pdf.uploadDate
+                    uploadDate: pdf.uploadDate,
+                    pages: pdf.pages,
                 }));
                 this.logger.info('✅ Retrieved PDFs:', pdfs.length);
                 resolve(pdfs);
@@ -101,7 +103,8 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                         type: request.result.type,
                         size: request.result.size,
                         data: request.result.data,
-                        uploadDate: request.result.uploadDate
+                        uploadDate: request.result.uploadDate,
+                        pages: request.result.pages,
                     };
                     this.logger.info('✅ Retrieved PDF:', pdf.name);
                     resolve(pdf);

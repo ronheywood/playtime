@@ -152,4 +152,25 @@ describe('PlayTime Score List Integration', () => {
         // Assert
         expect(mockDatabase.get).toHaveBeenCalledWith('1');
     });
+
+    test('should display page count badge when pages are available', async () => {
+        // Arrange
+        const playTimeScoreList = scoreListModule(mockDatabase, mockLogger);
+        const mockPDFs = [
+            {
+                id: '1',
+                name: 'sample-score.pdf',
+                pages: 3,
+                uploadDate: new Date('2024-01-01').toISOString()
+            }
+        ];
+        mockDatabase.getAll.mockResolvedValue(mockPDFs);
+        // Act
+        await playTimeScoreList.refresh();
+        // Assert
+        const scoresList = document.querySelector('#scores-list');
+        const pageBadges = scoresList.querySelectorAll('.score-pages');
+        expect(pageBadges.length).toBe(1);
+        expect(pageBadges[0].textContent).toContain('3 pages');
+    });
 });

@@ -15,12 +15,17 @@ describe('File Upload Integration', () => {
         // Set up minimal database for integration testing
         const savedPdfs = [];
         mockDatabase = {
-            save: function(file) {
-                savedPdfs.push({
+            // capture optional meta (e.g., pages)
+            save: function(file, meta = {}) {
+                const record = {
                     name: file.name,
                     type: file.type,
                     size: file.size
-                });
+                };
+                if (Number.isFinite(meta.pages)) {
+                    record.pages = Number(meta.pages);
+                }
+                savedPdfs.push(record);
                 return Promise.resolve();
             },
             getAll: function() {
@@ -140,6 +145,32 @@ describe('File Upload Integration', () => {
         expect(statusElement.textContent).toContain('Error loading PDF');
         expect(statusElement.getAttribute('data-status')).toBe('error');
         
+        delete global.window.PlayTimePDFViewer;
+    });
+
+    // New test: ensure pages are persisted as part of saved metadata
+    test('should persist page count in database metadata', async () => {
+        const fileInput = document.querySelector('#pdf-upload');
+
+        // Mock viewer to return a deterministic page count
+        const mockPDFViewer = {
+            loadPDF: jest.fn(() => Promise.resolve()),
+            renderPage: jest.fn(() => Promise.resolve()),
+            init: jest.fn(() => Promise.resolve()),
+            getTotalPages: jest.fn(() => 3)
+        };
+        global.window.PlayTimePDFViewer = mockPDFViewer;
+
+        const mockFile = TestHelpers.createMockPDFFile('pages-meta.pdf');
+        TestHelpers.simulateFileUpload(fileInput, mockFile);
+
+        await TestHelpers.waitFor(200);
+
+        const savedPdfs = await window.PlayTimeDB.getAll();
+        expect(savedPdfs).toHaveLength(1);
+        expect(savedPdfs[0].name).toBe('pages-meta.pdf');
+        expect(savedPdfs[0].pages).toBe(3);
+
         delete global.window.PlayTimePDFViewer;
     });
 });

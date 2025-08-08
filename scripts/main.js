@@ -119,37 +119,41 @@ async function initializeFileUpload(database = null) {
         if (isValidPDFFile(file)) {
             updatePDFViewerStatus(pdfViewer, CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
             
-            // Save to database if available (use new DB abstraction)
-            if (database && database.save) {
-                try {
-                    await database.save(file);
-                    // Refresh the score list to show the newly added PDF using the score list component
-                    if (window.PlayTimeScoreList) {
-                        await window.PlayTimeScoreList.refresh();
-                    }
-                } catch (error) {
-                    // Using consistent error logging for database failures
-                    logger.error('Failed to save PDF to database:', error);
-                }
-            }
-            
-            // Load PDF into viewer for display
-            // TODO: Extract to separate function
+            // Load into viewer first so we can compute page count
             if (window.PlayTimePDFViewer && window.PlayTimePDFViewer.loadPDF) {
                 try {
                     logger.loading('Loading PDF into viewer...');
                     await window.PlayTimePDFViewer.loadPDF(file);
-                    
-                    // Use configuration for default page
                     await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
-                    logger.info('PDF successfully loaded and rendered');
                 } catch (error) {
                     logger.error('Failed to load PDF into viewer:', error);
                     updatePDFViewerStatus(pdfViewer, 'Error loading PDF: ' + error.message, true);
+                    return; // abort save if viewer failed
                 }
-            } else {
-                logger.warn(CONFIG.MESSAGES.ERROR_PDF_VIEWER_UNAVAILABLE);
             }
+
+            // Determine total pages if viewer exposes it
+            let pagesMeta = undefined;
+            try {
+                if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getTotalPages === 'function') {
+                    const total = window.PlayTimePDFViewer.getTotalPages();
+                    if (Number.isFinite(total) && total > 0) pagesMeta = total;
+                }
+            } catch (_) {}
+            
+            // Save to database if available (use new DB signature with meta)
+            if (database && database.save) {
+                try {
+                    await database.save(file, { pages: pagesMeta });
+                    if (window.PlayTimeScoreList) {
+                        await window.PlayTimeScoreList.refresh();
+                    }
+                } catch (error) {
+                    logger.error('Failed to save PDF to database:', error);
+                }
+            }
+            
+            logger.info('PDF successfully loaded and rendered');
         } else {
             updatePDFViewerStatus(pdfViewer, CONFIG.MESSAGES.ERROR_INVALID_FILE, true);
         }
