@@ -6,14 +6,39 @@
 class ThemeManager {
     constructor() {
         this.themeToggle = document.getElementById('theme-toggle');
-        this.sunIcon = document.getElementById('sun-icon');
-        this.moonIcon = document.getElementById('moon-icon');
         this.body = document.body;
+        // Do not cache icon refs permanently because Lucide may replace the nodes
+        this.sunIcon = null;
+        this.moonIcon = null;
         
         this.init();
     }
     
+    // Resolve current icon elements (works before and after lucide.createIcons)
+    _resolveIconRefs() {
+        this.sunIcon = document.getElementById('sun-icon')
+            || document.querySelector('svg.lucide-sun')
+            || document.querySelector('[data-lucide="sun"]');
+        this.moonIcon = document.getElementById('moon-icon')
+            || document.querySelector('svg.lucide-moon')
+            || document.querySelector('[data-lucide="moon"]');
+    }
+
+    _applyIconVisibility(theme) {
+        // Ensure we have fresh refs each call
+        this._resolveIconRefs();
+        const showMoon = theme === 'dark';
+        const showSun = !showMoon;
+        if (this.sunIcon) this.sunIcon.classList.toggle('hidden', !showSun);
+        if (this.moonIcon) this.moonIcon.classList.toggle('hidden', !showMoon);
+    }
+    
     init() {
+        // Initialize icon set before we try to toggle visibility
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            try { window.lucide.createIcons(); } catch (_) {}
+        }
+
         // Load saved theme preference or default to light mode
         const savedTheme = localStorage.getItem('playTime-theme') || 'light';
         this.setTheme(savedTheme, false); // false = don't save to localStorage again
@@ -42,13 +67,12 @@ class ThemeManager {
     setTheme(theme, saveToStorage = true) {
         if (theme === 'dark') {
             this.body.classList.add('dark');
-            if (this.sunIcon) this.sunIcon.classList.add('hidden');
-            if (this.moonIcon) this.moonIcon.classList.remove('hidden');
         } else {
             this.body.classList.remove('dark');
-            if (this.sunIcon) this.sunIcon.classList.remove('hidden');
-            if (this.moonIcon) this.moonIcon.classList.add('hidden');
         }
+        
+        // Update icon states (sun vs moon) safely with lucide
+        this._applyIconVisibility(theme);
         
         if (saveToStorage) {
             localStorage.setItem('playTime-theme', theme);

@@ -92,6 +92,9 @@ body {
 .w-full { width: 100%; }
 .w-6 { width: 1.5rem; }
 .h-6 { height: 1.5rem; }
+/* add small icon sizes for Lucide */
+.w-4 { width: 1rem; }
+.h-4 { height: 1rem; }
 .h-14 { height: 3.5rem; }
 .p-0 { padding: 0; }
 .p-4 { padding: 1rem; }
@@ -304,6 +307,18 @@ body {
     box-shadow: 0 0 0 3px hsl(var(--background)), 0 0 0 5px currentColor;
 }
 
+.confidence-btn i[data-lucide="circle"] {
+    display: inline-block;
+}
+#color-green i[data-lucide="circle"] { color: hsl(var(--practice-confident)); }
+#color-amber i[data-lucide="circle"] { color: hsl(var(--practice-unsure)); }
+#color-red i[data-lucide="circle"] { color: hsl(var(--practice-needs-work)); }
+
+/* Optional: lighten filled background so icon stands out */
+#color-green { background-color: hsl(var(--practice-confident) / 0.12); }
+#color-amber { background-color: hsl(var(--practice-unsure) / 0.12); }
+#color-red { background-color: hsl(var(--practice-needs-work) / 0.12); }
+
 /* Practice confidence color utilities */
 .bg-practice-confident { background-color: hsl(var(--practice-confident)); }
 .bg-practice-unsure { background-color: hsl(var(--practice-unsure)); }
@@ -410,6 +425,20 @@ body {
 .app-container.focus-mode .focus-mode-button-trigger:hover {
     background-color: rgba(0, 0, 0, 0.8);
 }
+
+/* Page info badge styling to match prototype */
+.page-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+}
+
+/* Icon alignment helpers (avoid Tailwind) */
+.btn .lucide { vertical-align: middle; }
+.page-badge .lucide { vertical-align: middle; }
 
 /* Ensure viewer section and PDF container fill available height */
 #viewer-section {
