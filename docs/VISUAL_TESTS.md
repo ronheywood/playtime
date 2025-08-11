@@ -33,4 +33,4 @@ npm run test:visual
 ## Tips
 - Keep `deviceScaleFactor: 1` and disable animations to reduce noise.
 - Ensure fonts are available on CI (Google Inter is loaded via CSS here).
-- If design intentionally changes, re-run with `--update-snapshots` and commit new baselines.
+- If design intentionally changes, re-run with `npm run test:visual:update` and commit new baselines.
