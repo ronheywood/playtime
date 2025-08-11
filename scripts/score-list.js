@@ -9,7 +9,10 @@ const SCORE_LIST_CONFIG = {
     SELECTORS: {
         SCORES_LIST: '#scores-list',
         CURRENT_SCORE_TITLE: '[data-role="current-score-title"]',
-        PDF_VIEWER: '.pdf-viewer-container'
+        PDF_VIEWER: '.pdf-viewer-container',
+        ZOOM_IN_BTN: '[data-role="zoom-in"]',
+        ZOOM_OUT_BTN: '[data-role="zoom-out"]',
+        ZOOM_DISPLAY: '[data-role="zoom-display"]'
     },
     CSS_CLASSES: {
         SCORE_ITEM: 'score-item',

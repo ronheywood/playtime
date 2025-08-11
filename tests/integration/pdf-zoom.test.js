@@ -47,51 +47,86 @@ describe('PDF Viewer Zoom Integration', () => {
     });
 
     test('should expose default zoom of 1.0', () => {
-        // Fails until getZoom implemented
         expect(typeof viewer.getZoom).toBe('function');
         expect(viewer.getZoom()).toBe(1.0);
     });
 
     test('setZoom should increase effective render scale', async () => {
-        // Render baseline page first
         await viewer.renderPage(TEST_CONSTANTS.FIRST_PAGE);
-        // Capture last scale argument used (second call to getViewport in render implementation)
         const baselineCalls = mockPage.getViewport.mock.calls.map(c => c[0]?.scale).filter(Boolean);
         expect(baselineCalls.length).toBeGreaterThan(0);
         const baselineFitScale = baselineCalls[baselineCalls.length - 1];
-
         mockPage.getViewport.mockClear();
-
-        // Act: increase zoom
-        expect(typeof viewer.setZoom).toBe('function');
-        viewer.setZoom(1.5); // expect clamp and internal storage
+        viewer.setZoom(1.5);
         await viewer.renderPage(TEST_CONSTANTS.FIRST_PAGE);
-
         const zoomCalls = mockPage.getViewport.mock.calls.map(c => c[0]?.scale).filter(Boolean);
         const newFitScale = zoomCalls[zoomCalls.length - 1];
-
-        expect(newFitScale).toBeGreaterThan(baselineFitScale); // Should be larger scale applied
+        expect(newFitScale).toBeGreaterThan(baselineFitScale);
         expect(viewer.getZoom()).toBeCloseTo(1.5, 2);
     });
 
     test('zoomIn and zoomOut adjust zoom within bounds', async () => {
-        expect(typeof viewer.zoomIn).toBe('function');
-        expect(typeof viewer.zoomOut).toBe('function');
-
         const startZoom = viewer.getZoom();
         viewer.zoomIn();
         const afterIn = viewer.getZoom();
         expect(afterIn).toBeGreaterThan(startZoom);
-
         viewer.zoomOut();
         const afterOut = viewer.getZoom();
-        // After zoomOut from afterIn should return roughly to startZoom (depending on clamp/precision)
         expect(afterOut).toBeLessThanOrEqual(afterIn);
+        viewer.setZoom(100);
+        expect(viewer.getZoom()).toBeLessThanOrEqual(3);
+        viewer.setZoom(0.01);
+        expect(viewer.getZoom()).toBeGreaterThanOrEqual(0.5);
+    });
 
-        // Clamp tests
-        viewer.setZoom(100); // way above max
-        expect(viewer.getZoom()).toBeLessThanOrEqual(3); // expected max (design choice)
-        viewer.setZoom(0.01); // way below min
-        expect(viewer.getZoom()).toBeGreaterThanOrEqual(0.5); // expected min (design choice)
+    // New tests
+    test('auto re-render updates effective scale without explicit render call', async () => {
+        // Arrange: render once to establish baseline effective scale
+        await viewer.renderPage(TEST_CONSTANTS.FIRST_PAGE);
+        const baselineEffective = viewer.getEffectiveScale();
+        // Act: change zoom (auto re-render should happen)
+        viewer.setZoom(2.0);
+        // Await microtask queue flush
+        await Promise.resolve();
+        // Since reRenderCurrentPage awaited internally, allow event loop tick
+        await TestHelpers.waitFor(0);
+        const newEffective = viewer.getEffectiveScale();
+        expect(newEffective).toBeGreaterThan(baselineEffective);
+        expect(viewer.getZoom()).toBeCloseTo(2.0, 2);
+    });
+
+    test('cumulative zoomIn steps follow defined STEP value', () => {
+        const step = 0.25; // from implementation
+        expect(viewer.getZoom()).toBeCloseTo(1.0, 5);
+        viewer.zoomIn(); // 1.25
+        expect(viewer.getZoom()).toBeCloseTo(1.0 + step, 5);
+        viewer.zoomIn(); // 1.5
+        expect(viewer.getZoom()).toBeCloseTo(1.0 + (2 * step), 5);
+    });
+
+    test('clamps zoom exactly at min and max bounds', () => {
+        viewer.setZoom(-999);
+        expect(viewer.getZoom()).toBe(0.5);
+        viewer.setZoom(999);
+        expect(viewer.getZoom()).toBe(3.0);
+    });
+
+    test('base fit scale cached so second render does not recompute base scale', async () => {
+        await viewer.renderPage(1); // establish cache and baseline
+        const firstCallCount = mockPage.getViewport.mock.calls.length;
+        mockPage.getViewport.mockClear();
+        await viewer.renderPage(1); // second render same page
+        const secondCallCount = mockPage.getViewport.mock.calls.length;
+        // Should not exceed original number of viewport computations (no extra base recompute)
+        expect(secondCallCount).toBeLessThanOrEqual(firstCallCount);
+    });
+
+    test('switching pages creates a new cached base scale entry', async () => {
+        await viewer.renderPage(1);
+        mockPage.getViewport.mockClear();
+        await viewer.renderPage(2); // different page -> new base
+        const calls = mockPage.getViewport.mock.calls.map(c => c[0]?.scale);
+        // Expect one of the calls for second page to have scale 1 (base capture)
+        expect(calls).toContain(1);
     });
 });

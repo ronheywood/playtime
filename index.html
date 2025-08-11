@@ -114,6 +114,15 @@
                     <div class="card shadow-lg">
                         <div class="p-0">
                             <!-- PDF Canvas Container -->
+                            <div class="pdf-viewer-toolbar flex items-center gap-2 p-2 border-b border-border">
+                                <button data-role="zoom-out" class="btn btn-outline btn-icon" title="Zoom out" aria-label="Zoom out" type="button">
+                                    <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                                </button>
+                                <button data-role="zoom-in" class="btn btn-outline btn-icon" title="Zoom in" aria-label="Zoom in" type="button">
+                                    <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                                </button>
+                                <span data-role="zoom-display" class="text-sm text-muted-foreground ml-2" aria-live="polite"></span>
+                            </div>
                             <div class="pdf-viewer-container">
                                 <canvas id="pdf-canvas"></canvas>
                                 <div class="selection-overlay" style="display: none;"></div>
@@ -155,6 +164,22 @@
         if (window.lucide && window.lucide.createIcons) {
           window.lucide.createIcons();
         }
+        const zoomInBtn = document.querySelector('[data-role="zoom-in"]');
+        const zoomOutBtn = document.querySelector('[data-role="zoom-out"]');
+        const zoomDisplay = document.querySelector('[data-role="zoom-display"]');
+        function updateZoomDisplay() {
+            if (window.PlayTimePDFViewer && zoomDisplay) {
+                const z = window.PlayTimePDFViewer.getZoom();
+                zoomDisplay.textContent = `${Math.round(z * 100)}%`;
+            }
+        }
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener('click', () => { window.PlayTimePDFViewer?.zoomIn(); updateZoomDisplay(); });
+        }
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener('click', () => { window.PlayTimePDFViewer?.zoomOut(); updateZoomDisplay(); });
+        }
+        updateZoomDisplay();
       });
     </script>
 </body>

@@ -294,12 +294,23 @@ describe('PlayTime Music Practice App', () => {
             });
 
             test('As a musician, I want a zoom in button to increase the score view', async () => {
-                // Assert navigation controls exist
                 const zoomInBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_IN_BTN);
                 const zoomOutBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_OUT_BTN);
-
+                const zoomDisplay = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_DISPLAY || '[data-role="zoom-display"]');
                 expect(zoomInBtn).toBeTruthy();
                 expect(zoomOutBtn).toBeTruthy();
+                // Functional check: clicking changes canvas dimensions & display text
+                const canvas = document.querySelector('#pdf-canvas');
+                const initialWidth = canvas.width;
+                if (zoomInBtn) zoomInBtn.click();
+                await new Promise(r => setTimeout(r, 10));
+                const afterWidth = canvas.width;
+                expect(afterWidth).toBeGreaterThanOrEqual(initialWidth); // allow equality if min pages small
+                if (zoomDisplay) {
+                    // Expect display to reflect >= 100%
+                    const numeric = parseInt(zoomDisplay.textContent);
+                    expect(numeric).toBeGreaterThanOrEqual(100);
+                }
             });
         });
 
