@@ -163,6 +163,12 @@
         if (window.lucide && window.lucide.createIcons) {
           window.lucide.createIcons();
         }
+
+        /*
+        TODO: This inline script for zoom controls should be in the pdf-viewer.js
+        It should also be using a configuration object to specify the targets
+        for the querySelector.
+        */
         const zoomInBtn = document.querySelector('[data-role="zoom-in"]');
         const zoomOutBtn = document.querySelector('[data-role="zoom-out"]');
         const zoomDisplay = document.querySelector('[data-role="zoom-display"]');

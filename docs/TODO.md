@@ -38,8 +38,9 @@
 - [x] **1.2 View & Select Existing Score** (Score list + selection)
 - [ ] **BUG: After uploading a file the status message is displayed near the foot of the screen but the current score information is not updated**
 
-#### Activity 2: Analyze & Mark Up Score  
+#### Activity 2: Analyze Score  
 - [x] **2.1 View PDF Score** (PDF.js integration + navigation)
+- [ ] **BUG: After loading the application with scores in the database, then the first score is shown but the zoom controls are not updated**
 
 #### Activity 3: Practice Score
 - [ ] **3.1 Distraction-Free Mode** (Remove UI elements so the musician is not distracted)

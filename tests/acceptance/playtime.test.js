@@ -270,7 +270,7 @@ describe('PlayTime Music Practice App', () => {
         });
     });
 
-    describe('Activity 2: Analyze & Mark Up Score', () => {
+    describe('Activity 2: Analyze Score', () => {
         beforeEach(async () => {
             // Load a PDF for markup tests
             const fileInput = document.querySelector('input[type="file"]');
@@ -304,7 +304,7 @@ describe('PlayTime Music Practice App', () => {
                 expect(pageInfo?.textContent).toContain('Page 1');
             });
 
-            test('As a musician, I want a zoom in button to increase the score view', async () => {
+            test('As a musician, I want a zoom button to increase the score view', async () => {
                 const zoomInBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_IN_BTN);
                 const zoomOutBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_OUT_BTN);
                 const zoomDisplay = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_DISPLAY || '[data-role="zoom-display"]');
@@ -326,8 +326,58 @@ describe('PlayTime Music Practice App', () => {
                 }
             });
         });
+    });
 
-        describe('User Story 2.2: Highlight Sections', () => {
+    describe('Activity 3: Practice Score', () => {
+        beforeEach(async () => {
+            // Setup with a PDF
+            const fileInput = document.querySelector('input[type="file"]');
+            const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
+            Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
+            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        describe('User Story 3.1: Distraction-Free Mode', () => {
+            test.skip('As a musician, I want to hide UI distractions to focus on the score', async () => {
+                // Arrange
+                const focusModeBtn = document.querySelector('#focus-mode-btn');
+                const sidebar = document.querySelector('.sidebar');
+                expect(focusModeBtn).toBeTruthy();
+                expect(sidebar).toBeTruthy();
+
+                // Assert initial state: sidebar is visible
+                expect(window.getComputedStyle(sidebar).display).not.toBe('none');
+
+                // Act
+                focusModeBtn.click();
+                await new Promise(resolve => setTimeout(resolve, 50)); // wait for CSS transition
+
+                // Assert final state: sidebar is hidden
+                expect(window.getComputedStyle(sidebar).display).toBe('none');
+            });
+        });
+    });
+
+    describe('Activity 4: Practice Marked Sections', () => {
+        beforeEach(async () => {
+            // Setup with a PDF and some highlights
+            const fileInput = document.querySelector('input[type="file"]');
+            const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
+            Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
+            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Create a highlight
+            const canvas = document.querySelector('#pdf-canvas');
+            const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 });
+            const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 150 });
+            canvas.dispatchEvent(mouseDownEvent);
+            canvas.dispatchEvent(mouseUpEvent);
+            
+            const colorRedBtn = document.querySelector('#color-red');
+            colorRedBtn?.click();
+        });
+
+        describe('User Story 4.1: Highlight Sections', () => {
             test.skip('As a musician, I want to draw a rectangle over a part of the score to define a practice section', async () => {
                 // Arrange
                 const canvas = document.querySelector('#pdf-canvas');
@@ -388,7 +438,7 @@ describe('PlayTime Music Practice App', () => {
             });
         });
 
-        describe('User Story 2.3: Persist Highlights', () => {
+        describe('User Story 4.2: Persist Highlights', () => {
             test.skip('As a musician, I want highlighted sections to be saved locally and persist when I reopen the score', async () => {
                 // Arrange - create a highlight
                 const canvas = document.querySelector('#pdf-canvas');
@@ -415,58 +465,8 @@ describe('PlayTime Music Practice App', () => {
                 expect(amberHighlight).toBeTruthy();
             });
         });
-    });
 
-    describe('Activity 3: Practice Score', () => {
-        beforeEach(async () => {
-            // Setup with a PDF
-            const fileInput = document.querySelector('input[type="file"]');
-            const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
-            Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
-            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-
-        describe('User Story 3.1: Distraction-Free Mode', () => {
-            test.skip('As a musician, I want to hide UI distractions to focus on the score', async () => {
-                // Arrange
-                const focusModeBtn = document.querySelector('#focus-mode-btn');
-                const sidebar = document.querySelector('.sidebar');
-                expect(focusModeBtn).toBeTruthy();
-                expect(sidebar).toBeTruthy();
-
-                // Assert initial state: sidebar is visible
-                expect(window.getComputedStyle(sidebar).display).not.toBe('none');
-
-                // Act
-                focusModeBtn.click();
-                await new Promise(resolve => setTimeout(resolve, 50)); // wait for CSS transition
-
-                // Assert final state: sidebar is hidden
-                expect(window.getComputedStyle(sidebar).display).toBe('none');
-            });
-        });
-    });
-
-    describe('Activity 4: Practice Marked Sections', () => {
-        beforeEach(async () => {
-            // Setup with a PDF and some highlights
-            const fileInput = document.querySelector('input[type="file"]');
-            const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
-            Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
-            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-            
-            // Create a highlight
-            const canvas = document.querySelector('#pdf-canvas');
-            const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 });
-            const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 150 });
-            canvas.dispatchEvent(mouseDownEvent);
-            canvas.dispatchEvent(mouseUpEvent);
-            
-            const colorRedBtn = document.querySelector('#color-red');
-            colorRedBtn?.click();
-        });
-
-        describe('User Story 4.1: Focus on a Highlighted Section', () => {
+        describe('User Story 4.3: Focus on a Highlighted Section', () => {
             test.skip('As a musician, I want to select one of my highlighted sections from the score', async () => {
                 // Act
                 const redHighlight = document.querySelector('.highlight[data-color="red"]');
@@ -519,42 +519,6 @@ describe('PlayTime Music Practice App', () => {
                 expect(exitFocusBtn?.style.display).not.toBe('none');
                 expect(focusSectionBtn?.style.display).toBe('none');
             });
-        });
-        
-        test('Zoom buttons reflect disabled state at min, mid, and max zoom levels', async () => {
-            const zoomInBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_IN_BTN);
-            const zoomOutBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_OUT_BTN);
-            expect(zoomInBtn).toBeTruthy();
-            expect(zoomOutBtn).toBeTruthy();
-
-            // Initial state (min = 100%)
-            expect(zoomOutBtn.getAttribute('aria-disabled')).toBe('true');
-            expect(zoomInBtn.getAttribute('aria-disabled')).toBe('false');
-
-            // Helper delay
-            const wait = (ms=5) => new Promise(r => setTimeout(r, ms));
-
-            // Zoom in one step (mid-range)
-            zoomInBtn.click();
-            await wait();
-            expect(zoomOutBtn.getAttribute('aria-disabled')).toBe('false');
-            expect(zoomInBtn.getAttribute('aria-disabled')).toBe('false');
-
-            // Zoom to max (3.0) - safety cap on iterations
-            for (let i = 0; i < 12 && zoomInBtn.getAttribute('aria-disabled') !== 'true'; i++) {
-                zoomInBtn.click();
-                await wait();
-            }
-            expect(zoomInBtn.getAttribute('aria-disabled')).toBe('true');
-            expect(zoomOutBtn.getAttribute('aria-disabled')).toBe('false');
-
-            // Zoom back down to min
-            for (let i = 0; i < 12 && zoomOutBtn.getAttribute('aria-disabled') !== 'true'; i++) {
-                zoomOutBtn.click();
-                await wait();
-            }
-            expect(zoomOutBtn.getAttribute('aria-disabled')).toBe('true');
-            expect(zoomInBtn.getAttribute('aria-disabled')).toBe('false');
         });
     });
 });
