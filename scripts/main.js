@@ -392,27 +392,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         initializeFocusMode();
         
         // Application ready
-        
-        // MAJOR ISSUE: Inline CSS styles mixed with JavaScript logic!
-        // TODO: Move all styles to CSS classes in external stylesheet
-        // TODO: Extract this to separate function createDevStatusElement()
-        const statusElement = document.createElement('div');
-        statusElement.style.cssText = `
-            position: fixed;
-            top: 10px;
-            right: 150px;
-            background: #ff6b35;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            z-index: 9999;
-        `;
-        // TODO: Move this text to configuration/constants
-        statusElement.textContent = '⚠️ Implementation Needed - Check Console';
-        document.body.appendChild(statusElement);
-        
     } catch (error) {
         logger.error('Failed to initialize PlayTime:', error);
     }
