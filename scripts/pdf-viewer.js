@@ -13,7 +13,7 @@ function createPlayTimePDFViewer(logger = console) {
 
     // Zoom state
     let zoomMultiplier = 1.0;
-    const ZOOM = { MIN: 0.5, MAX: 3.0, STEP: 0.25 };
+    const ZOOM = { MIN: 1.0, MAX: 3.0, STEP: 0.25 };
 
     // Single document base fit scale to ensure consistent zoom across pages
     let documentBaseFitScale = null;
@@ -101,6 +101,7 @@ function createPlayTimePDFViewer(logger = console) {
         // Zoom API (integration tests will drive this)
         getZoom: function() { return zoomMultiplier; },
         getEffectiveScale: function() { return lastEffectiveScale; }, // deterministic hook for future tests
+        getZoomBounds: function() { return { min: ZOOM.MIN, max: ZOOM.MAX }; },
         setZoom: function(multiplier) {
             const prev = zoomMultiplier;
             zoomMultiplier = clamp(Number(multiplier) || 1.0, ZOOM.MIN, ZOOM.MAX);

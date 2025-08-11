@@ -76,7 +76,7 @@ describe('PDF Viewer Zoom Integration', () => {
         viewer.setZoom(100);
         expect(viewer.getZoom()).toBeLessThanOrEqual(3);
         viewer.setZoom(0.01);
-        expect(viewer.getZoom()).toBeGreaterThanOrEqual(0.5);
+        expect(viewer.getZoom()).toBeGreaterThanOrEqual(1.0);
     });
 
     // New tests
@@ -106,7 +106,7 @@ describe('PDF Viewer Zoom Integration', () => {
 
     test('clamps zoom exactly at min and max bounds', () => {
         viewer.setZoom(-999);
-        expect(viewer.getZoom()).toBe(0.5);
+        expect(viewer.getZoom()).toBe(1.0);
         viewer.setZoom(999);
         expect(viewer.getZoom()).toBe(3.0);
     });

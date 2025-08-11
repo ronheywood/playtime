@@ -104,7 +104,6 @@
                     <h2 class="font-medium text-foreground" data-role="current-score-title" >&nbsp;</h2>
                 </div>
                 
-                <!-- Remove inline toggle from toolbar (now floating) -->
                 <!-- (intentionally left blank to preserve spacing/alignment) -->
             </div>
 
@@ -171,6 +170,13 @@
             if (window.PlayTimePDFViewer && zoomDisplay) {
                 const z = window.PlayTimePDFViewer.getZoom();
                 zoomDisplay.textContent = `${Math.round(z * 100)}%`;
+                const bounds = window.PlayTimePDFViewer.getZoomBounds?.();
+                if (bounds && zoomInBtn && zoomOutBtn) {
+                    const atMin = z <= bounds.min + 1e-9;
+                    const atMax = z >= bounds.max - 1e-9;
+                    zoomOutBtn.setAttribute('aria-disabled', atMin ? 'true' : 'false');
+                    zoomInBtn.setAttribute('aria-disabled', atMax ? 'true' : 'false');
+                }
             }
         }
         if (zoomInBtn) {
