@@ -11,12 +11,12 @@ function createPlayTimePDFViewer(logger = console) {
     let currentPage = 1;
     let totalPages = 0;
 
-    // Zoom state (inner-loop integration requirement)
+    // Zoom state
     let zoomMultiplier = 1.0;
     const ZOOM = { MIN: 0.5, MAX: 3.0, STEP: 0.25 };
 
-    // Stable fit scale cache (per page) so zooming applies consistently and is visible
-    const pageBaseFitScale = new Map();
+    // Single document base fit scale to ensure consistent zoom across pages
+    let documentBaseFitScale = null;
     let lastEffectiveScale = 1; // exposed for deterministic tests
 
     // Clamp helper
@@ -25,38 +25,25 @@ function createPlayTimePDFViewer(logger = console) {
     return {
         init: function() {
             logger.info('🔄 PDF Viewer initializing...');
-            
-            // Configure PDF.js worker
             if (typeof pdfjsLib !== 'undefined') {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                 logger.info('✅ PDF.js configured');
             }
-            
             return Promise.resolve();
         },
         
         loadPDF: async function(file) {
             try {
                 logger.info('📖 Loading PDF:', file.name);
-                
-                // Convert File to ArrayBuffer
                 const arrayBuffer = await file.arrayBuffer();
-                
-                // Load PDF using PDF.js
                 const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
                 currentPDF = pdf;
                 totalPages = pdf.numPages;
                 currentPage = 1;
-                pageBaseFitScale.clear(); // reset cache for new document
-                
+                documentBaseFitScale = null; // reset for new document
                 logger.info(`✅ PDF loaded: ${totalPages} pages`);
-                
-                // Render first page
                 await this.renderPage(1);
-                
-                // Update page info
                 this.updatePageInfo();
-                
                 return Promise.resolve();
             } catch (error) {
                 logger.error('❌ Failed to load PDF:', error);
@@ -69,39 +56,32 @@ function createPlayTimePDFViewer(logger = console) {
                 logger.warn('❌ No PDF loaded');
                 return Promise.reject(new Error('No PDF loaded'));
             }
-            
             try {
                 logger.info(`🖼️ Rendering page ${pageNum}`);
                 const page = await currentPDF.getPage(pageNum);
                 const canvas = document.getElementById('pdf-canvas');
                 const context = canvas.getContext('2d');
-                // Base viewport (unscaled)
                 const baseViewport = page.getViewport({ scale: 1.0 });
 
-                // Determine container element (prefer a stable container over canvas to avoid shrink/expand feedback loop)
                 const containerEl = (canvas.closest && canvas.closest('.pdf-viewer-container')) || canvas.parentElement || canvas;
-                // Capture container dimensions (fallbacks for JSDOM/test environment)
                 let containerWidth = containerEl.clientWidth || baseViewport.width || 800;
                 let containerHeight = containerEl.clientHeight || baseViewport.height || 600;
-                if (!containerWidth || !containerHeight) { // final fallback
+                if (!containerWidth || !containerHeight) {
                     containerWidth = baseViewport.width;
                     containerHeight = baseViewport.height;
                 }
 
-                // Compute (or reuse) base fit scale (independent of zoomMultiplier)
-                let baseFitScale = pageBaseFitScale.get(pageNum);
-                if (!baseFitScale) {
+                // Compute base fit scale once for the document to keep zoom consistent across pages
+                if (!documentBaseFitScale) {
                     const firstFit = Math.min(
                         containerWidth / baseViewport.width,
                         containerHeight / baseViewport.height
                     ) * 0.9;
-                    baseFitScale = isFinite(firstFit) && firstFit > 0 ? firstFit : 1;
-                    pageBaseFitScale.set(pageNum, baseFitScale);
-                    logger.info(`ℹ️ Base fit scale cached for page ${pageNum}: ${baseFitScale.toFixed(3)}`);
+                    documentBaseFitScale = isFinite(firstFit) && firstFit > 0 ? firstFit : 1;
+                    logger.info(`ℹ️ Document base fit scale set: ${documentBaseFitScale.toFixed(3)}`);
                 }
 
-                // Effective scale now consistently multiplies the stable base fit scale
-                const effectiveScale = baseFitScale * zoomMultiplier;
+                const effectiveScale = documentBaseFitScale * zoomMultiplier;
                 lastEffectiveScale = effectiveScale;
 
                 const scaledViewport = page.getViewport({ scale: effectiveScale });
@@ -110,7 +90,7 @@ function createPlayTimePDFViewer(logger = console) {
                 const renderContext = { canvasContext: context, viewport: scaledViewport };
                 await page.render(renderContext).promise;
                 currentPage = pageNum;
-                logger.info(`✅ Page ${pageNum} rendered (zoom x${zoomMultiplier.toFixed(2)}) baseFit=${baseFitScale.toFixed(2)} effective=${effectiveScale.toFixed(2)}`);
+                logger.info(`✅ Page ${pageNum} rendered (zoom x${zoomMultiplier.toFixed(2)}) baseFit=${documentBaseFitScale.toFixed(2)} effective=${effectiveScale.toFixed(2)}`);
                 return Promise.resolve();
             } catch (error) {
                 logger.error(`❌ Failed to render page ${pageNum}:`, error);
