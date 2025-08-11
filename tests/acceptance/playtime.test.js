@@ -292,6 +292,15 @@ describe('PlayTime Music Practice App', () => {
                 expect(nextPageBtn).toBeTruthy();
                 expect(pageInfo?.textContent).toContain('Page 1');
             });
+
+            test('As a musician, I want a zoom in button to increase the score view', async () => {
+                // Assert navigation controls exist
+                const zoomInBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_IN_BTN);
+                const zoomOutBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_OUT_BTN);
+
+                expect(zoomInBtn).toBeTruthy();
+                expect(zoomOutBtn).toBeTruthy();
+            });
         });
 
         describe('User Story 2.2: Highlight Sections', () => {
@@ -414,20 +423,47 @@ describe('PlayTime Music Practice App', () => {
             });
 
             test('As a musician, I want the application to zoom in on the selected section for focused practice', async () => {
-                // Act
+                // Arrange - capture baseline canvas state BEFORE focus
+                const pdfCanvas = document.querySelector('#pdf-canvas');
+                expect(pdfCanvas).toBeTruthy();
+                const initialTransform = window.getComputedStyle(pdfCanvas).transform;
+                const initialWidth = pdfCanvas.width;
+                const initialHeight = pdfCanvas.height;
+
+                // Sanity: current implementation should have either 'none' or a matrix()
+                expect(initialWidth).toBeGreaterThan(0);
+                expect(initialHeight).toBeGreaterThan(0);
+
+                // Act - select highlight then press focus button
                 const redHighlight = document.querySelector('.highlight[data-color="red"]');
                 redHighlight?.click();
-                
+
                 const focusSectionBtn = document.querySelector('#focus-section-btn');
+                expect(focusSectionBtn).toBeTruthy();
+                // For real UX we expect the focus button to be visible before click (will enforce later)
+                // Clicking even if display none (JSDOM) still triggers handler if attached
                 focusSectionBtn?.click();
-                
-                // Assert - check that the view has changed (zoomed/cropped)
-                const pdfCanvas = document.querySelector('#pdf-canvas');
-                const canvasTransform = window.getComputedStyle(pdfCanvas).transform;
-                expect(canvasTransform).not.toBe('none');
-                
+
+                // Assert - EXPECT CHANGES that are NOT implemented yet (should FAIL until feature added)
+                const postTransform = window.getComputedStyle(pdfCanvas).transform;
+                const postWidth = pdfCanvas.width;
+                const postHeight = pdfCanvas.height;
+
+                // 1. Transform matrix should change and not remain 'none'
+                expect(postTransform).not.toBe(initialTransform);
+                expect(postTransform).not.toBe('none');
+
+                // 2. Canvas should be re-rendered at a larger scale (either width or height increases)
+                expect(postWidth > initialWidth || postHeight > initialHeight).toBe(true);
+
+                // 3. Focus mode data attribute should be set on canvas (future implementation requirement)
+                expect(pdfCanvas.getAttribute('data-focus-mode')).toBe('active');
+
+                // 4. Exit button should become visible, focus button should hide
                 const exitFocusBtn = document.querySelector('#exit-focus-btn');
                 expect(exitFocusBtn).toBeTruthy();
+                expect(exitFocusBtn?.style.display).not.toBe('none');
+                expect(focusSectionBtn?.style.display).toBe('none');
             });
         });
     });

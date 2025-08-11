@@ -235,6 +235,101 @@ function initializeConfidenceControls() {
     });
 }
 
+// Focus Mode (zoom into a selected highlight via CSS transform)
+function initializeFocusMode() {
+    const focusBtn = document.getElementById('focus-section-btn');
+    const exitBtn = document.getElementById('exit-focus-btn');
+    const toggleBtn = document.getElementById('focus-mode-toggle'); // newly added quick toggle
+    const viewerContainer = document.querySelector('.pdf-viewer-container');
+    const canvas = document.getElementById('pdf-canvas');
+    if (!focusBtn || !exitBtn || !viewerContainer || !canvas) return;
+
+    function clearHighlightSelection() {
+        document.querySelectorAll('.highlight.selected').forEach(h => h.classList.remove('selected'));
+    }
+
+    viewerContainer.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target && target.classList && target.classList.contains('highlight')) {
+            clearHighlightSelection();
+            target.classList.add('selected');
+            focusBtn.style.display = '';
+            if (toggleBtn) toggleBtn.disabled = false;
+        }
+    });
+
+    function applyFallbackFocus() {
+        const scaleFactor = 1.5;
+        if (canvas.width > 0) canvas.width = Math.round(canvas.width * scaleFactor);
+        if (canvas.height > 0) canvas.height = Math.round(canvas.height * scaleFactor);
+        if (!canvas.style.transform) canvas.style.transform = 'none';
+        canvas.style.transformOrigin = 'top left';
+        canvas.style.transform = `scale(${scaleFactor})`;
+        canvas.style.transition = 'transform 0.15s ease';
+    }
+
+    function enterFocusMode() {
+        const selected = document.querySelector('.highlight.selected');
+        canvas.setAttribute('data-focus-mode', 'active');
+        if (!selected) {
+            applyFallbackFocus();
+        } else {
+            const rect = selected.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            const viewerRect = viewerContainer.getBoundingClientRect();
+            const left = rect.width === 0 && rect.height === 0 ? parseFloat(selected.style.left) || 0 : rect.left - canvasRect.left;
+            const top = rect.width === 0 && rect.height === 0 ? parseFloat(selected.style.top) || 0 : rect.top - canvasRect.top;
+            const hWidth = rect.width || parseFloat(selected.style.width) || 1;
+            const hHeight = rect.height || parseFloat(selected.style.height) || 1;
+            const containerW = viewerRect.width || viewerContainer.clientWidth || canvas.width || 800;
+            const containerH = viewerRect.height || viewerContainer.clientHeight || canvas.height || 600;
+            const scale = Math.min(containerW / hWidth, containerH / hHeight) * 0.9;
+            const scaledHighlightW = hWidth * scale;
+            const scaledHighlightH = hHeight * scale;
+            const offsetX = (containerW - scaledHighlightW) / 2 - (left * scale);
+            const offsetY = (containerH - scaledHighlightH) / 2 - (top * scale);
+            if (!canvas.style.transform) canvas.style.transform = 'none';
+            canvas.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+            canvas.style.transition = 'transform 0.25s ease';
+        }
+        focusBtn.style.display = 'none';
+        exitBtn.style.display = '';
+        if (toggleBtn) {
+            toggleBtn.setAttribute('aria-pressed', 'true');
+            toggleBtn.classList.add('active');
+        }
+    }
+
+    function exitFocusMode() {
+        canvas.removeAttribute('data-focus-mode');
+        canvas.style.transform = '';
+        exitBtn.style.display = 'none';
+        focusBtn.style.display = '';
+        if (toggleBtn) {
+            toggleBtn.setAttribute('aria-pressed', 'false');
+            toggleBtn.classList.remove('active');
+        }
+    }
+
+    focusBtn.addEventListener('click', enterFocusMode);
+    exitBtn.addEventListener('click', exitFocusMode);
+    if (toggleBtn) {
+        // Disabled until selection or explicit use; allow fallback regardless
+        toggleBtn.addEventListener('click', () => {
+            const active = canvas.getAttribute('data-focus-mode') === 'active';
+            if (active) {
+                exitFocusMode();
+            } else {
+                enterFocusMode();
+            }
+        });
+    }
+
+    if (!focusBtn.style.display) focusBtn.style.display = 'none';
+    exitBtn.style.display = 'none';
+    if (toggleBtn) toggleBtn.disabled = false;
+}
+
 // Initialize the application when DOM is ready
 // ISSUE: This function also does too much - initialization AND UI creation
 // TODO: Split into initializeApplication() and createDevStatusElement()
@@ -293,6 +388,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Initialize confidence controls
         initializeConfidenceControls();
+        // Initialize focus mode (after highlights & canvas exist)
+        initializeFocusMode();
         
         // Application ready
         
