@@ -417,7 +417,37 @@ describe('PlayTime Music Practice App', () => {
         });
     });
 
-    describe('Activity 3: Practice Marked Sections', () => {
+    describe('Activity 3: Practice Score', () => {
+        beforeEach(async () => {
+            // Setup with a PDF
+            const fileInput = document.querySelector('input[type="file"]');
+            const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
+            Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
+            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        describe('User Story 3.1: Distraction-Free Mode', () => {
+            test.skip('As a musician, I want to hide UI distractions to focus on the score', async () => {
+                // Arrange
+                const focusModeBtn = document.querySelector('#focus-mode-btn');
+                const sidebar = document.querySelector('.sidebar');
+                expect(focusModeBtn).toBeTruthy();
+                expect(sidebar).toBeTruthy();
+
+                // Assert initial state: sidebar is visible
+                expect(window.getComputedStyle(sidebar).display).not.toBe('none');
+
+                // Act
+                focusModeBtn.click();
+                await new Promise(resolve => setTimeout(resolve, 50)); // wait for CSS transition
+
+                // Assert final state: sidebar is hidden
+                expect(window.getComputedStyle(sidebar).display).toBe('none');
+            });
+        });
+    });
+
+    describe('Activity 4: Practice Marked Sections', () => {
         beforeEach(async () => {
             // Setup with a PDF and some highlights
             const fileInput = document.querySelector('input[type="file"]');
@@ -436,7 +466,7 @@ describe('PlayTime Music Practice App', () => {
             colorRedBtn?.click();
         });
 
-        describe('User Story 3.1: Focus on a Highlighted Section', () => {
+        describe('User Story 4.1: Focus on a Highlighted Section', () => {
             test.skip('As a musician, I want to select one of my highlighted sections from the score', async () => {
                 // Act
                 const redHighlight = document.querySelector('.highlight[data-color="red"]');

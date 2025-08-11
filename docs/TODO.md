@@ -36,16 +36,18 @@
 #### Activity 1: Manage Music Scores
 - [x] **1.1 Add New Score** (File upload + local storage)
 - [x] **1.2 View & Select Existing Score** (Score list + selection)
-- [ ] **BUG: After uploading a file the status message is neither well placed or well designed**
+- [ ] **BUG: After uploading a file the status message is displayed near the foot of the screen but the current score information is not updated**
 
 #### Activity 2: Analyze & Mark Up Score  
 - [x] **2.1 View PDF Score** (PDF.js integration + navigation)
-- [ ] **2.2 Focus on whole PDF Score** (Remove UI elements so the musician is not distracted)
-- [ ] **2.2 Highlight Sections** (Drawing interface + color coding)
-- [ ] **2.3 Persist Highlights** (Save/load highlights)
 
-#### Activity 3: Practice Marked Sections
-- [ ] **3.1 Focus on Highlighted Section** (Zoom/crop functionality)
+#### Activity 3: Practice Score
+- [ ] **3.1 Distraction-Free Mode** (Remove UI elements so the musician is not distracted)
+
+#### Activity 4: Practice Marked Sections
+- [ ] **4.1 Highlight Sections** (Drawing interface + color coding)
+- [ ] **4.2 Persist Highlights** (Save/load highlights)
+- [ ] **4.3 Focus on Highlighted Section** (Zoom/crop functionality)
 
 ### Phase 1: Basic PDF Upload & Display
 - [ ] **File Upload Handler** (scripts/main.js)
