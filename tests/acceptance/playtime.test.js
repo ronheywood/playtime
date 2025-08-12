@@ -4,6 +4,7 @@
  */
 
 const { SCORE_LIST_CONFIG } = require('../../scripts/score-list');
+const { CONFIG } = require('../../scripts/main');
 
 describe('PlayTime Music Practice App', () => {
     beforeAll(async () => {
@@ -305,9 +306,9 @@ describe('PlayTime Music Practice App', () => {
             });
 
             test('As a musician, I want a zoom button to increase the score view', async () => {
-                const zoomInBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_IN_BTN);
-                const zoomOutBtn = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_OUT_BTN);
-                const zoomDisplay = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.ZOOM_DISPLAY || '[data-role="zoom-display"]');
+                const zoomInBtn = document.querySelector(CONFIG.SELECTORS.ZOOM_IN_BTN);
+                const zoomOutBtn = document.querySelector(CONFIG.SELECTORS.ZOOM_OUT_BTN);
+                const zoomDisplay = document.querySelector(CONFIG.SELECTORS.ZOOM_DISPLAY);
                 expect(zoomInBtn).toBeTruthy();
                 expect(zoomOutBtn).toBeTruthy();
                 // Functional check: clicking changes canvas dimensions & display text

@@ -9,10 +9,7 @@ const SCORE_LIST_CONFIG = {
     SELECTORS: {
         SCORES_LIST: '#scores-list',
         CURRENT_SCORE_TITLE: '[data-role="current-score-title"]',
-        PDF_VIEWER: '.pdf-viewer-container',
-        ZOOM_IN_BTN: '[data-role="zoom-in"]',
-        ZOOM_OUT_BTN: '[data-role="zoom-out"]',
-        ZOOM_DISPLAY: '[data-role="zoom-display"]'
+        PDF_VIEWER: '.pdf-viewer-container'
     },
     CSS_CLASSES: {
         SCORE_ITEM: 'score-item',
@@ -100,11 +97,8 @@ function createPlayTimeScoreList(database, logger = console) {
                     return;
                 }
                 // Hide any existing status message when selecting a score from the list
-                const viewer = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.PDF_VIEWER);
-                if (viewer) {
-                    const msg = viewer.querySelector('.status-message');
-                    if (msg && typeof msg.remove === 'function') msg.remove();
-                }
+                const msg = document.querySelector('.status-message');
+                if (msg && typeof msg.remove === 'function') msg.remove();
 
                 this._updateCurrentScoreTitle(pdf.name || pdf.filename);
                 await this._loadIntoPDFViewer(pdf);
