@@ -94,6 +94,15 @@ function updatePDFViewerStatus(pdfViewer, message, isError = false) {
     }
 }
 
+// Update the current score title display immediately (fix for Bug 1.2)
+function updateCurrentScoreTitleDisplay(filename) {
+    if (!filename) return;
+    try {
+        const nodes = document.querySelectorAll(CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
+        nodes.forEach(n => { if (n) n.textContent = String(filename); });
+    } catch (_) { /* noop for test environments without the element */ }
+}
+
 // --- refactor helpers (no behavior change) ---
 async function loadPDFIntoViewer(file) {
     if (!window.PlayTimePDFViewer || typeof window.PlayTimePDFViewer.loadPDF !== 'function') return;
@@ -131,6 +140,8 @@ async function handleFileSelection(file, pdfViewerEl, database) {
     }
 
     updatePDFViewerStatus(pdfViewerEl, CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + file.name, false);
+    // Update current score title right away so UI reflects the selected/uploaded score
+    updateCurrentScoreTitleDisplay(file.name);
 
     // Load into viewer first so we can compute page count
     try {
@@ -439,6 +450,7 @@ if (typeof module !== 'undefined' && module.exports) {
         CONFIG,
         isValidPDFFile,
         updatePDFViewerStatus,
+    updateCurrentScoreTitleDisplay,
         initializeFileUpload,
         initializePageNavigation
     };

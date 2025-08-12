@@ -36,7 +36,7 @@
 #### Activity 1: Manage Music Scores
 - [x] **1.1 Add New Score** (File upload + local storage)
 - [x] **1.2 View & Select Existing Score** (Score list + selection)
-- [ ] **BUG: After uploading a file the status message is displayed near the foot of the screen but the current score information is not updated**
+- [x] **BUG: After uploading a file the status message is displayed near the foot of the screen but the current score information is not updated**
 
 #### Activity 2: Analyze Score  
 - [x] **2.1 View PDF Score** (PDF.js integration + navigation)

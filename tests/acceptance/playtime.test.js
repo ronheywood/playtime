@@ -137,6 +137,48 @@ describe('PlayTime Music Practice App', () => {
                 expect(pdfViewer?.textContent).toContain('sample-score.pdf');
             });
 
+            test('After uploading a score, the current score title updates immediately', async () => {
+                // Arrange
+                const fileInput = document.querySelector('input[type="file"]');
+                expect(fileInput).toBeTruthy();
+                const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
+                Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
+
+                // Act
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                // Allow async handlers to complete
+                await new Promise(resolve => setTimeout(resolve, 20));
+
+                // Assert: current score title reflects uploaded file name
+                const currentScoreTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
+                expect(currentScoreTitle).toBeTruthy();
+                expect(currentScoreTitle?.textContent).toContain('sample-score.pdf');
+            });
+
+            test('After uploading a second score, it remains selected and visible (does not revert to first)', async () => {
+                // Arrange
+                const fileInput = document.querySelector('input[type="file"]');
+                const first = new File(['mock pdf 1'], 'first.pdf', { type: 'application/pdf' });
+                const second = new File(['mock pdf 2'], 'second.pdf', { type: 'application/pdf' });
+
+                // Upload first
+                Object.defineProperty(fileInput, 'files', { value: [first], writable: false, configurable: true });
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                await new Promise(r => setTimeout(r, 30));
+
+                // Upload second
+                Object.defineProperty(fileInput, 'files', { value: [second], writable: false, configurable: true });
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+                // Allow async handlers and any list refreshes to complete
+                await new Promise(r => setTimeout(r, 60));
+
+                // Assert
+                const currentScoreTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
+                expect(currentScoreTitle).toBeTruthy();
+                expect(currentScoreTitle?.textContent).toContain('second.pdf');
+            });
+
             test('As a musician, I want the uploaded PDF to be saved locally in my browser', async () => {
                 // Arrange
                 const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });

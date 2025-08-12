@@ -71,8 +71,12 @@ function createPlayTimeScoreList(database, logger = console) {
                 this._attachClickHandlers(scoresList);
                 _logger.info(`Score list refreshed with ${pdfs.length} items`);
                 const currentTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
-                if (pdfs.length > 0 && currentTitle && !currentTitle.textContent.includes(pdfs[0].name || pdfs[0].filename)) {
-                    await this.loadScore(pdfs[0].id);
+                if (pdfs.length > 0 && currentTitle) {
+                    const titleText = (currentTitle.textContent || '').trim();
+                    // Auto-load only if no current title is displayed (first-run UX)
+                    if (!titleText) {
+                        await this.loadScore(pdfs[0].id);
+                    }
                 }
             } catch (error) {
                 _logger.error('Failed to refresh score list:', error);
