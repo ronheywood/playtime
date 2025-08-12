@@ -40,7 +40,7 @@
 
 #### Activity 2: Analyze Score  
 - [x] **2.1 View PDF Score** (PDF.js integration + navigation)
-- [ ] **BUG: After loading the application with scores in the database, then the first score is shown but the zoom controls are not updated**
+- [x] **BUG: After loading the application with scores in the database, then the first score is shown but the zoom controls are not updated**
 
 #### Activity 3: Practice Score
 - [ ] **3.1 Distraction-Free Mode** (Remove UI elements so the musician is not distracted)
