@@ -34,7 +34,9 @@ const CONFIG = {
         CURRENT_SCORE_TITLE: '[data-role="current-score-title"]',
         ZOOM_IN_BTN: '[data-role="zoom-in"]',
         ZOOM_OUT_BTN: '[data-role="zoom-out"]',
-        ZOOM_DISPLAY: '[data-role="zoom-display"]'
+        ZOOM_DISPLAY: '[data-role="zoom-display"]',
+        FOCUS_MODE_BTN: '[data-role="toggle-focus-mode"]',
+        FOCUS_MODE_HIDDEN: '[data-role="focus-mode-hidden"]'
     },
     
     // File Types
@@ -242,7 +244,7 @@ function initializeConfidenceControls() {
 function initializeFocusMode() {
     const focusBtn = document.getElementById('focus-section-btn');
     const exitBtn = document.getElementById('exit-focus-btn');
-    const toggleBtn = document.getElementById('focus-mode-toggle'); // newly added quick toggle
+    const toggleBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN); // newly added quick toggle
     const viewerContainer = document.querySelector('.pdf-viewer-container');
     const canvas = document.getElementById('pdf-canvas');
     if (!focusBtn || !exitBtn || !viewerContainer || !canvas) return;

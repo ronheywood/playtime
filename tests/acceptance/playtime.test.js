@@ -341,7 +341,7 @@ describe('PlayTime Music Practice App', () => {
         describe('User Story 3.1: Distraction-Free Mode', () => {
             test.skip('As a musician, I want to hide UI distractions to focus on the score', async () => {
                 // Arrange
-                const focusModeBtn = document.querySelector('#focus-mode-btn');
+                const focusModeBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN);
                 const sidebar = document.querySelector('.sidebar');
                 expect(focusModeBtn).toBeTruthy();
                 expect(sidebar).toBeTruthy();
