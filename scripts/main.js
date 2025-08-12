@@ -31,7 +31,10 @@ const CONFIG = {
         NEXT_BUTTON: '#next-page-btn',
         STATUS_MESSAGE: '.status-message',
         SCORES_LIST: '#scores-list',
-        CURRENT_SCORE_TITLE: '[data-role="current-score-title"]'
+        CURRENT_SCORE_TITLE: '[data-role="current-score-title"]',
+        ZOOM_IN_BTN: '[data-role="zoom-in"]',
+        ZOOM_OUT_BTN: '[data-role="zoom-out"]',
+        ZOOM_DISPLAY: '[data-role="zoom-display"]'
     },
     
     // File Types
@@ -390,6 +393,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         initializeConfidenceControls();
         // Initialize focus mode (after highlights & canvas exist)
         initializeFocusMode();
+        
+        /*
+        TODO: This inline script for zoom controls should be in the pdf-viewer.js
+        It should also be using a configuration object to specify the targets
+        for the querySelector.
+        */
+        const zoomInBtn = document.querySelector(CONFIG.SELECTORS.ZOOM_IN_BTN);
+        const zoomOutBtn = document.querySelector(CONFIG.SELECTORS.ZOOM_OUT_BTN);
+        const zoomDisplay = document.querySelector(CONFIG.SELECTORS.ZOOM_DISPLAY);
+        function updateZoomDisplay() {
+            if (window.PlayTimePDFViewer && zoomDisplay) {
+                const z = window.PlayTimePDFViewer.getZoom();
+                zoomDisplay.textContent = `${Math.round(z * 100)}%`;
+                const bounds = window.PlayTimePDFViewer.getZoomBounds?.();
+                if (bounds && zoomInBtn && zoomOutBtn) {
+                    const atMin = z <= bounds.min + 1e-9;
+                    const atMax = z >= bounds.max - 1e-9;
+                    zoomOutBtn.setAttribute('aria-disabled', atMin ? 'true' : 'false');
+                    zoomInBtn.setAttribute('aria-disabled', atMax ? 'true' : 'false');
+                }
+            }
+        }
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener('click', () => { window.PlayTimePDFViewer?.zoomIn(); updateZoomDisplay(); });
+        }
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener('click', () => { window.PlayTimePDFViewer?.zoomOut(); updateZoomDisplay(); });
+        }
+        updateZoomDisplay();
         
         // Application ready
     } catch (error) {
