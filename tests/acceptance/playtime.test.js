@@ -68,7 +68,9 @@ describe('PlayTime Music Practice App', () => {
             return viewer;
         };
         
-        global.window.PlayTimeHighlighting = { init: jest.fn().mockResolvedValue(true) };
+    // Use real highlighting capability (data-role driven)
+    const Highlighting = require('../../scripts/highlighting.js');
+    global.window.PlayTimeHighlighting = Highlighting;
         
         // Setup score list component
         const createPlayTimeScoreList = require('../../scripts/score-list').createPlayTimeScoreList;
@@ -432,30 +434,21 @@ describe('PlayTime Music Practice App', () => {
 
     describe('Activity 4: Practice Marked Sections', () => {
         beforeEach(async () => {
-            // Setup with a PDF and some highlights
+            // Setup with a PDF; do not pre-draw or set colors so overlay starts hidden
             const fileInput = document.querySelector('input[type="file"]');
             const mockFile = new File(['mock pdf content'], 'sample-score.pdf', { type: 'application/pdf' });
             Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
             fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-            
-            // Create a highlight
-            const canvas = document.querySelector('#pdf-canvas');
-            const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 });
-            const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 150 });
-            canvas.dispatchEvent(mouseDownEvent);
-            canvas.dispatchEvent(mouseUpEvent);
-            
-            const colorRedBtn = document.querySelector('#color-red');
-            colorRedBtn?.click();
         });
 
         describe('User Story 4.1: Highlight Sections', () => {
-            test.skip('As a musician, I want to draw a rectangle over a part of the score to define a practice section', async () => {
+            test('As a musician, I want to draw a rectangle over a part of the score to define a practice section', async () => {
                 // Arrange
-                const canvas = document.querySelector('#pdf-canvas');
+                const HL_CONFIG = global.window.PlayTimeHighlighting?.CONFIG || { SELECTORS: { CANVAS: '[data-role="pdf-canvas"]', SELECTION_OVERLAY: '[data-role="selection-overlay"]' } };
+                const canvas = document.querySelector(HL_CONFIG.SELECTORS.CANVAS) || document.getElementById('pdf-canvas');
 
                 // Assert - selection overlay should not be visible before dragging (check computed style)
-                let selectionOverlay = document.querySelector('.selection-overlay');
+                let selectionOverlay = document.querySelector(HL_CONFIG.SELECTORS.SELECTION_OVERLAY) || document.querySelector('.selection-overlay');
                 if (selectionOverlay) {
                     const style = window.getComputedStyle(selectionOverlay);
                     expect(style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0').toBe(true);
@@ -486,7 +479,7 @@ describe('PlayTime Music Practice App', () => {
                 canvas.dispatchEvent(mouseUpEvent);
 
                 // Assert - check for selection feedback (should now be visible)
-                selectionOverlay = document.querySelector('.selection-overlay');
+                selectionOverlay = document.querySelector(HL_CONFIG.SELECTORS.SELECTION_OVERLAY) || document.querySelector('.selection-overlay');
                 expect(selectionOverlay).toBeTruthy();
                 const style = window.getComputedStyle(selectionOverlay);
                 expect(style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0').toBe(true);

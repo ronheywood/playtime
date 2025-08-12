@@ -70,15 +70,15 @@
             <div class="p-4 border-b border-border">
                 <div class="text-sm font-medium mb-3 text-foreground">Mark Section Confidence:</div>
                 <div class="flex flex-col gap-2" id="confidence-controls">
-                    <button id="color-green" data-color="green" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Confident">
+                    <button id="color-green" data-role="color-green" data-color="green" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Confident">
                         <span class="confidence-dot" aria-hidden="true"></span>
                         <span class="confidence-label">Confident</span>
                     </button>
-                    <button id="color-amber" data-color="amber" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Unsure">
+                    <button id="color-amber" data-role="color-amber" data-color="amber" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Unsure">
                         <span class="confidence-dot" aria-hidden="true"></span>
                         <span class="confidence-label">Unsure</span>
                     </button>
-                    <button id="color-red" data-color="red" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Needs Work">
+                    <button id="color-red" data-role="color-red" data-color="red" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Needs Work">
                         <span class="confidence-dot" aria-hidden="true"></span>
                         <span class="confidence-label">Needs Work</span>
                     </button>
@@ -122,9 +122,9 @@
                                 </button>
                                 <span data-role="zoom-display" class="text-sm text-muted-foreground ml-2" aria-live="polite"></span>
                             </div>
-                            <div class="pdf-viewer-container">
-                                <canvas id="pdf-canvas"></canvas>
-                                <div class="selection-overlay" style="display: none;"></div>
+                            <div class="pdf-viewer-container" data-role="pdf-viewer">
+                                <canvas id="pdf-canvas" data-role="pdf-canvas"></canvas>
+                                <div class="selection-overlay" data-role="selection-overlay" style="display: none;"></div>
                             </div>
                             <div id="selected-message"></div>
                             <!-- Practice Focus Controls -->
