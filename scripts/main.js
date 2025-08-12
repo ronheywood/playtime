@@ -258,6 +258,7 @@ function initializeFocusMode() {
     const toggleBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN); // newly added quick toggle
     const viewerContainer = document.querySelector('.pdf-viewer-container');
     const canvas = document.getElementById('pdf-canvas');
+    const sidebar = document.querySelector('.sidebar');
     if (!focusBtn || !exitBtn || !viewerContainer || !canvas) return;
 
     function clearHighlightSelection() {
@@ -275,18 +276,32 @@ function initializeFocusMode() {
     });
 
     function applyFallbackFocus() {
-        const scaleFactor = 1.5;
-        if (canvas.width > 0) canvas.width = Math.round(canvas.width * scaleFactor);
-        if (canvas.height > 0) canvas.height = Math.round(canvas.height * scaleFactor);
-        if (!canvas.style.transform) canvas.style.transform = 'none';
-        canvas.style.transformOrigin = 'top left';
-        canvas.style.transform = `scale(${scaleFactor})`;
-        canvas.style.transition = 'transform 0.15s ease';
+    // Compute scale to fit within viewer container without resizing canvas pixels (avoid clearing)
+    const viewerRect = viewerContainer.getBoundingClientRect();
+    const baseW = canvas.width || canvas.clientWidth || 800;
+    const baseH = canvas.height || canvas.clientHeight || 600;
+    const containerW = viewerRect.width || viewerContainer.clientWidth || baseW;
+    const containerH = viewerRect.height || viewerContainer.clientHeight || baseH;
+    const scale = Math.max(1, Math.min(containerW / baseW, containerH / baseH));
+    if (!canvas.style.transform) canvas.style.transform = 'none';
+    // In focus mode we center via flex; only scale here
+    canvas.style.transformOrigin = 'center center';
+    canvas.style.transform = `scale(${scale})`;
+    canvas.style.transition = 'transform 0.15s ease';
     }
 
     function enterFocusMode() {
         const selected = document.querySelector('.highlight.selected');
         canvas.setAttribute('data-focus-mode', 'active');
+    // Distraction-free: hide sidebar and add body class for CSS-based tweaks
+    if (sidebar) sidebar.style.display = 'none';
+    if (document && document.body) document.body.classList.add('distraction-free');
+        // Preserve original styles to restore later
+        if (!canvas.dataset._origTransform) canvas.dataset._origTransform = canvas.style.transform || '';
+        if (!canvas.dataset._origTransition) canvas.dataset._origTransition = canvas.style.transition || '';
+        if (!viewerContainer.dataset._origOverflow) viewerContainer.dataset._origOverflow = viewerContainer.style.overflow || '';
+        // Prevent scrollbars fighting the transform
+        viewerContainer.style.overflow = 'hidden';
         if (!selected) {
             applyFallbackFocus();
         } else {
@@ -318,7 +333,13 @@ function initializeFocusMode() {
 
     function exitFocusMode() {
         canvas.removeAttribute('data-focus-mode');
-        canvas.style.transform = '';
+        // Restore original transform/transition and container overflow
+        canvas.style.transform = canvas.dataset._origTransform || '';
+        canvas.style.transition = canvas.dataset._origTransition || '';
+        viewerContainer.style.overflow = viewerContainer.dataset._origOverflow || '';
+    // Restore sidebar visibility and remove body class
+    if (sidebar) sidebar.style.display = '';
+    if (document && document.body) document.body.classList.remove('distraction-free');
         exitBtn.style.display = 'none';
         focusBtn.style.display = '';
         if (toggleBtn) {
@@ -340,6 +361,13 @@ function initializeFocusMode() {
             }
         });
     }
+
+    // Accessibility: ESC exits focus mode
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && canvas.getAttribute('data-focus-mode') === 'active') {
+            exitFocusMode();
+        }
+    });
 
     if (!focusBtn.style.display) focusBtn.style.display = 'none';
     exitBtn.style.display = 'none';

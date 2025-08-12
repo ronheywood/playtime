@@ -381,7 +381,7 @@ describe('PlayTime Music Practice App', () => {
         });
 
         describe('User Story 3.1: Distraction-Free Mode', () => {
-            test.skip('As a musician, I want to hide UI distractions to focus on the score', async () => {
+            test('As a musician, I want to hide UI distractions to focus on the score', async () => {
                 // Arrange
                 const focusModeBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN);
                 const sidebar = document.querySelector('.sidebar');
@@ -397,6 +397,35 @@ describe('PlayTime Music Practice App', () => {
 
                 // Assert final state: sidebar is hidden
                 expect(window.getComputedStyle(sidebar).display).toBe('none');
+            });
+
+            test('Toggling focus mode does not clear the canvas content (dimensions unchanged)', async () => {
+                // Arrange
+                const focusModeBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN);
+                const canvas = document.getElementById('pdf-canvas');
+                expect(focusModeBtn).toBeTruthy();
+                expect(canvas).toBeTruthy();
+                const w = canvas.width;
+                const h = canvas.height;
+                expect(w).toBeGreaterThan(0);
+                expect(h).toBeGreaterThan(0);
+
+                // Act - enter focus
+                focusModeBtn.click();
+                await new Promise(r => setTimeout(r, 30));
+
+                // Assert - dimensions unchanged
+                expect(canvas.width).toBe(w);
+                expect(canvas.height).toBe(h);
+
+                // Act - exit focus
+                const exitBtn = document.getElementById('exit-focus-btn');
+                exitBtn?.click();
+                await new Promise(r => setTimeout(r, 30));
+
+                // Assert - still unchanged
+                expect(canvas.width).toBe(w);
+                expect(canvas.height).toBe(h);
             });
         });
     });

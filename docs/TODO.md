@@ -43,7 +43,7 @@
 - [x] **BUG: After loading the application with scores in the database, then the first score is shown but the zoom controls are not updated**
 
 #### Activity 3: Practice Score
-- [ ] **3.1 Distraction-Free Mode** (Remove UI elements so the musician is not distracted)
+- [x] **3.1 Distraction-Free Mode** (Remove UI elements so the musician is not distracted)
 
 #### Activity 4: Practice Marked Sections
 - [ ] **4.1 Highlight Sections** (Drawing interface + color coding)
