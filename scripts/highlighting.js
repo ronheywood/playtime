@@ -19,18 +19,32 @@
     };
 
     function createOrGetOverlay(viewer, config) {
+        // Ensure the viewer is a positioned container so absolute children align correctly
+        try {
+            const pos = (viewer && viewer.ownerDocument && viewer.ownerDocument.defaultView)
+                ? viewer.ownerDocument.defaultView.getComputedStyle(viewer).position
+                : (viewer && viewer.style && viewer.style.position) || 'static';
+            if (pos === 'static') {
+                viewer.style.position = 'relative';
+            }
+        } catch (_) { /* noop */ }
         let overlay = viewer.querySelector(config.SELECTORS.SELECTION_OVERLAY);
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.setAttribute('data-role', 'selection-overlay');
             overlay.className = DEFAULT_CONFIG.CSS.OVERLAY_CLASS;
-            overlay.style.display = 'none';
-            overlay.style.position = 'absolute';
-            overlay.style.border = '2px dashed rgba(0,0,0,0.4)';
-            overlay.style.background = 'rgba(0,0,0,0.08)';
-            overlay.style.pointerEvents = 'none';
             viewer.appendChild(overlay);
         }
+        // Normalize required styles whether newly created or pre-existing in DOM
+        overlay.style.display = overlay.style.display || 'none';
+        overlay.style.position = 'absolute';
+        overlay.style.zIndex = '10'; // ensure it renders above the canvas
+        overlay.style.visibility = overlay.style.display === 'none' ? 'hidden' : 'visible';
+        overlay.style.opacity = overlay.style.display === 'none' ? '0' : '1';
+        overlay.style.boxSizing = 'border-box';
+        overlay.style.border = overlay.style.border || '2px dashed rgba(0,0,0,0.4)';
+        overlay.style.background = overlay.style.background || 'rgba(0,0,0,0.08)';
+        overlay.style.pointerEvents = 'none';
         return overlay;
     }
 
@@ -95,42 +109,34 @@
             red && red.addEventListener('click', () => this.setActiveColor('red'));
 
             // Mouse interactions on the canvas
-            canvas.addEventListener('mousedown', (e) => {
-                this._state.selecting = true;
-                const p = getRelativePoint(viewer, e.clientX, e.clientY);
-                this._state.start = p;
-                this._state.current = p;
-                // Reveal overlay when selection starts (thin rectangle at 0 size)
-                const overlay = this._state.overlay;
-                if (overlay) {
-                    overlay.style.left = p.x + 'px';
-                    overlay.style.top = p.y + 'px';
-                    overlay.style.width = '0px';
-                    overlay.style.height = '0px';
-                    overlay.style.display = 'block';
-                }
-            });
-
-            canvas.addEventListener('mousemove', (e) => {
-                if (!this._state.selecting) return;
-                const p = getRelativePoint(viewer, e.clientX, e.clientY);
-                this._state.current = p;
+            const updateOverlayFromPoint = (point) => {
                 const overlay = this._state.overlay;
                 if (!overlay) return;
-                const left = Math.min(this._state.start.x, p.x);
-                const top = Math.min(this._state.start.y, p.y);
-                const width = Math.abs(p.x - this._state.start.x);
-                const height = Math.abs(p.y - this._state.start.y);
+                const left = Math.min(this._state.start.x, point.x);
+                const top = Math.min(this._state.start.y, point.y);
+                const width = Math.abs(point.x - this._state.start.x);
+                const height = Math.abs(point.y - this._state.start.y);
                 overlay.style.display = 'block';
+                overlay.style.visibility = 'visible';
+                overlay.style.opacity = '1';
                 overlay.style.left = left + 'px';
                 overlay.style.top = top + 'px';
                 overlay.style.width = width + 'px';
                 overlay.style.height = height + 'px';
-            });
+            };
+
+            const onMouseMoveDoc = (e) => {
+                if (!this._state.selecting) return;
+                const p = getRelativePoint(viewer, e.clientX, e.clientY);
+                this._state.current = p;
+                updateOverlayFromPoint(p);
+            };
 
             const finish = (e) => {
                 if (!this._state.selecting) return;
                 this._state.selecting = false;
+                document.removeEventListener('mousemove', onMouseMoveDoc, true);
+                document.removeEventListener('mouseup', finish, true);
                 const p = getRelativePoint(viewer, e.clientX, e.clientY);
                 const left = Math.min(this._state.start.x, p.x);
                 const top = Math.min(this._state.start.y, p.y);
@@ -142,11 +148,48 @@
                     if (this._state.activeColor) {
                         createHighlight(viewer, { left, top, width, height }, this._state.activeColor, this.CONFIG);
                     }
-                    if (overlay) overlay.style.display = 'block';
+                    if (overlay) {
+                        overlay.style.display = 'block';
+                        overlay.style.visibility = 'visible';
+                        overlay.style.opacity = '1';
+                    }
                 } else {
-                    if (overlay) overlay.style.display = 'none';
+                    if (overlay) {
+                        overlay.style.display = 'none';
+                        overlay.style.visibility = 'hidden';
+                        overlay.style.opacity = '0';
+                    }
                 }
             };
+
+            canvas.addEventListener('mousedown', (e) => {
+                this._state.selecting = true;
+                const p = getRelativePoint(viewer, e.clientX, e.clientY);
+                this._state.start = p;
+                this._state.current = p;
+                // Reveal overlay when selection starts (thin rectangle at 0 size)
+                const overlay = this._state.overlay;
+                if (overlay) {
+                    overlay.style.left = p.x + 'px';
+                    overlay.style.top = p.y + 'px';
+                    // Use a minimal size so users see immediate feedback even before moving
+                    overlay.style.width = '1px';
+                    overlay.style.height = '1px';
+                    overlay.style.display = 'block';
+                    overlay.style.visibility = 'visible';
+                    overlay.style.opacity = '1';
+                }
+                // Listen on the document for reliable dragging even if cursor leaves canvas
+                document.addEventListener('mousemove', onMouseMoveDoc, true);
+                document.addEventListener('mouseup', finish, true);
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!this._state.selecting) return;
+                const p = getRelativePoint(viewer, e.clientX, e.clientY);
+                this._state.current = p;
+                updateOverlayFromPoint(p);
+            });
             canvas.addEventListener('mouseup', finish);
             canvas.addEventListener('mouseleave', (e) => { if (this._state.selecting) finish(e); });
 
