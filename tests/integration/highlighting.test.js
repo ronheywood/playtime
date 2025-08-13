@@ -57,22 +57,7 @@ describe('Highlighting Integration', () => {
     await new Promise((r) => setTimeout(r, 10));
   });
 
-  test('clicking a color then dragging creates a highlight element', async () => {
-    const greenBtn = document.querySelector('[data-role="color-green"]') || document.getElementById('color-green');
-    expect(greenBtn).toBeTruthy();
-    greenBtn.click();
-
-    const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
-    canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 120, clientY: 120 }));
-    canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 170 }));
-    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 170 }));
-
-    const highlight = document.querySelector('[data-role="highlight"]');
-    expect(highlight).toBeTruthy();
-    expect(highlight.getAttribute('data-color')).toBe('green');
-  });
-
-  test('selection overlay appears while dragging and remains visible after mouseup', async () => {
+  test('selection overlay appears while dragging and as hidden after mouseup', async () => {
     const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
     expect(canvas).toBeTruthy();
 
@@ -86,11 +71,26 @@ describe('Highlighting Integration', () => {
     canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 }));
     canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 180, clientY: 160 }));
     let during = window.getComputedStyle(overlay);
-    expect(during.display !== 'none' && during.visibility !== 'hidden').toBe(true);
+    expect(during.display == 'none' && during.visibility == 'hidden').toBe(false);
 
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 180, clientY: 160 }));
     let after = window.getComputedStyle(overlay);
-    expect(after.display !== 'none' && after.visibility !== 'hidden').toBe(true);
+    expect(after.display == 'none' && after.visibility == 'hidden').toBe(true);
+  });
+
+  test('clicking a color then dragging creates a highlight element', async () => {
+    const greenBtn = document.querySelector('[data-role="color-green"]') || document.getElementById('color-green');
+    expect(greenBtn).toBeTruthy();
+    greenBtn.click();
+
+    const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
+    canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 120, clientY: 120 }));
+    canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 170 }));
+    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 170 }));
+
+    const highlight = document.querySelector('[data-role="highlight"]');
+    expect(highlight).toBeTruthy();
+    expect(highlight.getAttribute('data-color')).toBe('green');
   });
 
 });

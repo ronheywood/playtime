@@ -148,16 +148,16 @@
                 const top = Math.min(this._state.start.y, p.y);
                 const width = Math.abs(p.x - this._state.start.x);
                 const height = Math.abs(p.y - this._state.start.y);
-                // Keep overlay visible after a meaningful drag; hide otherwise
+                
                 const overlay = this._state.overlay;
                 if (width > 2 && height > 2) {
                     if (this._state.activeColor) {
                         createHighlight(viewer, { left, top, width, height }, this._state.activeColor, this.CONFIG);
                     }
                     if (overlay) {
-                        overlay.style.display = 'block';
-                        overlay.style.visibility = 'visible';
-                        overlay.style.opacity = '1';
+                        overlay.style.display = 'none';
+                        overlay.style.visibility = 'hidden';
+                        overlay.style.opacity = '0';
                     }
                 } else {
                     if (overlay) {
