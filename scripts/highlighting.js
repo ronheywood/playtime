@@ -15,9 +15,37 @@
         },
         CSS: {
             OVERLAY_CLASS: 'selection-overlay', // keep class for legacy tests/UX
-            HIGHLIGHT_CLASS: 'highlight'
+            HIGHLIGHT_CLASS: 'highlight',
+            COLOR_STYLES: {
+                green: { border: '2px solid rgba(0,128,0,0.6)', background: 'rgba(0,128,0,0.15)' },
+                amber: { border: '2px solid rgba(255,165,0,0.6)', background: 'rgba(255,165,0,0.15)' },
+                red: { border: '2px solid rgba(255,0,0,0.6)', background: 'rgba(255,0,0,0.15)' }
+            }
         }
     };
+
+    // ---- Overlay helpers (tidy/DRY only, no behavior change) ----
+    function showOverlay(overlay) {
+        if (!overlay) return;
+        overlay.style.display = 'block';
+        overlay.style.visibility = 'visible';
+        overlay.style.opacity = '1';
+    }
+
+    function hideOverlay(overlay) {
+        if (!overlay) return;
+        overlay.style.display = 'none';
+        overlay.style.visibility = 'hidden';
+        overlay.style.opacity = '0';
+    }
+
+    function setOverlayRect(overlay, left, top, width, height) {
+        if (!overlay) return;
+        overlay.style.left = left + 'px';
+        overlay.style.top = top + 'px';
+        overlay.style.width = width + 'px';
+        overlay.style.height = height + 'px';
+    }
 
     function createOrGetOverlay(viewer, config) {
         // Ensure the viewer is a positioned container so absolute children align correctly
@@ -29,7 +57,7 @@
                 viewer.style.position = 'relative';
             }
         } catch (_) { /* noop */ }
-        let overlay = viewer.querySelector(config.SELECTORS.SELECTION_OVERLAY);
+    let overlay = viewer.querySelector(config.SELECTORS.SELECTION_OVERLAY);
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.setAttribute('data-role', 'selection-overlay');
@@ -37,11 +65,11 @@
             viewer.appendChild(overlay);
         }
         // Normalize required styles whether newly created or pre-existing in DOM
-        overlay.style.display = overlay.style.display || 'none';
+    overlay.style.display = overlay.style.display || 'none';
         overlay.style.position = 'absolute';
         overlay.style.zIndex = '10'; // ensure it renders above the canvas
-        overlay.style.visibility = overlay.style.display === 'none' ? 'hidden' : 'visible';
-        overlay.style.opacity = overlay.style.display === 'none' ? '0' : '1';
+    overlay.style.visibility = overlay.style.display === 'none' ? 'hidden' : 'visible';
+    overlay.style.opacity = overlay.style.display === 'none' ? '0' : '1';
         overlay.style.boxSizing = 'border-box';
         overlay.style.border = overlay.style.border || '2px dashed rgba(0,0,0,0.4)';
         overlay.style.background = overlay.style.background || 'rgba(0,0,0,0.08)';
@@ -52,15 +80,19 @@
     function createHighlight(viewer, rect, color, config) {
         const el = document.createElement('div');
         el.setAttribute('data-role', 'highlight');
-        el.setAttribute('data-color', color || 'red');
+        const appliedColor = color || 'red';
+        el.setAttribute('data-color', appliedColor);
         el.className = DEFAULT_CONFIG.CSS.HIGHLIGHT_CLASS;
         el.style.position = 'absolute';
         el.style.left = rect.left + 'px';
         el.style.top = rect.top + 'px';
         el.style.width = rect.width + 'px';
         el.style.height = rect.height + 'px';
-        el.style.border = '2px solid rgba(255,0,0,0.6)';
-        el.style.background = 'rgba(255,0,0,0.15)';
+        const styles = (config && config.CSS && config.CSS.COLOR_STYLES && config.CSS.COLOR_STYLES[appliedColor])
+            || DEFAULT_CONFIG.CSS.COLOR_STYLES[appliedColor]
+            || DEFAULT_CONFIG.CSS.COLOR_STYLES.red;
+        el.style.border = styles.border;
+        el.style.background = styles.background;
         el.tabIndex = 0;
         viewer.appendChild(el);
         return el;
@@ -123,13 +155,8 @@
                 const top = Math.min(this._state.start.y, point.y);
                 const width = Math.abs(point.x - this._state.start.x);
                 const height = Math.abs(point.y - this._state.start.y);
-                overlay.style.display = 'block';
-                overlay.style.visibility = 'visible';
-                overlay.style.opacity = '1';
-                overlay.style.left = left + 'px';
-                overlay.style.top = top + 'px';
-                overlay.style.width = width + 'px';
-                overlay.style.height = height + 'px';
+                showOverlay(overlay);
+                setOverlayRect(overlay, left, top, width, height);
             };
 
             const onMouseMoveDoc = (e) => {
@@ -155,17 +182,9 @@
                     if (this._state.activeColor) {
                         createHighlight(viewer, { left, top, width, height }, this._state.activeColor, this.CONFIG);
                     }
-                    if (overlay) {
-                        overlay.style.display = 'none';
-                        overlay.style.visibility = 'hidden';
-                        overlay.style.opacity = '0';
-                    }
+                    hideOverlay(overlay);
                 } else {
-                    if (overlay) {
-                        overlay.style.display = 'none';
-                        overlay.style.visibility = 'hidden';
-                        overlay.style.opacity = '0';
-                    }
+                    hideOverlay(overlay);
                 }
             };
 
@@ -177,14 +196,9 @@
                 // Reveal overlay when selection starts (thin rectangle at 0 size)
                 const overlay = this._state.overlay;
                 if (overlay) {
-                    overlay.style.left = p.x + 'px';
-                    overlay.style.top = p.y + 'px';
                     // Use a minimal size so users see immediate feedback even before moving
-                    overlay.style.width = '1px';
-                    overlay.style.height = '1px';
-                    overlay.style.display = 'block';
-                    overlay.style.visibility = 'visible';
-                    overlay.style.opacity = '1';
+                    setOverlayRect(overlay, p.x, p.y, 1, 1);
+                    showOverlay(overlay);
                 }
                 // Listen on the document for reliable dragging even if cursor leaves canvas
                 document.addEventListener('mousemove', onMouseMoveDoc, true);
