@@ -57,6 +57,20 @@ describe('Highlighting Integration', () => {
     await new Promise((r) => setTimeout(r, 10));
   });
 
+  test('clicking a color then dragging creates a highlight element', async () => {
+    const greenBtn = document.querySelector('[data-role="color-green"]') || document.getElementById('color-green');
+    expect(greenBtn).toBeTruthy();
+    greenBtn.click();
+
+    const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
+    canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 120, clientY: 120 }));
+    canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 170 }));
+    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 170 }));
+
+    const highlight = document.querySelector('[data-role="highlight"]');
+    expect(highlight).toBeTruthy();
+    expect(highlight.getAttribute('data-color')).toBe('green');
+  });
   test('selection overlay appears while dragging and remains visible after mouseup', async () => {
     const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
     expect(canvas).toBeTruthy();
@@ -78,18 +92,4 @@ describe('Highlighting Integration', () => {
     expect(after.display !== 'none' && after.visibility !== 'hidden').toBe(true);
   });
 
-  test.skip('clicking a color then dragging creates a highlight element', async () => {
-    const greenBtn = document.querySelector('[data-role="color-green"]') || document.getElementById('color-green');
-    expect(greenBtn).toBeTruthy();
-    greenBtn.click();
-
-    const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
-    canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 120, clientY: 120 }));
-    canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 170 }));
-    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 170 }));
-
-    const highlight = document.querySelector('[data-role="highlight"]');
-    expect(highlight).toBeTruthy();
-    expect(highlight.getAttribute('data-color')).toBe('green');
-  });
 });
