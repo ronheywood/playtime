@@ -2,6 +2,7 @@
 // Data-role driven selectors and minimal functionality to support selection overlay and basic highlights
 
 (function initHighlightingModule(global) {
+    const CONST = (global && global.PlayTimeConstants) ? global.PlayTimeConstants : (function(){ try { return require('./constants'); } catch(_) { return { EVENTS: { CONFIDENCE_CHANGED: 'playtime:confidence-changed' }, SELECTORS: {} }; } })();
     const DEFAULT_CONFIG = {
         SELECTORS: {
             VIEWER: '[data-role="pdf-viewer"]',
@@ -109,9 +110,9 @@
                 } catch (_) { /* noop */ }
             };
             if (typeof window !== 'undefined' && window.addEventListener) {
-                window.addEventListener('playtime:confidence-changed', onConfidenceChanged);
+                window.addEventListener(CONST.EVENTS.CONFIDENCE_CHANGED, onConfidenceChanged);
             } else if (typeof document !== 'undefined' && document.addEventListener) {
-                document.addEventListener('playtime:confidence-changed', onConfidenceChanged);
+                document.addEventListener(CONST.EVENTS.CONFIDENCE_CHANGED, onConfidenceChanged);
             }
 
             // Mouse interactions on the canvas

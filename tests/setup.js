@@ -122,14 +122,14 @@ beforeEach(() => {
                     <button id="next-page-btn">▶</button>
                     <div data-role="current-score-title" class="current-score-title"></div>
                 </div>
-                <div class="pdf-viewer-container">
-                    <canvas id="pdf-canvas"></canvas>
-                    <div class="selection-overlay" style="display: none;"></div>
+                <div class="pdf-viewer-container" data-role="pdf-viewer">
+                    <canvas id="pdf-canvas" data-role="pdf-canvas"></canvas>
+                    <div class="selection-overlay" data-role="selection-overlay" style="display: none;"></div>
                 </div>
                 <div class="highlight-controls">
-                    <button id="color-green" data-color="green">●</button>
-                    <button id="color-amber" data-color="amber">●</button>
-                    <button id="color-red" data-color="red">●</button>
+                    <button id="color-green" data-role="color-green" data-color="green">●</button>
+                    <button id="color-amber" data-role="color-amber" data-color="amber">●</button>
+                    <button id="color-red" data-role="color-red" data-color="red">●</button>
                 </div>
                 <div class="practice-controls">
                     <button id="focus-section-btn" style="display: none;">Focus</button>

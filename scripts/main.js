@@ -239,16 +239,17 @@ function initializeConfidenceControls() {
         });
     };
 
+    const CONST = (typeof window !== 'undefined' && window.PlayTimeConstants) ? window.PlayTimeConstants : (function(){ try { return require('./constants'); } catch(_) { return { EVENTS: { CONFIDENCE_CHANGED: 'playtime:confidence-changed' } }; } })();
     buttons.forEach(btn => {
         btn.addEventListener('click', () => {
             setPressed(btn);
             const color = btn.getAttribute('data-color');
             // Publish confidence change event for decoupled subscribers
             try {
-                const ev = new CustomEvent('playtime:confidence-changed', { detail: { color } });
+                const ev = new CustomEvent(CONST.EVENTS.CONFIDENCE_CHANGED, { detail: { color } });
                 window.dispatchEvent(ev);
             } catch (_) {
-                try { document.dispatchEvent(new CustomEvent('playtime:confidence-changed', { detail: { color } })); } catch (_) {}
+                try { document.dispatchEvent(new CustomEvent(CONST.EVENTS.CONFIDENCE_CHANGED, { detail: { color } })); } catch (_) {}
             }
         });
     });

@@ -3,25 +3,16 @@
  */
 
 const { CONFIG } = require('../../scripts/main');
+const { SELECTORS } = require('../../scripts/constants');
 
 describe('Highlighting Integration', () => {
   beforeEach(async () => {
-    // Reset DOM
-    document.head.innerHTML = '';
-    document.body.innerHTML = '';
+    // Silence logs in tests
+    const logger = require('../../scripts/logger');
+    logger.setSilent(true);
+    global.logger = logger;
 
-    const fs = require('fs');
-    const path = require('path');
-    let htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
-    htmlContent = htmlContent.replace(/<script[^>]*>.*?<\/script>/gis, '');
-    htmlContent = htmlContent.replace(/<script[^>]*\/>/gis, '');
-
-    const headMatch = htmlContent.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-    const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    if (headMatch) document.head.innerHTML = headMatch[1];
-    if (bodyMatch) document.body.innerHTML = bodyMatch[1];
-
-    // Minimal stubs
+    // Provide minimal factories expected by main.js
     global.window.createPlayTimePDFViewer = (logger) => ({
       init: jest.fn().mockResolvedValue(true),
       loadPDF: jest.fn().mockResolvedValue(true),
@@ -32,36 +23,26 @@ describe('Highlighting Integration', () => {
       zoomIn: jest.fn(() => 1),
       zoomOut: jest.fn(() => 1)
     });
-
     global.window.createPlayTimeDB = () => ({
       init: jest.fn().mockResolvedValue(true),
       save: jest.fn().mockResolvedValue(true),
       getAll: jest.fn().mockResolvedValue([])
     });
 
-    const logger = require('../../scripts/logger');
-    logger.setSilent(true);
-    global.logger = logger;
+    // Ensure highlighting module is available for main.js
+    const Highlighting = require('../../scripts/highlighting.js');
+    global.window.PlayTimeHighlighting = Highlighting;
 
-  // Ensure highlighting module is available for main.js
-  const Highlighting = require('../../scripts/highlighting.js');
-  global.window.PlayTimeHighlighting = Highlighting;
-
-  // main.js is already required at the top of this file, which registers
-  // a single DOMContentLoaded handler. Re-evaluating it here would
-  // accumulate multiple handlers and duplicate event wiring across tests.
-
-    // Initialize app
-    const domContentLoadedEvent = new Event('DOMContentLoaded');
-    document.dispatchEvent(domContentLoadedEvent);
+    // Fire DOM ready to initialize modules (main.js listener already registered by require at top)
+    document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise((r) => setTimeout(r, 10));
   });
 
   test('selection overlay appears while dragging and as hidden after mouseup', async () => {
-    const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
+  const canvas = document.querySelector(SELECTORS.CANVAS);
     expect(canvas).toBeTruthy();
 
-    const overlay = document.querySelector('[data-role="selection-overlay"]');
+  const overlay = document.querySelector(SELECTORS.SELECTION_OVERLAY);
     expect(overlay).toBeTruthy();
     // Initially hidden
     const startStyle = window.getComputedStyle(overlay);
@@ -79,11 +60,11 @@ describe('Highlighting Integration', () => {
   });
 
   test('clicking a color then dragging creates a highlight element', async () => {
-    const greenBtn = document.querySelector('[data-role="color-green"]') || document.getElementById('color-green');
+  const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN);
     expect(greenBtn).toBeTruthy();
     greenBtn.click();
 
-    const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
+  const canvas = document.querySelector(SELECTORS.CANVAS);
     canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 120, clientY: 120 }));
     canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 170 }));
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 170 }));
