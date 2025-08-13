@@ -461,20 +461,40 @@ describe('PlayTime Music Practice App', () => {
                 expect(hidden.display == 'none' && hidden.visibility == 'hidden' && hidden.opacity == '0').toBe(true);
             });
 
-            test.skip('As a musician, I want to assign a color code (green, amber, red) to each section', async () => {
-                // Arrange - create a selection first
-                const canvas = document.querySelector('#pdf-canvas');
-                const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 });
-                const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 150 });
+            test('As a musician, I want to assign a color code (green, amber, red) to each section', async () => {
+                // Arrange
+                const HL_CONFIG = global.window.PlayTimeHighlighting?.CONFIG || { SELECTORS: { CANVAS: '[data-role="pdf-canvas"]', SELECTION_OVERLAY: '[data-role="selection-overlay"]' } };
+                const canvas = document.querySelector(HL_CONFIG.SELECTORS.CANVAS) || document.getElementById('pdf-canvas');
+
+                //set color code
+                const colorCode = 'green'; // example color code
+                const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN);
+                expect(greenBtn).toBeTruthy();
+                greenBtn.click();
+
+                // Act - simulate drawing a rectangle with mouse events
+                const mouseDownEvent = new MouseEvent('mousedown', {
+                    bubbles: true,
+                    clientX: 100,
+                    clientY: 100
+                });
+                const mouseMoveEvent = new MouseEvent('mousemove', {
+                    bubbles: true,
+                    clientX: 200,
+                    clientY: 150
+                });
+                const mouseUpEvent = new MouseEvent('mouseup', {
+                    bubbles: true,
+                    clientX: 200,
+                    clientY: 150
+                });
+
                 canvas.dispatchEvent(mouseDownEvent);
+                canvas.dispatchEvent(mouseMoveEvent);
                 canvas.dispatchEvent(mouseUpEvent);
                 
-                // Act
-                const colorGreenBtn = document.querySelector('#color-green');
-                colorGreenBtn?.click();
-                
                 // Assert
-                const greenHighlight = document.querySelector('[data-role="highlight"][data-color="green"]');
+                const greenHighlight = document.querySelector(SELECTORS.HIGHLIGHT + '[data-color="'+colorCode+'"]');
                 expect(greenHighlight).toBeTruthy();
             });
         });
