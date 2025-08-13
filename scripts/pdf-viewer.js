@@ -91,6 +91,12 @@ function createPlayTimePDFViewer(logger = console) {
                 await page.render(renderContext).promise;
                 currentPage = pageNum;
                 logger.info(`✅ Page ${pageNum} rendered (zoom x${zoomMultiplier.toFixed(2)}) baseFit=${documentBaseFitScale.toFixed(2)} effective=${effectiveScale.toFixed(2)}`);
+                // Publish page-changed for interested modules (e.g., highlighting visibility)
+                try {
+                    const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.PAGE_CHANGED) || 'playtime:page-changed';
+                    const ev = new CustomEvent(evName, { detail: { page: currentPage } });
+                    window.dispatchEvent(ev);
+                } catch(_) { /* noop */ }
                 return Promise.resolve();
             } catch (error) {
                 logger.error(`❌ Failed to render page ${pageNum}:`, error);

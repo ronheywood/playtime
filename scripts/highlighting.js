@@ -89,7 +89,7 @@
         return overlay;
     }
 
-    function createHighlight(viewer, rect, color, config, canvas) {
+    function createHighlight(viewer, rect, color, config, canvas, pageNumber) {
         const el = document.createElement('div');
         el.setAttribute('data-role', 'highlight');
         const appliedColor = color || 'red';
@@ -98,6 +98,9 @@
         el.style.position = 'absolute';
         el.tabIndex = 0;
         viewer.appendChild(el);
+        if (Number.isFinite(pageNumber)) {
+            el.dataset.page = String(pageNumber);
+        }
 
         // Normalize to canvas so we can reposition on resize/recenter
         try {
@@ -282,7 +285,10 @@
                 const overlay = this._state.overlay;
                 if (width > 2 && height > 2) {
                     if (this._state.activeColor) {
-                        createHighlight(viewer, { left, top, width, height }, this._state.activeColor, this.CONFIG, canvas);
+                        // Determine page number if PDF viewer exposes API
+                        let pageNum = undefined;
+                        try { pageNum = (window.PlayTimePDFViewer && window.PlayTimePDFViewer.getCurrentPage && window.PlayTimePDFViewer.getCurrentPage()) || undefined; } catch(_) {}
+                        createHighlight(viewer, { left, top, width, height }, this._state.activeColor, this.CONFIG, canvas, pageNum);
                     }
                     hideOverlay(overlay);
                 } else {
@@ -338,6 +344,20 @@
                     const evName = (CONST && CONST.EVENTS && CONST.EVENTS.LAYOUT_CHANGED) ? CONST.EVENTS.LAYOUT_CHANGED : 'playtime:layout-changed';
                     window.addEventListener(evName, onResize);
                 } catch (_) { /* noop */ }
+                // Page changed: update visibility of highlights
+                try {
+                    const pageEvName = (CONST && CONST.EVENTS && CONST.EVENTS.PAGE_CHANGED) ? CONST.EVENTS.PAGE_CHANGED : 'playtime:page-changed';
+                    window.addEventListener(pageEvName, (e) => {
+                        const page = e && e.detail && e.detail.page;
+                        if (!Number.isFinite(page)) return;
+                        const list = viewer.querySelectorAll(this.CONFIG.SELECTORS.HIGHLIGHT);
+                        list.forEach(el => {
+                            if (el.dataset.page) {
+                                el.style.display = (Number(el.dataset.page) === page) ? 'block' : 'none';
+                            }
+                        });
+                    });
+                } catch(_) { /* noop */ }
             }
 
             return Promise.resolve();

@@ -3,6 +3,7 @@
 const EVENTS = {
   CONFIDENCE_CHANGED: 'playtime:confidence-changed',
   LAYOUT_CHANGED: 'playtime:layout-changed',
+  PAGE_CHANGED: 'playtime:page-changed', // fired after a page is rendered (detail: { page })
 };
 
 // Use data-role selectors for behavior wiring
