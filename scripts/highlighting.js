@@ -89,19 +89,51 @@
         return overlay;
     }
 
-    function createHighlight(viewer, rect, color, config) {
+    function createHighlight(viewer, rect, color, config, canvas) {
         const el = document.createElement('div');
         el.setAttribute('data-role', 'highlight');
         const appliedColor = color || 'red';
         el.setAttribute('data-color', appliedColor);
         el.className = DEFAULT_CONFIG.CSS.HIGHLIGHT_CLASS;
         el.style.position = 'absolute';
-        el.style.left = rect.left + 'px';
-        el.style.top = rect.top + 'px';
-        el.style.width = rect.width + 'px';
-        el.style.height = rect.height + 'px';
         el.tabIndex = 0;
         viewer.appendChild(el);
+
+        // Normalize to canvas so we can reposition on resize/recenter
+        try {
+            const vRect = viewer.getBoundingClientRect();
+            const c = canvas || viewer.querySelector(DEFAULT_CONFIG.SELECTORS.CANVAS);
+            const cRect = c.getBoundingClientRect();
+            const canvasOffsetLeft = cRect.left - vRect.left;
+            const canvasOffsetTop = cRect.top - vRect.top;
+
+            const localLeft = Math.max(0, Math.min(rect.left - canvasOffsetLeft, cRect.width));
+            const localTop = Math.max(0, Math.min(rect.top - canvasOffsetTop, cRect.height));
+            const localWidth = Math.max(0, Math.min(rect.width, cRect.width));
+            const localHeight = Math.max(0, Math.min(rect.height, cRect.height));
+
+            const xPct = cRect.width ? localLeft / cRect.width : 0;
+            const yPct = cRect.height ? localTop / cRect.height : 0;
+            const wPct = cRect.width ? localWidth / cRect.width : 0;
+            const hPct = cRect.height ? localHeight / cRect.height : 0;
+
+            el.dataset.hlXPct = String(xPct);
+            el.dataset.hlYPct = String(yPct);
+            el.dataset.hlWPct = String(wPct);
+            el.dataset.hlHPct = String(hPct);
+
+            // Apply absolute position relative to viewer for current layout
+            el.style.left = (canvasOffsetLeft + xPct * cRect.width) + 'px';
+            el.style.top = (canvasOffsetTop + yPct * cRect.height) + 'px';
+            el.style.width = (wPct * cRect.width) + 'px';
+            el.style.height = (hPct * cRect.height) + 'px';
+        } catch (_) {
+            // Fallback to the provided rect if geometry fails
+            el.style.left = rect.left + 'px';
+            el.style.top = rect.top + 'px';
+            el.style.width = rect.width + 'px';
+            el.style.height = rect.height + 'px';
+        }
         // Presentation (border/background) provided by CSS via [data-color].
         // Apply color-aware fallback only if computed styles are missing.
         try {
@@ -122,6 +154,25 @@
             if (!el.style.background) el.style.background = styleForColor.background;
         }
         return el;
+    }
+
+    function repositionHighlight(el, viewer, canvas) {
+        if (!el || !viewer || !canvas) return;
+        const xPct = parseFloat(el.dataset.hlXPct || 'NaN');
+        const yPct = parseFloat(el.dataset.hlYPct || 'NaN');
+        const wPct = parseFloat(el.dataset.hlWPct || 'NaN');
+        const hPct = parseFloat(el.dataset.hlHPct || 'NaN');
+        if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || !Number.isFinite(wPct) || !Number.isFinite(hPct)) return;
+        try {
+            const vRect = viewer.getBoundingClientRect();
+            const cRect = canvas.getBoundingClientRect();
+            const canvasOffsetLeft = cRect.left - vRect.left;
+            const canvasOffsetTop = cRect.top - vRect.top;
+            el.style.left = (canvasOffsetLeft + xPct * cRect.width) + 'px';
+            el.style.top = (canvasOffsetTop + yPct * cRect.height) + 'px';
+            el.style.width = (wPct * cRect.width) + 'px';
+            el.style.height = (hPct * cRect.height) + 'px';
+        } catch (_) { /* noop */ }
     }
 
     function getRelativePoint(container, clientX, clientY) {
@@ -206,7 +257,7 @@
                 const overlay = this._state.overlay;
                 if (width > 2 && height > 2) {
                     if (this._state.activeColor) {
-                        createHighlight(viewer, { left, top, width, height }, this._state.activeColor, this.CONFIG);
+                        createHighlight(viewer, { left, top, width, height }, this._state.activeColor, this.CONFIG, canvas);
                     }
                     hideOverlay(overlay);
                 } else {
@@ -240,6 +291,17 @@
             canvas.addEventListener('mouseup', finish);
             canvas.addEventListener('mouseleave', (e) => { if (this._state.selecting) finish(e); });
 
+            // Reposition highlights when window resizes (canvas recenters/scales)
+            const onResize = () => {
+                try {
+                    const list = viewer.querySelectorAll(this.CONFIG.SELECTORS.HIGHLIGHT);
+                    list.forEach((el) => repositionHighlight(el, viewer, canvas));
+                } catch (_) { /* noop */ }
+            };
+            if (typeof window !== 'undefined' && window.addEventListener) {
+                window.addEventListener('resize', onResize);
+            }
+
             return Promise.resolve();
         },
 
@@ -249,6 +311,12 @@
         getHighlights() {
             const sel = this.CONFIG.SELECTORS.HIGHLIGHT;
             return Array.from((this._state.viewer || document).querySelectorAll(sel));
+        },
+        repositionAll() {
+            const v = this._state.viewer;
+            const c = this._state.canvas;
+            if (!v || !c) return;
+            this.getHighlights().forEach((el) => repositionHighlight(el, v, c));
         },
         focusOnSection() { return Promise.resolve(); }
     };
