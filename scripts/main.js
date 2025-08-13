@@ -243,9 +243,12 @@ function initializeConfidenceControls() {
         btn.addEventListener('click', () => {
             setPressed(btn);
             const color = btn.getAttribute('data-color');
-            // Optional: notify highlighting module if it exposes an API
-            if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.setActiveColor === 'function') {
-                try { window.PlayTimeHighlighting.setActiveColor(color); } catch (_) {}
+            // Publish confidence change event for decoupled subscribers
+            try {
+                const ev = new CustomEvent('playtime:confidence-changed', { detail: { color } });
+                window.dispatchEvent(ev);
+            } catch (_) {
+                try { document.dispatchEvent(new CustomEvent('playtime:confidence-changed', { detail: { color } })); } catch (_) {}
             }
         });
     });
@@ -424,7 +427,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         await window.PlayTimePDFViewer.init();
         if (window.PlayTimeHighlighting) {
-            await window.PlayTimeHighlighting.init();
+            await window.PlayTimeHighlighting.init({}, appLogger);
         }
         
         // Initialize page navigation buttons

@@ -47,9 +47,9 @@ describe('Highlighting Integration', () => {
   const Highlighting = require('../../scripts/highlighting.js');
   global.window.PlayTimeHighlighting = Highlighting;
 
-  const mainJsPath = require('path').join(__dirname, '../../scripts/main.js');
-    const mainJsContent = require('fs').readFileSync(mainJsPath, 'utf8');
-    eval(mainJsContent);
+  // main.js is already required at the top of this file, which registers
+  // a single DOMContentLoaded handler. Re-evaluating it here would
+  // accumulate multiple handlers and duplicate event wiring across tests.
 
     // Initialize app
     const domContentLoadedEvent = new Event('DOMContentLoaded');
@@ -71,6 +71,7 @@ describe('Highlighting Integration', () => {
     expect(highlight).toBeTruthy();
     expect(highlight.getAttribute('data-color')).toBe('green');
   });
+
   test('selection overlay appears while dragging and remains visible after mouseup', async () => {
     const canvas = document.querySelector('[data-role="pdf-canvas"]') || document.getElementById('pdf-canvas');
     expect(canvas).toBeTruthy();

@@ -84,6 +84,7 @@
         },
 
         setActiveColor(color) {
+            try { this._state.logger && this._state.logger.debug && this._state.logger.debug('Setting active color', color); } catch (_) {}
             this._state.activeColor = color || null;
         },
 
@@ -100,13 +101,18 @@
             this._state.canvas = canvas;
             this._state.overlay = createOrGetOverlay(viewer, cfg);
 
-            // Wire color buttons if present
-            const green = document.querySelector(cfg.SELECTORS.COLOR_GREEN);
-            const amber = document.querySelector(cfg.SELECTORS.COLOR_AMBER);
-            const red = document.querySelector(cfg.SELECTORS.COLOR_RED);
-            green && green.addEventListener('click', () => this.setActiveColor('green'));
-            amber && amber.addEventListener('click', () => this.setActiveColor('amber'));
-            red && red.addEventListener('click', () => this.setActiveColor('red'));
+            // Subscribe to pub/sub event for confidence color changes
+            const onConfidenceChanged = (e) => {
+                try {
+                    const color = e && e.detail ? e.detail.color : null;
+                    this.setActiveColor(color);
+                } catch (_) { /* noop */ }
+            };
+            if (typeof window !== 'undefined' && window.addEventListener) {
+                window.addEventListener('playtime:confidence-changed', onConfidenceChanged);
+            } else if (typeof document !== 'undefined' && document.addEventListener) {
+                document.addEventListener('playtime:confidence-changed', onConfidenceChanged);
+            }
 
             // Mouse interactions on the canvas
             const updateOverlayFromPoint = (point) => {
