@@ -205,6 +205,36 @@ body {
     /* padding controlled by responsive rules at the end of file */
 }
 
+/* Selection overlay base styles (JS toggles visibility) */
+.selection-overlay {
+    position: absolute;
+    z-index: 10;
+    box-sizing: border-box;
+    border: 2px dashed rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.08);
+    pointer-events: none;
+}
+
+/* Highlight base + color variants (the module sets data-color) */
+.highlight {
+    position: absolute;
+    border-width: 2px;
+    border-style: solid;
+}
+.highlight[data-color="green"] {
+    border-color: hsl(var(--practice-confident));
+    background-color: hsl(var(--practice-confident) / 0.15);
+}
+.highlight[data-color="amber"] {
+    border-color: hsl(var(--practice-unsure));
+    background-color: hsl(var(--practice-unsure) / 0.15);
+}
+.highlight[data-color="red"],
+.highlight:not([data-color]) {
+    border-color: hsl(var(--practice-needs-work));
+    background-color: hsl(var(--practice-needs-work) / 0.15);
+}
+
 /* Non-breaking status message placement inside viewer */
 .pdf-viewer-container .status-message {
     position: absolute;

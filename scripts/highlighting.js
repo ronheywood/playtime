@@ -65,15 +65,27 @@
             viewer.appendChild(overlay);
         }
         // Normalize required styles whether newly created or pre-existing in DOM
-    overlay.style.display = overlay.style.display || 'none';
+        overlay.style.display = overlay.style.display || 'none';
+        // Visibility toggled via JS; presentation comes from CSS class
         overlay.style.position = 'absolute';
-        overlay.style.zIndex = '10'; // ensure it renders above the canvas
-    overlay.style.visibility = overlay.style.display === 'none' ? 'hidden' : 'visible';
-    overlay.style.opacity = overlay.style.display === 'none' ? '0' : '1';
-        overlay.style.boxSizing = 'border-box';
-        overlay.style.border = overlay.style.border || '2px dashed rgba(0,0,0,0.4)';
-        overlay.style.background = overlay.style.background || 'rgba(0,0,0,0.08)';
-        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '10';
+        overlay.style.visibility = overlay.style.display === 'none' ? 'hidden' : 'visible';
+        overlay.style.opacity = overlay.style.display === 'none' ? '0' : '1';
+        // Fallbacks if CSS not loaded (e.g., unit tests): only apply if computed styles are missing
+        try {
+            const win = (viewer && viewer.ownerDocument && viewer.ownerDocument.defaultView) || window;
+            const cs = win && win.getComputedStyle ? win.getComputedStyle(overlay) : null;
+            const noBorder = !cs || cs.borderStyle === 'none' || cs.borderWidth === '0px';
+            const noBg = !cs || cs.backgroundColor === 'rgba(0, 0, 0, 0)' || cs.backgroundColor === 'transparent' || cs.backgroundColor === '';
+            if (noBorder) overlay.style.border = '2px dashed rgba(0,0,0,0.4)';
+            if (noBg) overlay.style.background = 'rgba(0,0,0,0.08)';
+        } catch (_) {
+            // Safe fallback if getComputedStyle unavailable
+            overlay.style.border = overlay.style.border || '2px dashed rgba(0,0,0,0.4)';
+            overlay.style.background = overlay.style.background || 'rgba(0,0,0,0.08)';
+        }
+        overlay.style.boxSizing = overlay.style.boxSizing || 'border-box';
+        overlay.style.pointerEvents = overlay.style.pointerEvents || 'none';
         return overlay;
     }
 
@@ -88,13 +100,27 @@
         el.style.top = rect.top + 'px';
         el.style.width = rect.width + 'px';
         el.style.height = rect.height + 'px';
-        const styles = (config && config.CSS && config.CSS.COLOR_STYLES && config.CSS.COLOR_STYLES[appliedColor])
-            || DEFAULT_CONFIG.CSS.COLOR_STYLES[appliedColor]
-            || DEFAULT_CONFIG.CSS.COLOR_STYLES.red;
-        el.style.border = styles.border;
-        el.style.background = styles.background;
         el.tabIndex = 0;
         viewer.appendChild(el);
+        // Presentation (border/background) provided by CSS via [data-color].
+        // Apply color-aware fallback only if computed styles are missing.
+        try {
+            const win = (viewer && viewer.ownerDocument && viewer.ownerDocument.defaultView) || window;
+            const cs = win && win.getComputedStyle ? win.getComputedStyle(el) : null;
+            const noBorder = !cs || cs.borderStyle === 'none' || cs.borderWidth === '0px';
+            const noBg = !cs || cs.backgroundColor === 'rgba(0, 0, 0, 0)' || cs.backgroundColor === 'transparent' || cs.backgroundColor === '';
+            if (noBorder || noBg) {
+                const map = DEFAULT_CONFIG.CSS.COLOR_STYLES || {};
+                const styleForColor = map[appliedColor] || map.red || { border: '2px solid rgba(255,0,0,0.6)', background: 'rgba(255,0,0,0.15)' };
+                if (noBorder) el.style.border = styleForColor.border;
+                if (noBg) el.style.background = styleForColor.background;
+            }
+        } catch (_) {
+            const map = DEFAULT_CONFIG.CSS.COLOR_STYLES || {};
+            const styleForColor = map[appliedColor] || map.red || { border: '2px solid rgba(255,0,0,0.6)', background: 'rgba(255,0,0,0.15)' };
+            if (!el.style.border) el.style.border = styleForColor.border;
+            if (!el.style.background) el.style.background = styleForColor.background;
+        }
         return el;
     }
 
