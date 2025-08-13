@@ -127,7 +127,7 @@
             el.style.top = (canvasOffsetTop + yPct * cRect.height) + 'px';
             el.style.width = (wPct * cRect.width) + 'px';
             el.style.height = (hPct * cRect.height) + 'px';
-        } catch (_) {
+        } catch (err) {
             // Fallback to the provided rect if geometry fails
             el.style.left = rect.left + 'px';
             el.style.top = rect.top + 'px';
@@ -156,23 +156,34 @@
         return el;
     }
 
-    function repositionHighlight(el, viewer, canvas) {
+    function repositionHighlight(el, viewer, canvas, logger = console) {
         if (!el || !viewer || !canvas) return;
         const xPct = parseFloat(el.dataset.hlXPct || 'NaN');
         const yPct = parseFloat(el.dataset.hlYPct || 'NaN');
         const wPct = parseFloat(el.dataset.hlWPct || 'NaN');
         const hPct = parseFloat(el.dataset.hlHPct || 'NaN');
-        if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || !Number.isFinite(wPct) || !Number.isFinite(hPct)) return;
+        
+        if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || !Number.isFinite(wPct) || !Number.isFinite(hPct)) {
+            return;
+        }
         try {
             const vRect = viewer.getBoundingClientRect();
             const cRect = canvas.getBoundingClientRect();
             const canvasOffsetLeft = cRect.left - vRect.left;
             const canvasOffsetTop = cRect.top - vRect.top;
-            el.style.left = (canvasOffsetLeft + xPct * cRect.width) + 'px';
-            el.style.top = (canvasOffsetTop + yPct * cRect.height) + 'px';
-            el.style.width = (wPct * cRect.width) + 'px';
-            el.style.height = (hPct * cRect.height) + 'px';
-        } catch (_) { /* noop */ }
+            
+            const newLeft = canvasOffsetLeft + xPct * cRect.width;
+            const newTop = canvasOffsetTop + yPct * cRect.height;
+            const newWidth = wPct * cRect.width;
+            const newHeight = hPct * cRect.height;
+            
+            el.style.left = newLeft + 'px';
+            el.style.top = newTop + 'px';
+            el.style.width = newWidth + 'px';
+            el.style.height = newHeight + 'px';
+        } catch (err) { 
+            logger.debug && logger.debug('repositionHighlight: error', err);
+        }
     }
 
     function getRelativePoint(container, clientX, clientY) {
@@ -190,7 +201,8 @@
             overlay: null,
             viewer: null,
             canvas: null,
-            logger: console
+            logger: console,
+            scheduler: null
         },
 
         setActiveColor(color) {
@@ -198,11 +210,24 @@
             this._state.activeColor = color || null;
         },
 
+        //TODO: Using a property setter for a strategy could be improved
+        setScheduler(scheduler) {
+            this._state.scheduler = scheduler;
+        },
+
         async init(config = {}, logger = console) {
             this._state.logger = logger || console;
             const cfg = this.CONFIG = {
                 ...DEFAULT_CONFIG,
                 SELECTORS: { ...DEFAULT_CONFIG.SELECTORS, ...(config.SELECTORS || {}) }
+            };
+            
+            // Store scheduler for resize handling (allows test override)
+            this._state.scheduler = config.scheduler || {
+                schedule: (callback) => {
+                    const raf = (cb) => (typeof window.requestAnimationFrame === 'function' ? window.requestAnimationFrame(cb) : setTimeout(cb, 0));
+                    return setTimeout(() => raf(() => raf(callback)), 0);
+                }
             };
             const viewer = document.querySelector(cfg.SELECTORS.VIEWER) || document.querySelector('.pdf-viewer-container');
             const canvas = document.querySelector(cfg.SELECTORS.CANVAS) || document.getElementById('pdf-canvas');
@@ -292,14 +317,27 @@
             canvas.addEventListener('mouseleave', (e) => { if (this._state.selecting) finish(e); });
 
             // Reposition highlights when window resizes (canvas recenters/scales)
-            const onResize = () => {
+            let resizeTimer = null;
+            const doReposition = () => {
                 try {
                     const list = viewer.querySelectorAll(this.CONFIG.SELECTORS.HIGHLIGHT);
-                    list.forEach((el) => repositionHighlight(el, viewer, canvas));
-                } catch (_) { /* noop */ }
+                    list.forEach((el) => repositionHighlight(el, viewer, canvas, this._state.logger));
+                } catch (err) { 
+                    this._state.logger.debug && this._state.logger.debug('doReposition: error', err);
+                }
+            };
+            const onResize = () => {
+                // Throttle bursts and ensure we run after layout settles
+                if (resizeTimer) clearTimeout(resizeTimer);
+                resizeTimer = this._state.scheduler.schedule(doReposition);
             };
             if (typeof window !== 'undefined' && window.addEventListener) {
                 window.addEventListener('resize', onResize);
+                // App-driven layout changes (e.g., zoom) can fire this custom event
+                try {
+                    const evName = (CONST && CONST.EVENTS && CONST.EVENTS.LAYOUT_CHANGED) ? CONST.EVENTS.LAYOUT_CHANGED : 'playtime:layout-changed';
+                    window.addEventListener(evName, onResize);
+                } catch (_) { /* noop */ }
             }
 
             return Promise.resolve();
@@ -316,7 +354,7 @@
             const v = this._state.viewer;
             const c = this._state.canvas;
             if (!v || !c) return;
-            this.getHighlights().forEach((el) => repositionHighlight(el, v, c));
+            this.getHighlights().forEach((el) => repositionHighlight(el, v, c, this._state.logger));
         },
         focusOnSection() { return Promise.resolve(); }
     };

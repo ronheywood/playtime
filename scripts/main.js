@@ -460,11 +460,34 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         }
+        // Helper to publish a layout-changed event so dependent modules (e.g., highlighting) can react
+        const publishLayoutChangedNow = () => {
+            try {
+                const events = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS)
+                    ? window.PlayTimeConstants.EVENTS
+                    : (function(){ try { return require('./constants').EVENTS; } catch(_) { return { LAYOUT_CHANGED: 'playtime:layout-changed' }; } })();
+                const ev = new CustomEvent(events.LAYOUT_CHANGED || 'playtime:layout-changed');
+                window.dispatchEvent(ev);
+            } catch (_) { /* noop */ }
+        };
+        const publishLayoutChanged = () => {
+            const raf = (cb) => (typeof window.requestAnimationFrame === 'function' ? window.requestAnimationFrame(cb) : setTimeout(cb, 0));
+            // Allow one or two frames for layout to settle after zoom
+            raf(() => raf(() => publishLayoutChangedNow()));
+        };
         if (zoomInBtn) {
-            zoomInBtn.addEventListener('click', () => { window.PlayTimePDFViewer?.zoomIn(); updateZoomDisplay(); });
+            zoomInBtn.addEventListener('click', () => {
+                window.PlayTimePDFViewer?.zoomIn();
+                updateZoomDisplay();
+                publishLayoutChanged();
+            });
         }
         if (zoomOutBtn) {
-            zoomOutBtn.addEventListener('click', () => { window.PlayTimePDFViewer?.zoomOut(); updateZoomDisplay(); });
+            zoomOutBtn.addEventListener('click', () => {
+                window.PlayTimePDFViewer?.zoomOut();
+                updateZoomDisplay();
+                publishLayoutChanged();
+            });
         }
         updateZoomDisplay();
         

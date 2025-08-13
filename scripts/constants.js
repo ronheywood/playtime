@@ -2,6 +2,7 @@
 
 const EVENTS = {
   CONFIDENCE_CHANGED: 'playtime:confidence-changed',
+  LAYOUT_CHANGED: 'playtime:layout-changed',
 };
 
 // Use data-role selectors for behavior wiring
