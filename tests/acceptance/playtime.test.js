@@ -5,6 +5,7 @@
 
 const { SCORE_LIST_CONFIG } = require('../../scripts/score-list');
 const { CONFIG } = require('../../scripts/main');
+const { SELECTORS } = require('../../scripts/constants');
 
 describe('PlayTime Music Practice App', () => {
     beforeAll(async () => {
@@ -12,38 +13,12 @@ describe('PlayTime Music Practice App', () => {
     });
 
     beforeEach(async () => {
-        // Clean up first
-        document.head.innerHTML = '';
-        document.body.innerHTML = '';
-        
-        // Load the app HTML content and set up DOM properly
-        const fs = require('fs');
-        const path = require('path');
-        let htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
-        
-        // Remove script tags to prevent interference in test environment
-        htmlContent = htmlContent.replace(/<script[^>]*>.*?<\/script>/gi, '');
-        htmlContent = htmlContent.replace(/<script[^>]*\/>/gi, '');
-        
-        // Extract head and body content from the HTML file manually
-        const headMatch = htmlContent.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-        const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-        
-        if (headMatch) {
-            document.head.innerHTML = headMatch[1];
-        }
-        
-        if (bodyMatch) {
-            document.body.innerHTML = bodyMatch[1];
-        }
-        
-        // Verify DOM elements are present BEFORE continuing
-        const pdfCanvas = document.querySelector('#pdf-canvas');
+        // Use global test DOM from tests/setup.js
+        const pdfCanvas = document.querySelector(SELECTORS.CANVAS) || document.querySelector('#pdf-canvas');
         const fileInput = document.querySelector('input[type="file"]');
-        const pdfViewer = document.querySelector('.pdf-viewer-container');
-        
+        const pdfViewer = document.querySelector(SELECTORS.VIEWER) || document.querySelector('.pdf-viewer-container');
         if (!pdfCanvas || !fileInput || !pdfViewer) {
-            throw new Error(`🚨 TEST SETUP FAILED: Missing required elements. Canvas: ${!!pdfCanvas}, Input: ${!!fileInput}, Viewer: ${!!pdfViewer}`);
+            throw new Error('🚨 TEST SETUP FAILED: Missing required elements');
         }
         
         // Use the real in-memory database implementation for acceptance tests
@@ -72,10 +47,9 @@ describe('PlayTime Music Practice App', () => {
     const Highlighting = require('../../scripts/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
         
-        // Setup score list component
-        const createPlayTimeScoreList = require('../../scripts/score-list').createPlayTimeScoreList;
-        const SCORE_LIST_CONFIG = require('../../scripts/score-list').SCORE_LIST_CONFIG;
-        global.window.createPlayTimeScoreList = createPlayTimeScoreList;
+    // Setup score list component
+    const { createPlayTimeScoreList } = require('../../scripts/score-list');
+    global.window.createPlayTimeScoreList = createPlayTimeScoreList;
         
         // Setup logger for main.js
         const logger = require('../../scripts/logger');
@@ -83,22 +57,20 @@ describe('PlayTime Music Practice App', () => {
         // Set logger to silent for tests
         logger.setSilent(true);
         
-        // Load and execute the main application script
-        const mainJsPath = path.join(__dirname, '../../scripts/main.js');
-        const mainJsContent = fs.readFileSync(mainJsPath, 'utf8');
-        eval(mainJsContent);
+    // Require main.js once; it registers a DOMContentLoaded handler
+        // Removed duplicate inner requires for SELECTORS
+    require('../../scripts/main');
         
         // Trigger DOMContentLoaded event to initialize the app
         const domContentLoadedEvent = new Event('DOMContentLoaded');
         document.dispatchEvent(domContentLoadedEvent);
         
         // Wait for initialization to complete
-        await new Promise(resolve => setTimeout(resolve, 10));
         
-        // Verify elements still exist AFTER app initialization
-        const postInitCanvas = document.querySelector('#pdf-canvas');
-        const postInitInput = document.querySelector('input[type="file"]');
-        const postInitViewer = document.querySelector('.pdf-viewer-container');
+    // Verify elements still exist AFTER app initialization
+    const postInitCanvas = document.querySelector(SELECTORS.CANVAS) || document.querySelector('#pdf-canvas');
+    const postInitInput = document.querySelector('input[type="file"]');
+    const postInitViewer = document.querySelector(SELECTORS.VIEWER) || document.querySelector('.pdf-viewer-container');
         
         if (!postInitCanvas || !postInitInput || !postInitViewer) {
             throw new Error(`🚨 POST-INIT TEST SETUP FAILED: Elements disappeared after app init. Canvas: ${!!postInitCanvas}, Input: ${!!postInitInput}, Viewer: ${!!postInitViewer}`);
@@ -133,8 +105,9 @@ describe('PlayTime Music Practice App', () => {
                 fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                 
                 // Assert - Check if PDF canvas and viewer are present (these will fail until we implement them)
-                const pdfCanvas = document.querySelector('#pdf-canvas');
-                const pdfViewer = document.querySelector('.pdf-viewer-container');
+                const { SELECTORS } = require('../../scripts/constants');
+                const pdfCanvas = document.querySelector(SELECTORS.CANVAS) || document.querySelector('#pdf-canvas');
+                const pdfViewer = document.querySelector(SELECTORS.VIEWER) || document.querySelector('.pdf-viewer-container');
                 expect(pdfCanvas).toBeTruthy();
                 expect(pdfViewer?.textContent).toContain('sample-score.pdf');
             });
@@ -307,7 +280,7 @@ describe('PlayTime Music Practice App', () => {
                 }
 
                 // Assert
-                const pdfCanvas = document.querySelector('#pdf-canvas');
+                const pdfCanvas = document.querySelector(SELECTORS.CANVAS) || document.querySelector('#pdf-canvas');
                 expect(pdfCanvas).toBeTruthy();
                 expect(currentScoreTitle).toBeTruthy();
                 expect(currentScoreTitle.textContent).toContain('another-score.pdf');
@@ -327,11 +300,11 @@ describe('PlayTime Music Practice App', () => {
         describe('User Story 2.1: View PDF Score', () => {
             test('As a musician, I want to view the pages of my selected PDF score clearly on the screen', async () => {
                 // Assert
-                const pdfCanvas = document.querySelector('#pdf-canvas');
+                const pdfCanvas = document.querySelector(SELECTORS.CANVAS) || document.querySelector('#pdf-canvas');
                 expect(pdfCanvas).toBeTruthy();
                 
                 // Check that the canvas has content (not empty)
-                const canvas = document.getElementById('pdf-canvas');
+                const canvas = document.querySelector(SELECTORS.CANVAS) || document.getElementById('pdf-canvas');
                 const ctx = canvas.getContext('2d');
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const canvasHasContent = imageData.data.some(pixel => pixel !== 0);
@@ -342,7 +315,7 @@ describe('PlayTime Music Practice App', () => {
                 // Assert navigation controls exist
                 const prevPageBtn = document.querySelector('#prev-page-btn');
                 const nextPageBtn = document.querySelector('#next-page-btn');
-                const pageInfo = document.querySelector('#page-info');
+                const pageInfo = document.querySelector(SELECTORS.PAGE_INFO) || document.querySelector('#page-info');
                 
                 expect(prevPageBtn).toBeTruthy();
                 expect(nextPageBtn).toBeTruthy();
@@ -386,7 +359,7 @@ describe('PlayTime Music Practice App', () => {
             test('As a musician, I want to hide UI distractions to focus on the score', async () => {
                 // Arrange
                 const focusModeBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN);
-                const sidebar = document.querySelector('.sidebar');
+                const sidebar = document.querySelector(SELECTORS.SIDEBAR) || document.querySelector('.sidebar');
                 expect(focusModeBtn).toBeTruthy();
                 expect(sidebar).toBeTruthy();
 
@@ -421,7 +394,7 @@ describe('PlayTime Music Practice App', () => {
                 expect(canvas.height).toBe(h);
 
                 // Act - exit focus
-                const exitBtn = document.getElementById('exit-focus-btn');
+                const exitBtn = document.querySelector(SELECTORS.EXIT_FOCUS_BTN) || document.getElementById('exit-focus-btn');
                 exitBtn?.click();
                 await new Promise(r => setTimeout(r, 30));
 
@@ -582,7 +555,7 @@ describe('PlayTime Music Practice App', () => {
                 expect(pdfCanvas.getAttribute('data-focus-mode')).toBe('active');
 
                 // 4. Exit button should become visible, focus button should hide
-                const exitFocusBtn = document.querySelector('#exit-focus-btn');
+                const exitFocusBtn = document.querySelector(SELECTORS.EXIT_FOCUS_BTN) || document.querySelector('#exit-focus-btn');
                 expect(exitFocusBtn).toBeTruthy();
                 expect(exitFocusBtn?.style.display).not.toBe('none');
                 expect(focusSectionBtn?.style.display).toBe('none');

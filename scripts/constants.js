@@ -13,13 +13,17 @@ const SELECTORS = {
   COLOR_GREEN: '[data-role="color-green"]',
   COLOR_AMBER: '[data-role="color-amber"]',
   COLOR_RED: '[data-role="color-red"]',
+  PAGE_INFO: '[data-role="page-info"]',
+  SIDEBAR: '[data-role="sidebar"]',
+  FOCUS_SECTION_BTN: '#focus-section-btn',
+  EXIT_FOCUS_BTN: '#exit-focus-btn',
 };
 
 const PT_CONSTANTS = { EVENTS, SELECTORS };
 
 // CommonJS export
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = PT_CONSTANTS;
+  module.exports = {SELECTORS, EVENTS, PT_CONSTANTS};
 }
 
 // Browser global

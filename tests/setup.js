@@ -116,10 +116,15 @@ beforeEach(() => {
                 <div id="scores-list"></div>
             </section>
             <section id="viewer-section">
+                <aside class="sidebar" data-role="sidebar"></aside>
                 <div class="viewer-controls">
                     <button id="prev-page-btn">◀</button>
-                    <span id="page-info">Page 1 of 1</span>
+                    <span id="page-info" data-role="page-info">Page 1 of 1</span>
                     <button id="next-page-btn">▶</button>
+                    <button data-role="zoom-in">+</button>
+                    <button data-role="zoom-out">-</button>
+                    <span data-role="zoom-display"></span>
+                    <button data-role="toggle-focus-mode" aria-pressed="false"></button>
                     <div data-role="current-score-title" class="current-score-title"></div>
                 </div>
                 <div class="pdf-viewer-container" data-role="pdf-viewer">
