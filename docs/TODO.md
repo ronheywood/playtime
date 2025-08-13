@@ -46,7 +46,7 @@
 - [x] **3.1 Distraction-Free Mode** (Remove UI elements so the musician is not distracted)
 
 #### Activity 4: Practice Marked Sections
-- [ ] **4.1 Highlight Sections** (Drawing interface + color coding)
+- [x] **4.1 Highlight Sections** (Drawing interface + color coding)
 - [ ] **4.2 Persist Highlights** (Save/load highlights)
 - [ ] **4.3 Focus on Highlighted Section** (Zoom/crop functionality)
 
@@ -76,9 +76,9 @@
 
 ### Phase 3: Section Highlighting
 - [ ] **Drawing Interface** (scripts/highlighting.js)
-  - [ ] Mouse/touch rectangle selection on PDF canvas
-  - [ ] Visual feedback during selection (`.selection-overlay`)
-  - [ ] Color coding system (green/amber/red)
+  - [x] Mouse/touch rectangle selection on PDF canvas
+  - [x] Visual feedback during selection (`.selection-overlay`)
+  - [x] Color coding system (green/amber/red)
 
 - [ ] **Highlight Persistence**
   - [ ] Save highlights to IndexedDB with PDF reference
@@ -87,7 +87,7 @@
 
 ### Phase 4: Practice Features
 - [ ] **Section Focus Mode**
-  - [ ] Focus whole score (See todo-focus-mode.html for an example)
+  - [x] Focus whole score (See todo-focus-mode.html for an example)
   - [ ] Zoom/crop view to highlighted section
   - [ ] Exit focus mode back to full view
   - [ ] Section navigation (next/previous)
