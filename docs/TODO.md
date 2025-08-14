@@ -45,35 +45,6 @@
 #### Activity 3: Practice Score
 - [x] **3.1 Distraction-Free Mode** (Remove UI elements so the musician is not distracted)
 
-#### Activity 3.1: Layout Changed Command
-
-## Focus Mode Highlight Bug Fix - Clean Architecture Plan
-
-### 🎯 Problem Analysis
-- **Root Issue**: Focus Mode transforms canvas but highlights don't reposition
-- **Current State**: No layout-changed events fired during focus mode transitions
-- **Architecture Goal**: Clean command/event separation with proper async handling
-
-### 📋 Step-by-Step Implementation Plan
-
-#### Step 1: Test-Driven Development - Assert Event Dispatch
-- [x] **Design change layout command**: `changeLayout(type, options)` - fire and forget
-- [x] **Extract the direct DOM manipulation from Focus Mode click event handler to a new class, and invoke it inline - This will later become the command handler, but will preserve functionality for now - safe refactoring
-- [c] **Write failing test**: Focus mode toggle should dispatch layout-changed command
-- [c] **Verify current behavior**: Test fails because no event is dispatched
-- [c] **Simple implementation**: Add direct event dispatch to focus mode functions
-- [c] **Green test**: Basic event firing works - the focus mode behavior is still procedural
-
-#### Step 2: Proper Command/Event Architecture
-- [ ] **Command handler**: The extracted class subscribes to the command animations and async transitions are no longer directly invoked by the focus mode buttons click event
-- [ ] **Event dispatch**: Fire `layout-changed` AFTER animations complete
-
-#### Step 3: Highlight Subscription to Events
-- [ ] **Subscribe highlights**: Listen to `layout-changed` events (not commands)
-- [ ] **Decouple positioning**: Highlights don't know about focus mode, just react to layout changes
-- [ ] **Window resize integration**: Ensure resize also uses the same event system
-- [ ] **Test end-to-end**: Full UAT scenario works properly
-
 #### Activity 4: Practice Marked Sections
 - [x] **4.1 Highlight Sections** (Drawing interface + color coding)
 - [ ] **4.2 Persist Highlights** (Save/load highlights)
@@ -104,7 +75,7 @@
   - [ ] Delete/manage existing scores
 
 ### Phase 3: Section Highlighting
-- [ ] **Drawing Interface** (scripts/highlighting.js)
+- [x] **Drawing Interface** (scripts/highlighting.js)
   - [x] Mouse/touch rectangle selection on PDF canvas
   - [x] Visual feedback during selection (`.selection-overlay`)
   - [x] Color coding system (green/amber/red)
