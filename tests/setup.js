@@ -3,6 +3,24 @@
  * Simple JSDOM-based setup for rapid prototyping
  */
 
+// Polyfill CustomEvent for Node/JSDOM environments where it's missing
+// Keep minimal surface: tests only assert .type and .detail
+if (typeof global.CustomEvent !== 'function') {
+    try {
+        global.CustomEvent = function CustomEvent(event, params) {
+            params = params || { bubbles: false, cancelable: false, detail: undefined };
+            if (typeof document !== 'undefined' && document.createEvent) {
+                try {
+                    const evt = document.createEvent('CustomEvent');
+                    evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+                    return evt;
+                } catch (_) { /* fall through */ }
+            }
+            return { type: event, detail: params.detail, bubbles: !!params.bubbles, cancelable: !!params.cancelable };
+        };
+    } catch (_) { /* noop - tests will fail loudly if this breaks */ }
+}
+
 // Mock IndexedDB for testing
 global.indexedDB = {
     open: jest.fn(() => {
