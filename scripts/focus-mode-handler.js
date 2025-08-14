@@ -14,6 +14,57 @@ class FocusModeHandler {
         this.toggleBtn = elements.toggleBtn;
     }
 
+    // Internal: resolve the custom layout-changed event name
+    _layoutChangedEventName(win) {
+        return (win && win.PlayTimeConstants && win.PlayTimeConstants.EVENTS && win.PlayTimeConstants.EVENTS.LAYOUT_CHANGED)
+            ? win.PlayTimeConstants.EVENTS.LAYOUT_CHANGED
+            : 'playtime:layout-changed';
+    }
+
+    // Internal: safe creation + dispatch of layout changed (with fallback to resize)
+    _dispatchLayoutChanged(detail = {}) {
+        try {
+            const win = typeof window !== 'undefined' ? window : null;
+            if (!win || !win.dispatchEvent) return;
+            const evName = this._layoutChangedEventName(win);
+            let ev;
+            try { ev = new Event(evName); } catch(_) {
+                try { ev = document.createEvent('Event'); ev.initEvent(evName, true, true); } catch(__) { ev = null; }
+            }
+            if (ev) {
+                ev.detail = Object.assign({ source: 'focus-mode' }, detail);
+                win.dispatchEvent(ev);
+            } else {
+                try { win.dispatchEvent(new Event('resize')); } catch(___) { /* noop */ }
+            }
+        } catch(_) { /* non-fatal */ }
+    }
+
+    // Internal: schedule a dispatch after either a transition end (if provided) or next frame
+    _scheduleLayoutDispatch({ waitForTransition = false, transitionTarget = null, timeoutMs = 200, detail = {} } = {}) {
+        const win = (typeof window !== 'undefined') ? window : null;
+        if (!win) return;
+        let fired = false;
+        const fire = () => { if (!fired) { fired = true; this._dispatchLayoutChanged(detail); } };
+        if (waitForTransition && transitionTarget && transitionTarget.addEventListener) {
+            const onEnd = (e) => {
+                if (!e || e.propertyName === 'transform') {
+                    transitionTarget.removeEventListener('transitionend', onEnd);
+                    fire();
+                }
+            };
+            transitionTarget.addEventListener('transitionend', onEnd, { once: true });
+            setTimeout(fire, timeoutMs); // fallback
+        } else {
+            // schedule after paint so style mutations settle
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(() => setTimeout(fire, 0));
+            } else {
+                setTimeout(fire, 0);
+            }
+        }
+    }
+
     /**
      * Apply fallback focus when no highlight is selected
      * Scales canvas to fit within viewer container
@@ -30,6 +81,9 @@ class FocusModeHandler {
         this.canvas.style.transformOrigin = 'center center';
         this.canvas.style.transform = `scale(${scale})`;
         this.canvas.style.transition = 'transform 0.15s ease';
+
+    // Schedule layout changed dispatch (will fire after transform transition)
+    this._scheduleLayoutDispatch({ waitForTransition: true, transitionTarget: this.canvas, timeoutMs: 200, detail: { scale } });
 
     }
 
@@ -87,6 +141,9 @@ class FocusModeHandler {
             this.toggleBtn.setAttribute('aria-pressed', 'false');
             this.toggleBtn.classList.remove('active');
         }
+
+    // Notify highlighting / layout listeners that layout changed after exit (scale returns to 1)
+    this._scheduleLayoutDispatch({ waitForTransition: false, detail: { phase: 'exit', scale: 1 } });
     }
 
     /**

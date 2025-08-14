@@ -153,4 +153,59 @@ describe('Focus Mode Handler', () => {
         // Assert
         expect(mockElements.canvas.removeAttribute).toHaveBeenCalledWith('data-focus-mode');
     });
+
+    test('applyFocusLayout dispatches layout-changed event after transition', (done) => {
+        // Arrange
+        const events = [];
+        global.window = {
+            PlayTimeConstants: { EVENTS: { LAYOUT_CHANGED: 'playtime:layout-changed' } },
+            dispatchEvent: (ev) => { events.push(ev); },
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn()
+        };
+        // Simulate transitionend after a short delay
+        mockElements.canvas.addEventListener = (name, handler) => {
+            if (name === 'transitionend') {
+                setTimeout(() => handler({ propertyName: 'transform' }), 10);
+            }
+        };
+        mockElements.canvas.removeEventListener = jest.fn();
+
+        // Act
+        focusHandler.applyFocusLayout();
+
+        setTimeout(() => {
+            try {
+                expect(events.some(e => e.type === 'playtime:layout-changed')).toBe(true);
+                done();
+            } catch (err) { done(err); }
+        }, 50);
+    });
+
+    test('exitFocusMode dispatches layout-changed event after restoring layout', (done) => {
+        // Arrange
+        const events = [];
+        global.window = {
+            PlayTimeConstants: { EVENTS: { LAYOUT_CHANGED: 'playtime:layout-changed' } },
+            dispatchEvent: (ev) => { events.push(ev); },
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn()
+        };
+        global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+        mockElements.canvas.getAttribute.mockReturnValue('active');
+        focusHandler.enterFocusMode(); // ensure we are in focus mode
+
+        // Act
+        focusHandler.exitFocusMode();
+
+        setTimeout(() => {
+            try {
+                const dispatched = events.filter(e => e.type === 'playtime:layout-changed');
+                expect(dispatched.length).toBeGreaterThan(0);
+                const last = dispatched[dispatched.length - 1];
+                expect(last.detail && last.detail.phase).toBe('exit');
+                done();
+            } catch (err) { done(err); }
+        }, 30);
+    });
 });
