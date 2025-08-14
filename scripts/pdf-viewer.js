@@ -135,7 +135,8 @@ function createPlayTimePDFViewer(logger = console) {
         getTotalPages: function() { return totalPages; },
         
         updatePageInfo: function() {
-            const pageInfo = document.querySelector('#page-info');
+            const roleSelector = (window.PlayTimeConstants && window.PlayTimeConstants.SELECTORS && window.PlayTimeConstants.SELECTORS.PAGE_INFO) || '[data-role="page-info"]';
+            const pageInfo = document.querySelector(roleSelector);
             if (pageInfo) { pageInfo.textContent = `Page ${currentPage} of ${totalPages}`; }
         },
         

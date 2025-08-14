@@ -27,8 +27,9 @@ const CONFIG = {
     SELECTORS: {
         FILE_INPUT: '#pdf-upload',
         PDF_VIEWER: '.pdf-viewer-container',
-        PREV_BUTTON: '#prev-page-btn',
-        NEXT_BUTTON: '#next-page-btn',
+        PREV_BUTTON: '[data-role="prev-page"]',
+        NEXT_BUTTON: '[data-role="next-page"]',
+        PAGE_INFO: '[data-role="page-info"]',
         STATUS_MESSAGE: '.status-message',
         SCORES_LIST: '#scores-list',
         CURRENT_SCORE_TITLE: '[data-role="current-score-title"]',
@@ -185,7 +186,6 @@ async function initializeFileUpload(database = null) {
  * @returns {void}
  */
 function initializePageNavigation(pdfViewer = null) {
-    // Use configuration for button selectors
     const prevPageBtn = document.querySelector(CONFIG.SELECTORS.PREV_BUTTON);
     const nextPageBtn = document.querySelector(CONFIG.SELECTORS.NEXT_BUTTON);
     

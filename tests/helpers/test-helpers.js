@@ -93,10 +93,10 @@ const TestHelpers = {
      */
     setupBasicDOM: () => {
         document.body.innerHTML = `
-            <div class="pdf-viewer-container">
-                <canvas id="pdf-canvas"></canvas>
+            <div class="pdf-viewer-container" data-role="pdf-viewer">
+                <canvas id="pdf-canvas" data-role="pdf-canvas"></canvas>
             </div>
-            <div id="page-info">Page 1 of 1</div>
+            <div id="page-info" data-role="page-info">Page 1 of 1</div>
         `;
     },
 
@@ -170,9 +170,9 @@ const TestHelpers = {
                 <canvas id="pdf-canvas"></canvas>
             </div>
             <div class="viewer-controls">
-                <button id="prev-page-btn" aria-label="Previous page">◀</button>
-                <span id="page-info">Page 1 of 1</span>
-                <button id="next-page-btn" aria-label="Next page">▶</button>
+                <button id="prev-page-btn" data-role="prev-page" aria-label="Previous page">◀</button>
+                <span id="page-info" data-role="page-info">Page 1 of 1</span>
+                <button id="next-page-btn" data-role="next-page" aria-label="Next page">▶</button>
             </div>
         `;
     },
@@ -190,9 +190,9 @@ const TestHelpers = {
                 <canvas id="pdf-canvas"></canvas>
             </div>
             <div class="viewer-controls">
-                <button id="prev-page-btn" aria-label="Previous page">◀</button>
-                <span id="page-info">Page 1 of 1</span>
-                <button id="next-page-btn" aria-label="Next page">▶</button>
+                <button id="prev-page-btn" data-role="prev-page" aria-label="Previous page">◀</button>
+                <span id="page-info" data-role="page-info">Page 1 of 1</span>
+                <button id="next-page-btn" data-role="next-page" aria-label="Next page">▶</button>
             </div>
         `;
     },
@@ -415,7 +415,7 @@ const TestHelpers = {
      * @param {number} totalPages - Expected total pages
      */
     assertPageInfoDisplay: (currentPage, totalPages) => {
-        const pageInfo = document.querySelector('#page-info');
+        const pageInfo = document.querySelector('[data-role="page-info"]');
         expect(pageInfo?.textContent).toBe(`Page ${currentPage} of ${totalPages}`);
     },
 

@@ -160,7 +160,7 @@ describe('PDF Rendering Integration', () => {
             initializePageNavigation(mockPDFViewer);
         }
 
-        const pageInfo = document.querySelector('#page-info');
+    const pageInfo = document.querySelector('[data-role="page-info"]');
 
         // Verify initial state
         expect(mockPDFViewer.getCurrentPage()).toBe(TEST_CONSTANTS.FIRST_PAGE);

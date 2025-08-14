@@ -85,8 +85,8 @@ describe('Main helpers', () => {
     // stub document.querySelector to return our buttons
     const realQS = global.document.querySelector;
     global.document.querySelector = (sel) => {
-      if (sel === '#prev-page-btn') return prevBtn;
-      if (sel === '#next-page-btn') return nextBtn;
+      if (sel === '[data-role="prev-page"]') return prevBtn;
+      if (sel === '[data-role="next-page"]') return nextBtn;
       return null;
     };
 
