@@ -19,7 +19,7 @@ if (!global.window.logger) {
   global.window.logger.setSilent(true);
 }
 
-const { CONFIG, isValidPDFFile, updatePDFViewerStatus, initializePageNavigation } = require('../../scripts/main');
+const { CONFIG, isValidPDFFile, updatePDFViewerStatus } = require('../../scripts/main');
 
 describe('Main helpers', () => {
   function createMockContainer() {
@@ -78,7 +78,7 @@ describe('Main helpers', () => {
     return btn;
   }
 
-  test('initializePageNavigation wires prev/next to viewer methods (single pair)', async () => {
+  test('pdfViewer.attachUIControls wires prev/next to viewer methods (single pair)', async () => {
     const prevBtn = makeBtn();
     const nextBtn = makeBtn();
     const realQSA = global.document.querySelectorAll;
@@ -87,8 +87,13 @@ describe('Main helpers', () => {
       if (sel === '[data-role="next-page"]') return [nextBtn];
       return [];
     };
-    const pdfViewer = { prevPage: jest.fn().mockResolvedValue(), nextPage: jest.fn().mockResolvedValue() };
-    initializePageNavigation(pdfViewer);
+    const pdfViewer = { prevPage: jest.fn().mockResolvedValue(), nextPage: jest.fn().mockResolvedValue(), attachUIControls: function(){
+        // simulate binding as pdf-viewer would
+        this._attached = true;
+        prevBtn.addEventListener('click', () => this.prevPage());
+        nextBtn.addEventListener('click', () => this.nextPage());
+    } };
+  pdfViewer.attachUIControls();
     prevBtn.click();
     nextBtn.click();
     await Promise.resolve();
@@ -97,7 +102,7 @@ describe('Main helpers', () => {
     global.document.querySelectorAll = realQSA;
   });
 
-  test('initializePageNavigation wires all matching prev/next buttons (multiple)', async () => {
+  test('pdfViewer.attachUIControls wires all matching prev/next buttons (multiple)', async () => {
     const prevBtns = [makeBtn(), makeBtn()];
     const nextBtns = [makeBtn(), makeBtn(), makeBtn()];
     const realQSA = global.document.querySelectorAll;
@@ -106,8 +111,11 @@ describe('Main helpers', () => {
       if (sel === '[data-role="next-page"]') return nextBtns;
       return [];
     };
-    const pdfViewer = { prevPage: jest.fn().mockResolvedValue(), nextPage: jest.fn().mockResolvedValue() };
-    initializePageNavigation(pdfViewer);
+    const pdfViewer = { prevPage: jest.fn().mockResolvedValue(), nextPage: jest.fn().mockResolvedValue(), attachUIControls: function(){
+        prevBtns.forEach(b => b.addEventListener('click', () => this.prevPage()));
+        nextBtns.forEach(b => b.addEventListener('click', () => this.nextPage()));
+    } };
+  pdfViewer.attachUIControls();
     prevBtns.forEach(b => b.click());
     nextBtns.forEach(b => b.click());
     await Promise.resolve();

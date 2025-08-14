@@ -137,7 +137,7 @@ describe('Logger Implementation', () => {
             expect(mainJs.isValidPDFFile).toBeInstanceOf(Function);
             expect(mainJs.updatePDFViewerStatus).toBeInstanceOf(Function);
             expect(mainJs.initializeFileUpload).toBeInstanceOf(Function);
-            expect(mainJs.initializePageNavigation).toBeInstanceOf(Function);
+            // initializePageNavigation was deprecated and removed; controls handled inside viewer
         });
 
         test('should have CONFIG object with all required sections', () => {
@@ -275,14 +275,5 @@ describe('Real-world Usage Scenarios', () => {
         expect(logger.warn).toHaveBeenCalledWith('Required elements not found');
     });
 
-    test('should demonstrate logging consistency across main.js functions', () => {
-        const { initializePageNavigation } = require('../../scripts/main.js');
-        
-        // Mock missing navigation buttons
-        global.document.querySelector.mockReturnValue(null);
-        
-        initializePageNavigation();
-        
-        expect(logger.warn).toHaveBeenCalledWith('Page navigation buttons not found');
-    });
+    // Removed test for deprecated initializePageNavigation wrapper.
 });

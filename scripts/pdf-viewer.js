@@ -31,6 +31,71 @@ function createPlayTimePDFViewer(logger = console) {
             }
             return Promise.resolve();
         },
+        /**
+         * Attach UI controls (navigation + zoom) using data-role selectors.
+         * This consolidates previously scattered initialization logic from main.js.
+         * Safe to call multiple times; existing listeners simply remain (idempotent for typical use).
+         */
+        attachUIControls: function() {
+            const doc = (typeof document !== 'undefined') ? document : null;
+            if (!doc) return;
+
+            // Selectors (kept local to reduce coupling; mirror main CONFIG)
+            const SEL = {
+                PREV: '[data-role="prev-page"]',
+                NEXT: '[data-role="next-page"]',
+                ZOOM_IN: '[data-role="zoom-in"]',
+                ZOOM_OUT: '[data-role="zoom-out"]',
+                ZOOM_DISPLAY: '[data-role="zoom-display"]'
+            };
+
+            const prevButtons = Array.from(doc.querySelectorAll(SEL.PREV));
+            const nextButtons = Array.from(doc.querySelectorAll(SEL.NEXT));
+            const zoomInButtons = Array.from(doc.querySelectorAll(SEL.ZOOM_IN));
+            const zoomOutButtons = Array.from(doc.querySelectorAll(SEL.ZOOM_OUT));
+            const zoomDisplays = Array.from(doc.querySelectorAll(SEL.ZOOM_DISPLAY));
+
+            const publishLayoutChangedNow = () => {
+                try {
+                    const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.LAYOUT_CHANGED) || 'playtime:layout-changed';
+                    window.dispatchEvent(new CustomEvent(evName));
+                } catch(_) {}
+            };
+            const publishLayoutChanged = () => {
+                const raf = (cb) => (typeof window.requestAnimationFrame === 'function' ? window.requestAnimationFrame(cb) : setTimeout(cb, 0));
+                raf(() => raf(() => publishLayoutChangedNow()));
+            };
+
+            const updateZoomDisplay = () => {
+                if (!zoomDisplays.length) return;
+                const z = this.getZoom();
+                zoomDisplays.forEach(d => { d.textContent = `${Math.round(z * 100)}%`; });
+                const bounds = this.getZoomBounds?.();
+                if (bounds) {
+                    const atMin = z <= bounds.min + 1e-9;
+                    const atMax = z >= bounds.max - 1e-9;
+                    zoomOutButtons.forEach(b => b && b.setAttribute('aria-disabled', atMin ? 'true' : 'false'));
+                    zoomInButtons.forEach(b => b && b.setAttribute('aria-disabled', atMax ? 'true' : 'false'));
+                }
+            };
+
+            // Navigation binding
+            const bindClick = (els, fn) => els.forEach(el => el && typeof el.addEventListener === 'function' && el.addEventListener('click', fn));
+            bindClick(prevButtons, async () => { try { await this.prevPage(); } catch(e){ logger.error('Failed prev page', e); } });
+            bindClick(nextButtons, async () => { try { await this.nextPage(); } catch(e){ logger.error('Failed next page', e); } });
+
+            // Zoom binding
+            bindClick(zoomInButtons, () => { this.zoomIn(); updateZoomDisplay(); publishLayoutChanged(); });
+            bindClick(zoomOutButtons, () => { this.zoomOut(); updateZoomDisplay(); publishLayoutChanged(); });
+
+            updateZoomDisplay();
+
+            if (!prevButtons.length && !nextButtons.length && !zoomInButtons.length && !zoomOutButtons.length) {
+                logger.warn('No PDF viewer UI controls found to attach');
+            } else {
+                logger.info(`PDF Viewer UI controls attached (prev:${prevButtons.length} next:${nextButtons.length} zoomIn:${zoomInButtons.length} zoomOut:${zoomOutButtons.length})`);
+            }
+        },
         
         loadPDF: async function(file) {
             try {

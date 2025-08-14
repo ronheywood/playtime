@@ -154,11 +154,7 @@ describe('PDF Rendering Integration', () => {
         await TestHelpers.setupPDFViewer(mockPDFViewer);
         await mockPDFViewer.loadPDF(mockFile);
 
-        TestHelpers.setupMainJSIntegration();
-        
-        if (typeof initializePageNavigation === 'function') {
-            initializePageNavigation(mockPDFViewer);
-        }
+    TestHelpers.setupMainJSIntegration(); // viewer now handles its own UI control attachment
 
     const pageInfo = document.querySelector('[data-role="page-info"]');
 

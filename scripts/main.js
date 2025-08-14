@@ -179,48 +179,8 @@ async function initializeFileUpload(database = null) {
     });
 }
 
-// Page Navigation Handler - Connect UI buttons to PDF viewer
-/**
- * Initialize prev/next navigation buttons for the PDF viewer.
- * @param {{ prevPage: Function, nextPage: Function }} pdfViewer - Viewer with navigation methods
- * @returns {void}
- */
-function initializePageNavigation(pdfViewer = null) {
-    // Support multiple navigation control clusters (e.g., sidebar + floating focus mode controls)
-    const prevButtons = Array.from((document.querySelectorAll && document.querySelectorAll(CONFIG.SELECTORS.PREV_BUTTON)) || []);
-    const nextButtons = Array.from((document.querySelectorAll && document.querySelectorAll(CONFIG.SELECTORS.NEXT_BUTTON)) || []);
-    
-    // resolve logger safely (supports Node tests and browser)
-    const log = (typeof window !== 'undefined' && window.logger)
-        ? window.logger
-        : (typeof logger !== 'undefined' ? logger : console);
-    
-    if (prevButtons.length === 0 || nextButtons.length === 0) {
-        log.warn('Page navigation buttons not found');
-        return;
-    }
-    
-    if (!pdfViewer || !pdfViewer.prevPage || !pdfViewer.nextPage) {
-        log.warn(CONFIG.MESSAGES.ERROR_NAVIGATION_UNAVAILABLE);
-        return;
-    }
-    
-    const bind = (collection, handlerFactory) => {
-        collection.forEach(btn => {
-            if (!btn || typeof btn.addEventListener !== 'function') return;
-            btn.addEventListener('click', handlerFactory());
-        });
-    };
-
-    bind(prevButtons, () => async () => {
-        try { await pdfViewer.prevPage(); } catch (error) { log.error('Failed to navigate to previous page:', error); }
-    });
-    bind(nextButtons, () => async () => {
-        try { await pdfViewer.nextPage(); } catch (error) { log.error('Failed to navigate to next page:', error); }
-    });
-
-    log.info(`Page navigation buttons initialized (prev: ${prevButtons.length}, next: ${nextButtons.length})`);
-}
+// NOTE: Navigation + zoom UI controls are now fully initialized inside the PDF viewer implementation
+// via pdfViewer.attachUIControls(). The previous initializePageNavigation() shim has been removed.
 
 // Initialize confidence controls (accessibility + UX)
 function initializeConfidenceControls() {
@@ -303,75 +263,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         await window.PlayTimePDFViewer.init();
+        // Attach navigation + zoom UI controls now that viewer is initialized
+        if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.attachUIControls === 'function') {
+            try {
+                window.PlayTimePDFViewer.attachUIControls();
+                (window.logger || console).info('PDF viewer UI controls attached');
+            } catch (e) {
+                (window.logger || console).warn('Failed attaching PDF viewer UI controls', e);
+            }
+        }
         if (window.PlayTimeHighlighting) {
             await window.PlayTimeHighlighting.init({}, appLogger);
         }
         
-        // Initialize page navigation buttons
-        initializePageNavigation(window.PlayTimePDFViewer);
-        
-        // Initialize confidence controls
-        initializeConfidenceControls();
-        
-        // Initialize focus mode with command architecture (replaces procedural approach)
+    // PDF viewer UI controls (navigation + zoom) are attached internally by the viewer module.
+
+    // Initialize confidence controls
+    initializeConfidenceControls();
+
+    // Initialize focus mode with command architecture (replaces procedural approach)
         if (typeof window.createPlayTimeFocusModeCommands === 'function') {
             window.PlayTimeFocusModeCommands = window.createPlayTimeFocusModeCommands();
             if (window.PlayTimeFocusModeCommands && window.PlayTimeFocusModeCommands.initializeFocusModeCommands) {
                 window.PlayTimeFocusModeCommands.initializeFocusModeCommands();
             }
         }
-        
-        /*
-        TODO: This inline script for zoom controls should be in the pdf-viewer.js
-        It should also be using a configuration object to specify the targets
-        for the querySelector.
-        */
-        const zoomInBtn = document.querySelector(CONFIG.SELECTORS.ZOOM_IN_BTN);
-        const zoomOutBtn = document.querySelector(CONFIG.SELECTORS.ZOOM_OUT_BTN);
-        const zoomDisplay = document.querySelector(CONFIG.SELECTORS.ZOOM_DISPLAY);
-        function updateZoomDisplay() {
-            if (window.PlayTimePDFViewer && zoomDisplay) {
-                const z = window.PlayTimePDFViewer.getZoom();
-                zoomDisplay.textContent = `${Math.round(z * 100)}%`;
-                const bounds = window.PlayTimePDFViewer.getZoomBounds?.();
-                if (bounds && zoomInBtn && zoomOutBtn) {
-                    const atMin = z <= bounds.min + 1e-9;
-                    const atMax = z >= bounds.max - 1e-9;
-                    zoomOutBtn.setAttribute('aria-disabled', atMin ? 'true' : 'false');
-                    zoomInBtn.setAttribute('aria-disabled', atMax ? 'true' : 'false');
-                }
-            }
-        }
-        // Helper to publish a layout-changed event so dependent modules (e.g., highlighting) can react
-        const publishLayoutChangedNow = () => {
-            try {
-                const events = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS)
-                    ? window.PlayTimeConstants.EVENTS
-                    : (function(){ try { return require('./constants').EVENTS; } catch(_) { return { LAYOUT_CHANGED: 'playtime:layout-changed' }; } })();
-                const ev = new CustomEvent(events.LAYOUT_CHANGED || 'playtime:layout-changed');
-                window.dispatchEvent(ev);
-            } catch (_) { /* noop */ }
-        };
-        const publishLayoutChanged = () => {
-            const raf = (cb) => (typeof window.requestAnimationFrame === 'function' ? window.requestAnimationFrame(cb) : setTimeout(cb, 0));
-            // Allow one or two frames for layout to settle after zoom
-            raf(() => raf(() => publishLayoutChangedNow()));
-        };
-        if (zoomInBtn) {
-            zoomInBtn.addEventListener('click', () => {
-                window.PlayTimePDFViewer?.zoomIn();
-                updateZoomDisplay();
-                publishLayoutChanged();
-            });
-        }
-        if (zoomOutBtn) {
-            zoomOutBtn.addEventListener('click', () => {
-                window.PlayTimePDFViewer?.zoomOut();
-                updateZoomDisplay();
-                publishLayoutChanged();
-            });
-        }
-        updateZoomDisplay();
         
         // Application ready
     } catch (error) {
@@ -387,8 +303,7 @@ if (typeof module !== 'undefined' && module.exports) {
         CONFIG,
         isValidPDFFile,
         updatePDFViewerStatus,
-    updateCurrentScoreTitleDisplay,
-        initializeFileUpload,
-        initializePageNavigation
+        updateCurrentScoreTitleDisplay,
+        initializeFileUpload
     };
 }
