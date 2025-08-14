@@ -66,7 +66,7 @@ describe('Focus Mode Command Integration', () => {
             mockElements.exitBtn.click();
             
             // Assert: Command event was dispatched
-            //expect(commandEvents).toHaveLength(1);
+            //TODO: expect(commandEvents).toHaveLength(1);
             expect(commandEvents[0]).toEqual({
                 type: 'focus-mode',
                 options: { action: 'exit' }
@@ -78,7 +78,7 @@ describe('Focus Mode Command Integration', () => {
             mockElements.toggleBtn.click();
             
             // Assert: Command event was dispatched
-            //expect(commandEvents).toHaveLength(1);
+            //TODO: expect(commandEvents).toHaveLength(1);
             expect(commandEvents[0]).toEqual({
                 type: 'focus-mode',
                 options: { action: 'toggle' }
@@ -94,7 +94,7 @@ describe('Focus Mode Command Integration', () => {
             document.dispatchEvent(escEvent);
             
             // Assert: Command event was dispatched
-            //expect(commandEvents).toHaveLength(1);
+            //TODO: expect(commandEvents).toHaveLength(1);
             expect(commandEvents[0]).toEqual({
                 type: 'focus-mode',
                 options: { action: 'exit' }

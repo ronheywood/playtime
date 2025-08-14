@@ -18,7 +18,7 @@ class FocusModeHandler {
      * Apply fallback focus when no highlight is selected
      * Scales canvas to fit within viewer container
      */
-    applyFallbackFocus() {
+    applyFocusLayout() {
         const viewerRect = this.viewerContainer.getBoundingClientRect();
         const baseW = this.canvas.width || this.canvas.clientWidth || 800;
         const baseH = this.canvas.height || this.canvas.clientHeight || 600;
@@ -30,6 +30,7 @@ class FocusModeHandler {
         this.canvas.style.transformOrigin = 'center center';
         this.canvas.style.transform = `scale(${scale})`;
         this.canvas.style.transition = 'transform 0.15s ease';
+
     }
 
     /**
@@ -52,29 +53,8 @@ class FocusModeHandler {
         // Prevent scrollbars fighting the transform
         this.viewerContainer.style.overflow = 'hidden';
         
-        if (!selected) {
-            this.applyFallbackFocus();
-        } else {
-            const rect = selected.getBoundingClientRect();
-            const canvasRect = this.canvas.getBoundingClientRect();
-            const viewerRect = this.viewerContainer.getBoundingClientRect();
-            const left = rect.width === 0 && rect.height === 0 ? parseFloat(selected.style.left) || 0 : rect.left - canvasRect.left;
-            const top = rect.width === 0 && rect.height === 0 ? parseFloat(selected.style.top) || 0 : rect.top - canvasRect.top;
-            const hWidth = rect.width || parseFloat(selected.style.width) || 1;
-            const hHeight = rect.height || parseFloat(selected.style.height) || 1;
-            const containerW = viewerRect.width || this.viewerContainer.clientWidth || this.canvas.width || 800;
-            const containerH = viewerRect.height || this.viewerContainer.clientHeight || this.canvas.height || 600;
-            const scale = Math.min(containerW / hWidth, containerH / hHeight) * 0.9;
-            const scaledHighlightW = hWidth * scale;
-            const scaledHighlightH = hHeight * scale;
-            const offsetX = (containerW - scaledHighlightW) / 2 - (left * scale);
-            const offsetY = (containerH - scaledHighlightH) / 2 - (top * scale);
-            
-            if (!this.canvas.style.transform) this.canvas.style.transform = 'none';
-            this.canvas.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-            this.canvas.style.transition = 'transform 0.25s ease';
-        }
-        
+        this.applyFocusLayout();
+
         // Update button visibility
         this.focusBtn.style.display = 'none';
         this.exitBtn.style.display = '';

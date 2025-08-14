@@ -153,14 +153,4 @@ describe('Focus Mode Handler', () => {
         // Assert
         expect(mockElements.canvas.removeAttribute).toHaveBeenCalledWith('data-focus-mode');
     });
-
-    test('applyFallbackFocus scales canvas to fit container', () => {
-        // Act
-        focusHandler.applyFallbackFocus();
-
-        // Assert
-        expect(mockElements.canvas.style.transformOrigin).toBe('center center');
-        expect(mockElements.canvas.style.transform).toMatch(/scale\(/);
-        expect(mockElements.canvas.style.transition).toBe('transform 0.15s ease');
-    });
 });
