@@ -186,15 +186,16 @@ async function initializeFileUpload(database = null) {
  * @returns {void}
  */
 function initializePageNavigation(pdfViewer = null) {
-    const prevPageBtn = document.querySelector(CONFIG.SELECTORS.PREV_BUTTON);
-    const nextPageBtn = document.querySelector(CONFIG.SELECTORS.NEXT_BUTTON);
+    // Support multiple navigation control clusters (e.g., sidebar + floating focus mode controls)
+    const prevButtons = Array.from((document.querySelectorAll && document.querySelectorAll(CONFIG.SELECTORS.PREV_BUTTON)) || []);
+    const nextButtons = Array.from((document.querySelectorAll && document.querySelectorAll(CONFIG.SELECTORS.NEXT_BUTTON)) || []);
     
     // resolve logger safely (supports Node tests and browser)
     const log = (typeof window !== 'undefined' && window.logger)
         ? window.logger
         : (typeof logger !== 'undefined' ? logger : console);
     
-    if (!prevPageBtn || !nextPageBtn) {
+    if (prevButtons.length === 0 || nextButtons.length === 0) {
         log.warn('Page navigation buttons not found');
         return;
     }
@@ -204,23 +205,21 @@ function initializePageNavigation(pdfViewer = null) {
         return;
     }
     
-    prevPageBtn.addEventListener('click', async () => {
-        try {
-            await pdfViewer.prevPage();
-        } catch (error) {
-            log.error('Failed to navigate to previous page:', error);
-        }
+    const bind = (collection, handlerFactory) => {
+        collection.forEach(btn => {
+            if (!btn || typeof btn.addEventListener !== 'function') return;
+            btn.addEventListener('click', handlerFactory());
+        });
+    };
+
+    bind(prevButtons, () => async () => {
+        try { await pdfViewer.prevPage(); } catch (error) { log.error('Failed to navigate to previous page:', error); }
     });
-    
-    nextPageBtn.addEventListener('click', async () => {
-        try {
-            await pdfViewer.nextPage();
-        } catch (error) {
-            log.error('Failed to navigate to next page:', error);
-        }
+    bind(nextButtons, () => async () => {
+        try { await pdfViewer.nextPage(); } catch (error) { log.error('Failed to navigate to next page:', error); }
     });
-    
-    log.info('Page navigation buttons initialized');
+
+    log.info(`Page navigation buttons initialized (prev: ${prevButtons.length}, next: ${nextButtons.length})`);
 }
 
 // Initialize confidence controls (accessibility + UX)

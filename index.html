@@ -125,6 +125,16 @@
                             <div class="pdf-viewer-container" data-role="pdf-viewer">
                                 <canvas id="pdf-canvas" data-role="pdf-canvas"></canvas>
                                 <div class="selection-overlay" data-role="selection-overlay" style="display: none;"></div>
+                                <!-- Focus Mode Floating Page Controls (hidden until focus mode) -->
+                                <div class="focus-mode-page-controls" data-role="focus-page-controls" aria-hidden="true">
+                                    <button data-role="prev-page" class="btn btn-outline btn-icon" aria-label="Previous page" type="button">
+                                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                    </button>
+                                    <span data-role="page-info" class="text-xs font-medium whitespace-nowrap">&nbsp;</span>
+                                    <button data-role="next-page" class="btn btn-outline btn-icon" aria-label="Next page" type="button">
+                                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div id="selected-message"></div>
                             <!-- Practice Focus Controls -->

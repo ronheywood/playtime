@@ -6,6 +6,7 @@ if (typeof global.document === 'undefined') {
     body: { innerHTML: '' },
     addEventListener: () => {},
     querySelector: () => null,
+    querySelectorAll: () => [],
     getElementById: () => null
   };
   global.document = doc;
@@ -72,39 +73,46 @@ describe('Main helpers', () => {
     global.document.createElement = realCreate;
   });
 
-  test('initializePageNavigation wires prev/next to viewer methods', async () => {
-    // stub buttons that record click handlers
-    const makeBtn = () => {
-      const btn = { _handler: null, addEventListener: (ev, fn) => { if (ev === 'click') btn._handler = fn; } };
-      btn.click = () => btn._handler && btn._handler();
-      return btn;
-    };
+  function makeBtn() {
+    const btn = { _handler: null, addEventListener: (ev, fn) => { if (ev === 'click') btn._handler = fn; }, click: () => btn._handler && btn._handler() };
+    return btn;
+  }
+
+  test('initializePageNavigation wires prev/next to viewer methods (single pair)', async () => {
     const prevBtn = makeBtn();
     const nextBtn = makeBtn();
-
-    // stub document.querySelector to return our buttons
-    const realQS = global.document.querySelector;
-    global.document.querySelector = (sel) => {
-      if (sel === '[data-role="prev-page"]') return prevBtn;
-      if (sel === '[data-role="next-page"]') return nextBtn;
-      return null;
+    const realQSA = global.document.querySelectorAll;
+    global.document.querySelectorAll = (sel) => {
+      if (sel === '[data-role="prev-page"]') return [prevBtn];
+      if (sel === '[data-role="next-page"]') return [nextBtn];
+      return [];
     };
-
-    const pdfViewer = {
-      prevPage: jest.fn().mockResolvedValue(),
-      nextPage: jest.fn().mockResolvedValue()
-    };
-
+    const pdfViewer = { prevPage: jest.fn().mockResolvedValue(), nextPage: jest.fn().mockResolvedValue() };
     initializePageNavigation(pdfViewer);
-
     prevBtn.click();
     nextBtn.click();
-
     await Promise.resolve();
+    expect(pdfViewer.prevPage).toHaveBeenCalledTimes(1);
+    expect(pdfViewer.nextPage).toHaveBeenCalledTimes(1);
+    global.document.querySelectorAll = realQSA;
+  });
 
-    expect(pdfViewer.prevPage).toHaveBeenCalled();
-    expect(pdfViewer.nextPage).toHaveBeenCalled();
-
-    global.document.querySelector = realQS;
+  test('initializePageNavigation wires all matching prev/next buttons (multiple)', async () => {
+    const prevBtns = [makeBtn(), makeBtn()];
+    const nextBtns = [makeBtn(), makeBtn(), makeBtn()];
+    const realQSA = global.document.querySelectorAll;
+    global.document.querySelectorAll = (sel) => {
+      if (sel === '[data-role="prev-page"]') return prevBtns;
+      if (sel === '[data-role="next-page"]') return nextBtns;
+      return [];
+    };
+    const pdfViewer = { prevPage: jest.fn().mockResolvedValue(), nextPage: jest.fn().mockResolvedValue() };
+    initializePageNavigation(pdfViewer);
+    prevBtns.forEach(b => b.click());
+    nextBtns.forEach(b => b.click());
+    await Promise.resolve();
+    expect(pdfViewer.prevPage).toHaveBeenCalledTimes(prevBtns.length);
+    expect(pdfViewer.nextPage).toHaveBeenCalledTimes(nextBtns.length);
+    global.document.querySelectorAll = realQSA;
   });
 });
