@@ -22,6 +22,13 @@ function registerHandler(type, handler) {
 }
 
 /**
+ * Clear all registered handlers (for testing)
+ */
+function clearHandlers() {
+    handlers.clear();
+}
+
+/**
  * Execute a layout change command
  * Dispatches command event immediately, then invokes registered handler
  * @param {string} type - Command type (e.g., 'focus-mode', 'zoom')
@@ -54,7 +61,20 @@ function changeLayout(type, options = {}) {
     }
 }
 
-module.exports = {
-    changeLayout,
-    registerHandler
-};
+// Export for Node.js/testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        changeLayout,
+        registerHandler,
+        clearHandlers
+    };
+}
+
+// Also expose functions directly on window for browser usage (not a factory)
+if (typeof window !== 'undefined') {
+    window.PlayTimeLayoutCommands = {
+        changeLayout,
+        registerHandler,
+        clearHandlers
+    };
+}

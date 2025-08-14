@@ -50,6 +50,18 @@ describe('PlayTime Music Practice App', () => {
     // Setup score list component
     const { createPlayTimeScoreList } = require('../../scripts/score-list');
     global.window.createPlayTimeScoreList = createPlayTimeScoreList;
+    
+    // Setup focus mode command system
+    const createPlayTimeFocusModeCommands = require('../../scripts/focus-mode-commands');
+    global.window.createPlayTimeFocusModeCommands = createPlayTimeFocusModeCommands;
+    
+    // Setup layout commands for focus mode
+    const layoutCommands = require('../../scripts/layout-commands');
+    global.window.PlayTimeLayoutCommands = layoutCommands;
+    
+    // Setup focus mode handler
+    const FocusModeHandler = require('../../scripts/focus-mode-handler');
+    global.window.PlayTimeFocusModeHandler = FocusModeHandler;
         
         // Setup logger for main.js
         const logger = require('../../scripts/logger');

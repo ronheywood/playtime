@@ -255,129 +255,6 @@ function initializeConfidenceControls() {
     });
 }
 
-// Focus Mode (zoom into a selected highlight via CSS transform)
-function initializeFocusMode() {
-    const focusBtn = document.getElementById('focus-section-btn');
-    const exitBtn = document.getElementById('exit-focus-btn');
-    const toggleBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN); // newly added quick toggle
-    const viewerContainer = document.querySelector('.pdf-viewer-container');
-    const canvas = document.getElementById('pdf-canvas');
-    const sidebar = document.querySelector('.sidebar');
-    if (!focusBtn || !exitBtn || !viewerContainer || !canvas) return;
-
-    function clearHighlightSelection() {
-        document.querySelectorAll('.highlight.selected').forEach(h => h.classList.remove('selected'));
-    }
-
-    viewerContainer.addEventListener('click', (e) => {
-        const target = e.target;
-        if (target && target.classList && target.classList.contains('highlight')) {
-            clearHighlightSelection();
-            target.classList.add('selected');
-            focusBtn.style.display = '';
-            if (toggleBtn) toggleBtn.disabled = false;
-        }
-    });
-
-    function applyFallbackFocus() {
-    // Compute scale to fit within viewer container without resizing canvas pixels (avoid clearing)
-    const viewerRect = viewerContainer.getBoundingClientRect();
-    const baseW = canvas.width || canvas.clientWidth || 800;
-    const baseH = canvas.height || canvas.clientHeight || 600;
-    const containerW = viewerRect.width || viewerContainer.clientWidth || baseW;
-    const containerH = viewerRect.height || viewerContainer.clientHeight || baseH;
-    const scale = Math.max(1, Math.min(containerW / baseW, containerH / baseH));
-    if (!canvas.style.transform) canvas.style.transform = 'none';
-    // In focus mode we center via flex; only scale here
-    canvas.style.transformOrigin = 'center center';
-    canvas.style.transform = `scale(${scale})`;
-    canvas.style.transition = 'transform 0.15s ease';
-    }
-
-    function enterFocusMode() {
-        const selected = document.querySelector('.highlight.selected');
-        canvas.setAttribute('data-focus-mode', 'active');
-    // Distraction-free: hide sidebar and add body class for CSS-based tweaks
-    if (sidebar) sidebar.style.display = 'none';
-    if (document && document.body) document.body.classList.add('distraction-free');
-        // Preserve original styles to restore later
-        if (!canvas.dataset._origTransform) canvas.dataset._origTransform = canvas.style.transform || '';
-        if (!canvas.dataset._origTransition) canvas.dataset._origTransition = canvas.style.transition || '';
-        if (!viewerContainer.dataset._origOverflow) viewerContainer.dataset._origOverflow = viewerContainer.style.overflow || '';
-        // Prevent scrollbars fighting the transform
-        viewerContainer.style.overflow = 'hidden';
-        if (!selected) {
-            applyFallbackFocus();
-        } else {
-            const rect = selected.getBoundingClientRect();
-            const canvasRect = canvas.getBoundingClientRect();
-            const viewerRect = viewerContainer.getBoundingClientRect();
-            const left = rect.width === 0 && rect.height === 0 ? parseFloat(selected.style.left) || 0 : rect.left - canvasRect.left;
-            const top = rect.width === 0 && rect.height === 0 ? parseFloat(selected.style.top) || 0 : rect.top - canvasRect.top;
-            const hWidth = rect.width || parseFloat(selected.style.width) || 1;
-            const hHeight = rect.height || parseFloat(selected.style.height) || 1;
-            const containerW = viewerRect.width || viewerContainer.clientWidth || canvas.width || 800;
-            const containerH = viewerRect.height || viewerContainer.clientHeight || canvas.height || 600;
-            const scale = Math.min(containerW / hWidth, containerH / hHeight) * 0.9;
-            const scaledHighlightW = hWidth * scale;
-            const scaledHighlightH = hHeight * scale;
-            const offsetX = (containerW - scaledHighlightW) / 2 - (left * scale);
-            const offsetY = (containerH - scaledHighlightH) / 2 - (top * scale);
-            if (!canvas.style.transform) canvas.style.transform = 'none';
-            canvas.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-            canvas.style.transition = 'transform 0.25s ease';
-        }
-        focusBtn.style.display = 'none';
-        exitBtn.style.display = '';
-        if (toggleBtn) {
-            toggleBtn.setAttribute('aria-pressed', 'true');
-            toggleBtn.classList.add('active');
-        }
-    }
-
-    function exitFocusMode() {
-        canvas.removeAttribute('data-focus-mode');
-        // Restore original transform/transition and container overflow
-        canvas.style.transform = canvas.dataset._origTransform || '';
-        canvas.style.transition = canvas.dataset._origTransition || '';
-        viewerContainer.style.overflow = viewerContainer.dataset._origOverflow || '';
-    // Restore sidebar visibility and remove body class
-    if (sidebar) sidebar.style.display = '';
-    if (document && document.body) document.body.classList.remove('distraction-free');
-        exitBtn.style.display = 'none';
-        focusBtn.style.display = '';
-        if (toggleBtn) {
-            toggleBtn.setAttribute('aria-pressed', 'false');
-            toggleBtn.classList.remove('active');
-        }
-    }
-
-    focusBtn.addEventListener('click', enterFocusMode);
-    exitBtn.addEventListener('click', exitFocusMode);
-    if (toggleBtn) {
-        // Disabled until selection or explicit use; allow fallback regardless
-        toggleBtn.addEventListener('click', () => {
-            const active = canvas.getAttribute('data-focus-mode') === 'active';
-            if (active) {
-                exitFocusMode();
-            } else {
-                enterFocusMode();
-            }
-        });
-    }
-
-    // Accessibility: ESC exits focus mode
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && canvas.getAttribute('data-focus-mode') === 'active') {
-            exitFocusMode();
-        }
-    });
-
-    if (!focusBtn.style.display) focusBtn.style.display = 'none';
-    exitBtn.style.display = 'none';
-    if (toggleBtn) toggleBtn.disabled = false;
-}
-
 // Initialize the application when DOM is ready
 // ISSUE: This function also does too much - initialization AND UI creation
 // TODO: Split into initializeApplication() and createDevStatusElement()
@@ -436,8 +313,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Initialize confidence controls
         initializeConfidenceControls();
-        // Initialize focus mode (after highlights & canvas exist)
-        initializeFocusMode();
+        
+        // Initialize focus mode with command architecture (replaces procedural approach)
+        if (typeof window.createPlayTimeFocusModeCommands === 'function') {
+            window.PlayTimeFocusModeCommands = window.createPlayTimeFocusModeCommands();
+            if (window.PlayTimeFocusModeCommands && window.PlayTimeFocusModeCommands.initializeFocusModeCommands) {
+                window.PlayTimeFocusModeCommands.initializeFocusModeCommands();
+            }
+        }
         
         /*
         TODO: This inline script for zoom controls should be in the pdf-viewer.js

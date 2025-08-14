@@ -123,4 +123,12 @@ class FocusModeHandler {
     }
 }
 
-module.exports = FocusModeHandler;
+// Export for Node.js/testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = FocusModeHandler;
+}
+
+// Also expose class directly on window for browser usage (not a factory)
+if (typeof window !== 'undefined') {
+    window.PlayTimeFocusModeHandler = FocusModeHandler;
+}

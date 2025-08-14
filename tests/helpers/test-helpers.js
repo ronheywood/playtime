@@ -67,6 +67,28 @@ const TestHelpers = {
     // DOM Setup Helpers
 
     /**
+     * Setup global DOM environment with window event dispatching
+     */
+    setupDOM: () => {
+        global.window = global.window || {};
+        global.window.dispatchEvent = global.window.dispatchEvent || jest.fn();
+        global.window.addEventListener = global.window.addEventListener || jest.fn();
+        global.document = global.document || document;
+    },
+
+    /**
+     * Cleanup DOM environment
+     */
+    cleanup: () => {
+        if (document.body) {
+            document.body.innerHTML = '';
+        }
+        if (global.window && global.window.dispatchEvent && typeof global.window.dispatchEvent.mockClear === 'function') {
+            global.window.dispatchEvent.mockClear();
+        }
+    },
+
+    /**
      * Setup basic DOM structure for PDF viewer
      */
     setupBasicDOM: () => {
@@ -76,6 +98,67 @@ const TestHelpers = {
             </div>
             <div id="page-info">Page 1 of 1</div>
         `;
+    },
+
+    /**
+     * Setup DOM structure for focus mode testing
+     */
+    setupFocusModeDOM: () => {
+        document.body.innerHTML = `
+            <div class="sidebar">Sidebar content</div>
+            <div class="pdf-viewer-container">
+                <canvas id="pdf-canvas"></canvas>
+            </div>
+            <div class="viewer-controls">
+                <button id="focus-section-btn">Focus</button>
+                <button id="exit-focus-btn" style="display: none">Exit</button>
+                <button data-role="toggle-focus-mode" aria-pressed="false">Toggle</button>
+            </div>
+        `;
+    },
+
+    /**
+     * Create mock elements for focus mode testing with event listeners
+     * @returns {Object} Object containing all focus mode elements
+     */
+    createFocusModeElements: () => {
+        TestHelpers.setupFocusModeDOM();
+        
+        const elements = {
+            focusBtn: document.getElementById('focus-section-btn'),
+            exitBtn: document.getElementById('exit-focus-btn'),
+            toggleBtn: document.querySelector('[data-role="toggle-focus-mode"]'),
+            viewerContainer: document.querySelector('.pdf-viewer-container'),
+            canvas: document.getElementById('pdf-canvas'),
+            sidebar: document.querySelector('.sidebar')
+        };
+
+        // Add mock click methods for testing
+        Object.values(elements).forEach(element => {
+            if (element && !element.click) {
+                element.click = jest.fn(() => {
+                    const clickEvent = new Event('click', { bubbles: true });
+                    element.dispatchEvent(clickEvent);
+                });
+            }
+        });
+
+        // Add mock style properties
+        elements.canvas.style = elements.canvas.style || {};
+        elements.sidebar.style = elements.sidebar.style || {};
+        elements.focusBtn.style = elements.focusBtn.style || {};
+        elements.exitBtn.style = elements.exitBtn.style || {};
+        elements.viewerContainer.style = elements.viewerContainer.style || {};
+
+        // Mock getBoundingClientRect for layout calculations
+        elements.canvas.getBoundingClientRect = jest.fn(() => ({
+            left: 0, top: 0, width: 800, height: 600
+        }));
+        elements.viewerContainer.getBoundingClientRect = jest.fn(() => ({
+            width: 1000, height: 700
+        }));
+
+        return elements;
     },
 
     /**

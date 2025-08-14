@@ -59,10 +59,10 @@
 #### Step 1: Test-Driven Development - Assert Event Dispatch
 - [x] **Design change layout command**: `changeLayout(type, options)` - fire and forget
 - [x] **Extract the direct DOM manipulation from Focus Mode click event handler to a new class, and invoke it inline - This will later become the command handler, but will preserve functionality for now - safe refactoring
-- [ ] **Write failing test**: Focus mode toggle should dispatch layout-changed command
-- [ ] **Verify current behavior**: Test fails because no event is dispatched
-- [ ] **Simple implementation**: Add direct event dispatch to focus mode functions
-- [ ] **Green test**: Basic event firing works - the focus mode behavior is still procedural
+- [c] **Write failing test**: Focus mode toggle should dispatch layout-changed command
+- [c] **Verify current behavior**: Test fails because no event is dispatched
+- [c] **Simple implementation**: Add direct event dispatch to focus mode functions
+- [c] **Green test**: Basic event firing works - the focus mode behavior is still procedural
 
 #### Step 2: Proper Command/Event Architecture
 - [ ] **Command handler**: The extracted class subscribes to the command animations and async transitions are no longer directly invoked by the focus mode buttons click event
