@@ -206,7 +206,14 @@
             viewer: null,
             canvas: null,
             logger: console,
-            scheduler: null
+            scheduler: null,
+            pendingRehydratePdfId: null,
+            lastRehydratedPdfId: null,
+            lastClearedPdfId: null,
+            currentPdfId: null,
+            // New coordination flags to avoid duplicated / overlapping rehydrate chains
+            rehydrateScheduledFor: null,
+            rehydratingFor: null
         },
         // Internal helper: robust mapping even if CONF.confidenceToColor stub always returns 'red'
         _safeConfidenceToColor(level) {
@@ -230,7 +237,7 @@
         },
 
         setActiveConfidenceFromColor(color) {
-            try { this._state.logger && this._state.logger.debug && this._state.logger.debug('Setting active confidence from color', color); } catch (_) {}
+            // Debug log removed
             let level = null;
             if (CONF) {
                 if (typeof CONF.colorToConfidence === 'function') {
@@ -292,6 +299,133 @@
                 document.addEventListener(CONST.EVENTS.CONFIDENCE_CHANGED, onConfidenceChanged);
             }
 
+            // Event-driven highlight rehydration: wait for SCORE_SELECTED then PAGE_CHANGED
+            try {
+                const evScoreSelected = (CONST && CONST.EVENTS && CONST.EVENTS.SCORE_SELECTED) || 'playtime:score-selected';
+                const evPageChanged = (CONST && CONST.EVENTS && CONST.EVENTS.PAGE_CHANGED) || 'playtime:page-changed';
+                const performRehydrate = async (pdfId, attempt=0) => {
+                    if (pdfId == null) return;
+                    // Ignore stale rehydrate requests for scores that are no longer current (prevents resurrecting old highlights after switching)
+                    if (this._state.currentPdfId != null && pdfId !== this._state.currentPdfId) {
+                        return;
+                    }
+                    // If a rehydrate chain for this pdfId is already in progress, ignore newly triggered attempt=0 invocations.
+                    if (attempt === 0 && this._state.rehydratingFor === pdfId) {
+                        return;
+                    }
+                    if (pdfId === this._state.lastRehydratedPdfId) {
+                        const existing = this.getHighlights();
+                        if (existing && existing.length > 0) return;
+                    }
+                    try {
+                        // Mark chain ownership at first real attempt
+                        if (attempt === 0 && this._state.rehydratingFor == null) {
+                            this._state.rehydratingFor = pdfId;
+                        }
+                        // Defer until canvas has meaningful dimensions (avoid incorrect initial scaling)
+                        try {
+                            const cnv = this._state.canvas;
+                            // Only defer if explicitly 0 and we have not yet tried a couple times; allow progress sooner for test env
+                            if (cnv && (cnv.clientWidth === 0 || cnv.clientHeight === 0) && attempt < 2) {
+                                return setTimeout(() => performRehydrate(pdfId, attempt+1), 20);
+                            }
+                        } catch(_) {}
+                        // Removed debug start log
+                        if (!(window.PlayTimeDB && typeof window.PlayTimeDB.getHighlights === 'function')) return;
+                        let sections = await window.PlayTimeDB.getHighlights(pdfId);
+                        if ((!sections || sections.length === 0) && /(\d+)/.test(String(pdfId))) {
+                            try { sections = await window.PlayTimeDB.getHighlights(Number(pdfId)); } catch(_) {}
+                        }
+                        if (sections && sections.length) {
+                            this.addSections(sections);
+                            this._state.lastRehydratedPdfId = pdfId;
+                            this._state.pendingRehydratePdfId = null;
+                            this._state.rehydratingFor = null;
+                            this._state.rehydrateScheduledFor = null;
+                            // Schedule extra reposition passes for late layout adjustments (zoom/scale settling)
+                            try {
+                                const rep = () => { try { this.repositionAll(); } catch(_) {} };
+                                requestAnimationFrame(() => requestAnimationFrame(rep));
+                                setTimeout(rep, 60);
+                            } catch(_) {}
+                        } else if (attempt < 2) { // retry a couple times for async DB readiness
+                            setTimeout(() => performRehydrate(pdfId, attempt+1), 30);
+                        } else {
+                            // Exhausted attempts; clear in-progress flag so a later explicit reselect can retry
+                            this._state.rehydratingFor = null;
+                            this._state.rehydrateScheduledFor = null;
+                        }
+                    } catch(errReh) { this._state.logger && this._state.logger.warn && this._state.logger.warn('Rehydrate failed', errReh); }
+                };
+
+                window.addEventListener(evScoreSelected, (e) => {
+                    const pdfId = e && e.detail && e.detail.pdfId;
+                    if (pdfId == null) return;
+                    // Removed score selected debug
+                    this._state.currentPdfId = pdfId;
+                    this._state.pendingRehydratePdfId = pdfId;
+                    try { window.__playTimeLastScoreSelectedDetail = e.detail; } catch(_) {}
+                    // Clear existing highlights only once per pdfId to avoid wiping after rehydrate
+                    if (this._state.lastClearedPdfId !== pdfId) {
+                        try {
+                            const hs = this.getHighlights();
+                            hs.forEach(h => {
+                                try { h.remove(); } catch(_) { try { h.parentNode && h.parentNode.removeChild(h); } catch(_) {} }
+                            });
+                            // Removed cleared highlights debug
+                        } catch(_) {}
+                        // Reset dedupe signatures when switching to a different score so its highlights can be re-created
+                        this._state.rehydratedSignatures = new Set();
+                        this._state.lastClearedPdfId = pdfId;
+                    } else {
+                        // Same pdf re-selected: just ensure visibility sync for current page
+                        try { this.repositionAll(); } catch(_) {}
+                    }
+                    // Fallback immediate async attempt regardless of page events (addresses tests without PAGE_CHANGED emission)
+                    try {
+                        if (this._state.rehydrateScheduledFor !== pdfId) {
+                            this._state.rehydrateScheduledFor = pdfId;
+                            setTimeout(() => performRehydrate(pdfId), 10);
+                        }
+                    } catch(_) {}
+                    // If page already rendered (after reload auto-dispatch), rehydrate immediately
+                    try {
+                        if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getCurrentPage === 'function') {
+                            const cp = window.PlayTimePDFViewer.getCurrentPage();
+                            if (Number.isFinite(cp) && cp > 0) {
+                                if (this._state.rehydrateScheduledFor !== pdfId) {
+                                    this._state.rehydrateScheduledFor = pdfId;
+                                    performRehydrate(pdfId);
+                                }
+                            }
+                        }
+                    } catch(_) {}
+                });
+                window.addEventListener(evPageChanged, async () => {
+                    const pending = this._state.pendingRehydratePdfId;
+                    if (pending != null && pending !== this._state.lastRehydratedPdfId) {
+                        performRehydrate(pending);
+                    }
+                    // Always reposition after a page change (handles scale adjustments for already rehydrated highlights too)
+                    try {
+                        requestAnimationFrame(() => requestAnimationFrame(() => { try { this.repositionAll(); } catch(_) {} }));
+                    } catch(_) {}
+                });
+                // Buffer handling: if a SCORE_SELECTED fired before init, replay it now
+                try {
+                    let buffered = null;
+                    if (window.PlayTimeEventBuffer && typeof window.PlayTimeEventBuffer.getLast === 'function') {
+                        buffered = window.PlayTimeEventBuffer.getLast(evScoreSelected);
+                    } else if (window.__playTimeLastScoreSelectedDetail) {
+                        buffered = window.__playTimeLastScoreSelectedDetail;
+                    }
+                    if (buffered && this._state.pendingRehydratePdfId == null) {
+                        this._state.pendingRehydratePdfId = buffered.pdfId;
+                        performRehydrate(buffered.pdfId);
+                    }
+                } catch(_) {}
+            } catch(_) { /* ignore */ }
+
             // Mouse interactions on the canvas
             const updateOverlayFromPoint = (point) => {
                 const overlay = this._state.overlay;
@@ -321,7 +455,7 @@
                 const top = Math.min(this._state.start.y, p.y);
                 const width = Math.abs(p.x - this._state.start.x);
                 const height = Math.abs(p.y - this._state.start.y);
-                try { this._state.logger && this._state.logger.debug && this._state.logger.debug('highlight finish: dims', {left, top, width, height, activeConfidence:this._state.activeConfidence}); } catch(_) {}
+                // Removed highlight finish dims debug
                 
                 const overlay = this._state.overlay;
                 if (width > 2 && height > 2) {
@@ -331,12 +465,12 @@
                         const color = this._safeConfidenceToColor(this._state.activeConfidence);
                         const el = createHighlight(viewer, { left, top, width, height }, color, this.CONFIG, canvas, pageNum);
                         el.dataset.confidence = String(this._state.activeConfidence);
-                        try { this._state.logger && this._state.logger.debug && this._state.logger.debug('highlight finish: created element', {color, confidence:this._state.activeConfidence, page:pageNum}); } catch(_) {}
+                        // Removed highlight created element debug
                         // Persist practice section if DB & current score id available
                         try {
                             const pdfId = (global && global.PlayTimeCurrentScoreId) || (window && window.PlayTimeCurrentScoreId);
                             if (pdfId != null && window.PlayTimeDB && typeof window.PlayTimeDB.addHighlight === 'function') {
-                                try { this._state.logger && this._state.logger.debug && this._state.logger.debug('highlight finish: persisting section', {pdfId}); } catch(_) {}
+                                // Removed persisting section debug
                                 const sec = {
                                     // Preserve original id type (string vs number) for DB consistency
                                     pdfId: pdfId,
@@ -347,9 +481,7 @@
                                     wPct: parseFloat(el.dataset.hlWPct),
                                     hPct: parseFloat(el.dataset.hlHPct)
                                 };
-                                window.PlayTimeDB.addHighlight(sec).then(() => {
-                                    try { this._state.logger && this._state.logger.debug && this._state.logger.debug('highlight finish: persisted section'); } catch(_) {}
-                                }).catch(err => { try { this._state.logger && this._state.logger.warn && this._state.logger.warn('highlight finish: persistence failed', err); } catch(_) {} });
+                                window.PlayTimeDB.addHighlight(sec).catch(err => { try { this._state.logger && this._state.logger.warn && this._state.logger.warn('highlight finish: persistence failed', err); } catch(_) {} });
                             }
                         } catch(_) { /* swallow persistence errors */ }
                     } else {
@@ -357,7 +489,7 @@
                     }
                     hideOverlay(overlay);
                 } else {
-                    try { this._state.logger && this._state.logger.debug && this._state.logger.debug('highlight finish: dimensions too small, skipping'); } catch(_) {}
+                    // Removed too small debug
                     hideOverlay(overlay);
                 }
             };
@@ -449,12 +581,19 @@
         addSections(sections = []) {
             const viewer = this._state.viewer;
             const canvas = this._state.canvas;
+            // Removed addSections invoked debug
             if (!viewer || !canvas || !Array.isArray(sections)) return;
+            // Initialize signature set for dedupe
+            if (!this._state.rehydratedSignatures) this._state.rehydratedSignatures = new Set();
             // Determine current page if viewer module available
             let currentPage = null;
             try { if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getCurrentPage === 'function') { currentPage = Number(window.PlayTimePDFViewer.getCurrentPage()); } } catch(_) {}
             sections.forEach(sec => {
                 if (sec && typeof sec.xPct === 'number') {
+                    const sig = [sec.pdfId, sec.page, sec.confidence, sec.xPct, sec.yPct, sec.wPct, sec.hPct].join('|');
+                    if (this._state.rehydratedSignatures.has(sig)) {
+                        return;
+                    }
                     // Create element using pct geometry
                     try {
                         const el = document.createElement('div');
@@ -470,6 +609,8 @@
                         el.dataset.hlWPct = String(sec.wPct);
                         el.dataset.hlHPct = String(sec.hPct);
                         viewer.appendChild(el);
+                        // Removed addSections created highlight debug
+                        this._state.rehydratedSignatures.add(sig);
                         // position now
                         try { repositionHighlight(el, viewer, canvas, this._state.logger); } catch(_){}
                         // Visibility: show only if page matches current page (if known)
@@ -496,6 +637,8 @@
                     }, 0);
                 } catch(_) { /* noop */ }
             }
+
+            // Removed legacy single-PDF auto rehydrate fallback
         }
     };
 

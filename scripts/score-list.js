@@ -73,9 +73,15 @@ function createPlayTimeScoreList(database, logger = console) {
                 const currentTitle = document.querySelector(SCORE_LIST_CONFIG.SELECTORS.CURRENT_SCORE_TITLE);
                 if (pdfs.length > 0 && currentTitle) {
                     const titleText = (currentTitle.textContent || '').trim();
-                    // Auto-load only if no current title is displayed (first-run UX)
+                    // Auto-select via the same click path to ensure consistent highlight rehydration
                     if (!titleText) {
-                        await this.loadScore(pdfs[0].id);
+                        const firstItem = scoresList.querySelector(`.${SCORE_LIST_CONFIG.CSS_CLASSES.SCORE_ITEM}[data-pdf-id="${pdfs[0].id}"]`);
+                        if (firstItem) {
+                            firstItem.click();
+                        } else {
+                            // Fallback (should not normally happen)
+                            await this.loadScore(pdfs[0].id);
+                        }
                     }
                 }
             } catch (error) {
@@ -100,37 +106,46 @@ function createPlayTimeScoreList(database, logger = console) {
                     _logger.error('PDF not found:', pdfId);
                     return;
                 }
-                // Expose current score id globally for highlight persistence
-                if (typeof window !== 'undefined') {
-                    window.PlayTimeCurrentScoreId = pdf.id;
-                }
-                // Hide any existing status message when selecting a score from the list
-                const msg = document.querySelector('.status-message');
-                if (msg && typeof msg.remove === 'function') msg.remove();
-
+                // Remove any prior status message (legacy behavior required by tests)
+                try {
+                    const msg = document.querySelector('.status-message');
+                    if (msg && typeof msg.remove === 'function') msg.remove();
+                } catch(_) {}
+                // Minimal UI update (deprecated path; will be replaced by event pipeline)
                 this._updateCurrentScoreTitle(pdf.name || pdf.filename);
-                await this._loadIntoPDFViewer(pdf);
-                // Mark selected item in the list for accessibility and UI state
                 this._markSelectedItem(pdf.id);
-                // Remove existing highlight DOM nodes before rehydration (prevents duplication / cross-score bleed)
+                // Dispatch SCORE_SELECTED event (temporary until SCORE_SELECT_COMMAND used)
                 try {
-                    document.querySelectorAll('[data-role="highlight"]').forEach(h => h.remove());
-                } catch(_) { /* noop */ }
-                // Rehydrate practice sections (highlights)
-                try {
-                    if (_database.getHighlights && window.PlayTimeHighlighting) {
-                        // Attempt fetch with original id; if none and id is numeric-like, try numeric variant
-                        let sections = await _database.getHighlights(pdf.id);
-                        if ((!sections || sections.length === 0) && /^(\d+)$/.test(String(pdf.id))) {
-                            try { sections = await _database.getHighlights(Number(pdf.id)); } catch(_) {}
+                    const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.SCORE_SELECTED) || 'playtime:score-selected';
+                    const detail = { pdfId: pdf.id, name: pdf.name || pdf.filename, pages: pdf.pages };
+                    // Suppress duplicate rapid re-dispatch for same id (upload + auto-click, or repeated clicks)
+                    const lastId = window.__playTimeLastScoreSelectedId;
+                    const lastAt = window.__playTimeLastScoreSelectedAt || 0;
+                    const now = Date.now();
+                    // Always allow dispatch if selecting a DIFFERENT pdfId; only suppress rapid repeat of same id <100ms
+                    if (!(lastId === pdf.id && (now - lastAt) < 100)) {
+                        if (window.PlayTimeEventBuffer && typeof window.PlayTimeEventBuffer.publish === 'function') {
+                            window.PlayTimeEventBuffer.publish(evName, detail);
+                        } else {
+                            const ev = new CustomEvent(evName, { detail });
+                            window.dispatchEvent(ev);
                         }
-                        window.PlayTimeHighlighting.addSections(sections || []);
+                        window.__playTimeLastScoreSelectedId = pdf.id;
+                        window.__playTimeLastScoreSelectedAt = now;
+                    } else if (lastId === pdf.id && (now - lastAt) >= 100) {
+                        // Edge: same item re-selected after suppression window -> dispatch again
+                        if (window.PlayTimeEventBuffer && typeof window.PlayTimeEventBuffer.publish === 'function') {
+                            window.PlayTimeEventBuffer.publish(evName, detail);
+                        } else {
+                            window.dispatchEvent(new CustomEvent(evName, { detail }));
+                        }
+                        window.__playTimeLastScoreSelectedId = pdf.id;
+                        window.__playTimeLastScoreSelectedAt = now;
                     }
-                } catch(e) { _logger.warn && _logger.warn('Failed rehydrating sections', e); }
-                if (onScoreLoaded && typeof onScoreLoaded === 'function') {
-                    onScoreLoaded(pdf);
+                } catch (err) {
+                    _logger.warn && _logger.warn('Failed to publish SCORE_SELECTED event', err);
                 }
-                _logger.info(`Score loaded: ${pdf.name || pdf.filename}`);
+                if (onScoreLoaded && typeof onScoreLoaded === 'function') onScoreLoaded(pdf);
             } catch (error) {
                 _logger.error('Failed to load score into viewer:', error);
             }

@@ -1,0 +1,89 @@
+/** @jest-environment jsdom */
+// Upload score1, create highlight page1, upload score2 -> score1 highlight should not remain visible.
+
+const { SELECTORS, EVENTS } = require('../../scripts/constants');
+
+describe('Second upload clears first score highlights', () => {
+  beforeEach(async () => {
+    const logger = require('../../scripts/logger');
+    logger.setSilent(false);
+    global.window.createPlayTimeDB = () => ({
+      init: jest.fn().mockResolvedValue(true),
+      _pdfs: [],
+      _sections: [],
+      save: jest.fn().mockImplementation(function(file, meta){
+        const id = this._pdfs.length + 1;
+        this._pdfs.push({ id, name:file.name, data:new Uint8Array([1]), pages: meta.pages||2 });
+        return Promise.resolve(id);
+      }),
+      getAll: jest.fn().mockImplementation(function(){ return Promise.resolve(this._pdfs.slice()); }),
+      get: jest.fn().mockImplementation(function(id){ return Promise.resolve(this._pdfs.find(p=>p.id===id)); }),
+      addHighlight: jest.fn().mockImplementation(function(sec){ sec.id = this._sections.length+1; this._sections.push(sec); return Promise.resolve(sec.id); }),
+      getHighlights: jest.fn().mockImplementation(function(pdfId){ return Promise.resolve(this._sections.filter(s=>s.pdfId===pdfId)); })
+    });
+
+    // PDF viewer stub
+    let currentPage = 1;
+    global.window.createPlayTimePDFViewer = () => ({
+      init: jest.fn().mockResolvedValue(true),
+      loadPDF: jest.fn().mockResolvedValue(true),
+      renderPage: jest.fn().mockImplementation(async(p=1)=>{ currentPage=p; const ev = EVENTS.PAGE_CHANGED || 'playtime:page-changed'; window.dispatchEvent(new CustomEvent(ev,{ detail:{ page:p }})); }),
+      getCurrentPage: () => currentPage,
+      getTotalPages: () => 2
+    });
+
+    document.body.innerHTML = `
+      <main>
+        <section id="upload-section"><input type="file" id="pdf-upload" accept="application/pdf"></section>
+        <section><div id="scores-list"></div></section>
+        <section>
+          <div data-role="current-score-title"></div>
+          <div data-role="pdf-viewer" class="pdf-viewer-container">
+            <canvas id="pdf-canvas" data-role="pdf-canvas" width="300" height="300"></canvas>
+            <div data-role="selection-overlay" style="display:none;"></div>
+          </div>
+          <div class="highlight-controls">
+            <button id="color-green" data-role="color-green" data-color="green">●</button>
+            <button id="color-amber" data-role="color-amber" data-color="amber">●</button>
+            <button id="color-red" data-role="color-red" data-color="red">●</button>
+          </div>
+        </section>
+      </main>`;
+
+    jest.resetModules();
+    require('../../scripts/highlighting.js');
+    require('../../scripts/main');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    await new Promise(r=>setTimeout(r,60));
+  });
+
+  test('uploading second score removes visible first score highlight', async () => {
+    const fileInput = document.querySelector(SELECTORS.FILE_INPUT) || document.getElementById('pdf-upload');
+    // Upload score 1
+    const file1 = new File(['pdf1'], 'score1.pdf', { type:'application/pdf' });
+    Object.defineProperty(fileInput,'files',{ value:[file1], configurable:true });
+    fileInput.dispatchEvent(new Event('change', { bubbles:true }));
+    // Wait for current score id
+    for(let i=0;i<40;i++){ if(window.PlayTimeCurrentScoreId===1) break; await new Promise(r=>setTimeout(r,10)); }
+    // Select color & create highlight on page1
+    const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN); greenBtn && greenBtn.click();
+    const canvas = document.querySelector(SELECTORS.CANVAS);
+    canvas.dispatchEvent(new MouseEvent('mousedown',{ bubbles:true, clientX:30, clientY:30 }));
+    canvas.dispatchEvent(new MouseEvent('mousemove',{ bubbles:true, clientX:120, clientY:120 }));
+    canvas.dispatchEvent(new MouseEvent('mouseup',{ bubbles:true, clientX:120, clientY:120 }));
+    // Ensure highlight persisted
+    let hCount=0; for(let i=0;i<30;i++){ hCount=document.querySelectorAll('[data-role="highlight"]').length; if(hCount===1) break; await new Promise(r=>setTimeout(r,10)); }
+    expect(hCount).toBe(1);
+
+    // Upload score 2
+    const file2 = new File(['pdf2'], 'score2.pdf', { type:'application/pdf' });
+    Object.defineProperty(fileInput,'files',{ value:[file2], configurable:true });
+    fileInput.dispatchEvent(new Event('change', { bubbles:true }));
+    for(let i=0;i<40;i++){ if(window.PlayTimeCurrentScoreId===2) break; await new Promise(r=>setTimeout(r,10)); }
+    await new Promise(r=>setTimeout(r,80));
+
+    // Check visible highlights (display != none)
+    const visible = Array.from(document.querySelectorAll('[data-role="highlight"]')).filter(h=>h.style.display!=="none").length;
+    expect(visible).toBe(0);
+  });
+});

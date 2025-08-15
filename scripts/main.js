@@ -130,6 +130,20 @@ async function saveFileWithMeta(database, file, pagesMeta) {
         if (window.PlayTimeScoreList && typeof window.PlayTimeScoreList.refresh === 'function') {
             await window.PlayTimeScoreList.refresh();
         }
+        // Publish SCORE_SELECTED for newly saved score so dependent modules (highlighting) clear previous highlights
+        try {
+            const EV = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS) || {};
+            const SCORE_SELECTED = EV.SCORE_SELECTED || 'playtime:score-selected';
+            const detail = { pdfId: id, name: file.name, pages: pagesMeta };
+            // Debug log removed (saveFileWithMeta dispatch SCORE_SELECTED)
+            if (window.PlayTimeEventBuffer && typeof window.PlayTimeEventBuffer.publish === 'function') {
+                window.PlayTimeEventBuffer.publish(SCORE_SELECTED, detail);
+            } else {
+                window.dispatchEvent(new CustomEvent(SCORE_SELECTED, { detail }));
+            }
+            // Mark last dispatch for duplicate suppression in score-list
+            try { window.__playTimeLastScoreSelectedId = id; window.__playTimeLastScoreSelectedAt = Date.now(); } catch(_) {}
+        } catch (e) { (window.logger||console).warn('Failed dispatching SCORE_SELECTED after save', e); }
     } catch (error) {
         logger.error('Failed to save PDF to database:', error);
     }
@@ -256,13 +270,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // TODO: Add error handling for each module initialization
         await window.PlayTimeDB.init();
         
-        // Initialize score list component after database is ready
-        if (window.PlayTimeScoreList) {
-            window.PlayTimeScoreList.setDatabase(window.PlayTimeDB);
-            await window.PlayTimeScoreList.init();
-            await window.PlayTimeScoreList.refresh();
-        }
-        
+        // Initialize PDF viewer early so highlighting + rehydration have a ready viewer
         await window.PlayTimePDFViewer.init();
         // Attach navigation + zoom UI controls now that viewer is initialized
         if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.attachUIControls === 'function') {
@@ -273,9 +281,79 @@ document.addEventListener('DOMContentLoaded', async function() {
                 (window.logger || console).warn('Failed attaching PDF viewer UI controls', e);
             }
         }
+        // Initialize highlighting after viewer so it can read geometry reliably
         if (window.PlayTimeHighlighting) {
             await window.PlayTimeHighlighting.init({}, appLogger);
         }
+    // (Removed legacy auto-select fallback; selection will be event driven in upcoming refactor)
+        // Central SCORE_SELECTED event handler (unified selection pipeline)
+        try {
+            const EV = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS) || {};
+            const SCORE_SELECTED = EV.SCORE_SELECTED || 'playtime:score-selected';
+            // Idempotent: remove existing to avoid duplicate handlers in tests with re-requires
+            window.removeEventListener(SCORE_SELECTED, window.__playTimeScoreSelectedHandler || (()=>{}));
+            window.__playTimeScoreSelectedHandler = async (e) => {
+                const detail = e && e.detail || {};
+                const pdfId = detail.pdfId;
+                if (pdfId == null) return;
+                // Debug log removed (main SCORE_SELECTED handler invoked)
+                try { window.PlayTimeCurrentScoreId = pdfId; } catch(_) {}
+                try { updateCurrentScoreTitleDisplay(detail.name); } catch(_) {}
+                // Load PDF binary & render first page; highlight will rehydrate after PAGE_CHANGED
+                try {
+                    const pdf = await window.PlayTimeDB.get(pdfId);
+                    if (pdf && window.PlayTimePDFViewer) {
+                        const blob = new Blob([pdf.data], { type: 'application/pdf' });
+                        await window.PlayTimePDFViewer.loadPDF(blob);
+                        await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
+                    }
+                } catch(errLoad) { (window.logger || console).warn('SCORE_SELECTED viewer load failed', errLoad); }
+            };
+            window.addEventListener(SCORE_SELECTED, window.__playTimeScoreSelectedHandler);
+        } catch (errHandler) { (window.logger || console).warn('Failed to set SCORE_SELECTED handler', errHandler); }
+
+        // Initialize score list component after database, viewer & highlighting are ready
+    if (window.PlayTimeScoreList) { window.PlayTimeScoreList.setDatabase(window.PlayTimeDB); await window.PlayTimeScoreList.init(); await window.PlayTimeScoreList.refresh(); }
+        // Reload scenario: current score id already set but no highlights rendered yet -> replay SCORE_SELECTED
+        try {
+            if (window.PlayTimeCurrentScoreId != null && !window.__playTimeReloadReplayed) {
+                const existingHighlights = document.querySelectorAll('[data-role="highlight"]').length;
+                if (existingHighlights === 0 && window.PlayTimeDB && typeof window.PlayTimeDB.getHighlights === 'function') {
+                    const secs = await window.PlayTimeDB.getHighlights(window.PlayTimeCurrentScoreId);
+                    if (secs && secs.length) {
+                        const pdfMeta = await window.PlayTimeDB.get(window.PlayTimeCurrentScoreId);
+                        const EV = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS) || {};
+                        const SCORE_SELECTED = EV.SCORE_SELECTED || 'playtime:score-selected';
+                        const detail = { pdfId: pdfMeta.id, name: pdfMeta.name || pdfMeta.filename, pages: pdfMeta.pages };
+                        // Debug log removed (main replay SCORE_SELECTED reload)
+                        if (window.PlayTimeEventBuffer && typeof window.PlayTimeEventBuffer.publish === 'function') {
+                            window.PlayTimeEventBuffer.publish(SCORE_SELECTED, detail);
+                        } else {
+                            window.dispatchEvent(new CustomEvent(SCORE_SELECTED, { detail }));
+                        }
+                        window.__playTimeReloadReplayed = true;
+                    }
+                }
+            }
+        } catch(_) { /* ignore */ }
+        // Auto-dispatch SCORE_SELECTED for first stored PDF on reload if none selected yet
+        try {
+            if (window.PlayTimeCurrentScoreId == null && window.PlayTimeDB && typeof window.PlayTimeDB.getAll === 'function') {
+                const pdfs = await window.PlayTimeDB.getAll();
+                if (pdfs && pdfs.length > 0) {
+                    const first = pdfs[0];
+                    const EV = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS) || {};
+                    const SCORE_SELECTED = EV.SCORE_SELECTED || 'playtime:score-selected';
+                    const detail = { pdfId: first.id, name: first.name || first.filename, pages: first.pages };
+                    // Debug log removed (main auto-dispatch SCORE_SELECTED)
+                    if (window.PlayTimeEventBuffer && typeof window.PlayTimeEventBuffer.publish === 'function') {
+                        window.PlayTimeEventBuffer.publish(SCORE_SELECTED, detail);
+                    } else {
+                        window.dispatchEvent(new CustomEvent(SCORE_SELECTED, { detail }));
+                    }
+                }
+            }
+        } catch(_) { /* ignore */ }
         
     // PDF viewer UI controls (navigation + zoom) are attached internally by the viewer module.
 
