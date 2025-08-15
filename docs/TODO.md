@@ -36,9 +36,9 @@
   - [x] Visual feedback during selection (`.selection-overlay`)
   - [x] Color coding system (green/amber/red)
 
-- [ ] **Highlight Persistence**
-  - [ ] Save highlights to IndexedDB with PDF reference
-  - [ ] Load and display saved highlights
+- [x] **Highlight Persistence**
+  - [x] Save highlights to IndexedDB with PDF reference
+  - [x] Load and display saved highlights
   - [ ] Edit/delete existing highlights
 
 ### Phase 4: Practice Features
