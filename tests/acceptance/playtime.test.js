@@ -512,30 +512,71 @@ describe('PlayTime Music Practice App', () => {
         });
 
         describe('User Story 4.2: Persist Highlights', () => {
-            test.skip('As a musician, I want highlighted sections to be saved locally and persist when I reopen the score', async () => {
-                // Arrange - create a highlight
+            test('As a musician, I want highlighted sections (practice sections) to persist when I reopen the score', async () => {
+                // Arrange - choose a confidence (was color) BEFORE drawing (domain rule)
+                const amberBtn = document.querySelector('#color-amber');
+                expect(amberBtn).toBeTruthy();
+                amberBtn.click();
+
+                // Draw highlight
                 const canvas = document.querySelector('#pdf-canvas');
+                expect(canvas).toBeTruthy();
                 const mouseDownEvent = new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 });
-                const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 150 });
+                const mouseMoveEvent = new MouseEvent('mousemove', { bubbles: true, clientX: 180, clientY: 140 });
+                const mouseUpEvent = new MouseEvent('mouseup', { bubbles: true, clientX: 180, clientY: 140 });
                 canvas.dispatchEvent(mouseDownEvent);
+                canvas.dispatchEvent(mouseMoveEvent);
                 canvas.dispatchEvent(mouseUpEvent);
-                
-                const colorAmberBtn = document.querySelector('#color-amber');
-                colorAmberBtn?.click();
-                
-                // Act - reload the page to simulate reopening
-                // In JSDOM, we simulate this by reloading the HTML and then selecting the score
+
+                // Sanity: highlight exists pre-reload
+                let created = document.querySelector('.highlight[data-color="amber"]');
+                expect(created).toBeTruthy();
+
+                // Capture DOM-independent proof soon: we rely on persistence layer after reload
+
+                // Simulate reload (simplified). Rebuild DOM from index.html then re-run app init
                 const fs = require('fs');
                 const path = require('path');
                 const htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
                 document.documentElement.innerHTML = htmlContent;
-                
-                const scoreItem = document.querySelector('.score-item[data-filename="sample-score.pdf"]');
-                scoreItem?.click();
-                
-                // Assert - highlight should still be there
-                const amberHighlight = document.querySelector('.highlight[data-color="amber"]');
-                expect(amberHighlight).toBeTruthy();
+
+                // Re-require setup pieces like in beforeEach of earlier suites (minimal bootstrap)
+                // NOTE: We intentionally do not re-import the test file itself.
+                const { SELECTORS: R_SELECTORS } = require('../../scripts/constants');
+                const logger = require('../../scripts/logger');
+                logger.setSilent(true);
+                // Provide Memory DB factory again
+                const MemoryDatabase = require('../../db/MemoryDatabase');
+                global.window.createPlayTimeDB = (l) => new MemoryDatabase();
+                // PDF viewer stub
+                global.window.createPlayTimePDFViewer = (l) => ({
+                    init: jest.fn().mockResolvedValue(true),
+                    loadPDF: jest.fn().mockResolvedValue(true),
+                    renderPage: jest.fn().mockResolvedValue(true),
+                    getZoom: () => 1,
+                    getZoomBounds: () => ({ min: 1, max: 3 }),
+                    setZoom: jest.fn()
+                });
+                // Highlighting module
+                global.window.PlayTimeHighlighting = require('../../scripts/highlighting.js');
+                // Score list
+                const { createPlayTimeScoreList } = require('../../scripts/score-list');
+                global.window.createPlayTimeScoreList = createPlayTimeScoreList;
+                // Main (will register DOMContentLoaded)
+                require('../../scripts/main');
+                document.dispatchEvent(new Event('DOMContentLoaded'));
+                await new Promise(r => setTimeout(r, 50));
+
+                // Select first score item (we add data-filename via component soon)
+                const scoreItems = document.querySelectorAll('.score-item');
+                if (scoreItems.length) {
+                    scoreItems[0].click();
+                }
+                await new Promise(r => setTimeout(r, 50));
+
+                // Assert - highlight recreated with confidence attribute (numeric) OR legacy data-color
+                const amberRehydrated = document.querySelector('.highlight[data-color="amber"], .highlight[data-confidence]');
+                expect(amberRehydrated).toBeTruthy();
             });
         });
 

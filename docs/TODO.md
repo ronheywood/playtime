@@ -6,50 +6,6 @@
 3. **Highlight Persistence** - Save/load highlights to IndexedDB
 4. **Section Selection** - Make highlights clickable/selectable
 
-## 📋 Priorities by Value (XP/Agile Approach)
-
-### 🧹 1. Tidy First - Working XP Pipeline for CI/CD ✅
-- [x] **Working test pipeline** - Jest + JSDOM acceptance tests running
-- [x] **Build automation** - PSake build system with comprehensive tasks
-- [x] **Tech choices installed** - All dependencies ready (PDF.js, IndexedDB mocks)
-- [x] **Complete test conversion** - ✅ ALL Playwright → JSDOM syntax converted!
-- [x] **GitHub Actions CI/CD Pipeline** - ✅ Automated testing on every commit/PR
-  - [x] Created `.github/workflows/ci.yml` with comprehensive pipeline
-  - [x] Multi-Node testing (18.x, 20.x), build checks, security audit
-  - [x] Added build status badge to README
-  - [x] Tests run in clean Node.js environment with `npm ci` + `npm test`
-- [x] **Fix PSake StartServer hanging** - ✅ Fixed! Replaced Start-Process with Start-Job for reliable server management
-
-### 🎯 2. Sandbox Clicky Prototype for UAT
-**Goal:** Get something clickable ASAP for user feedback
-- [x] **Minimal file upload that works** - ✅ File upload handler implemented and tested
-- [x] **Connect file upload to acceptance tests** - ✅ FIRST ACCEPTANCE TEST PASSING!
-- [x] **Basic PDF display** - ✅ PDF.js integration implemented in tests, but blocked in UAT by placeholder db.js
-- [x] **⚠️ Fix PDF display in UAT** - Remove "not implemented yet" messages from db.js
-- [x] **Multi page pdf navigation** - next and previous page buttons
-- [ ] **Simple section highlighting** - Draw colored rectangles
-- [ ] **Demo-ready prototype** - Enough functionality for user testing
-
-### 🗺️ 3. Start Implementing User Story Map Systematically  
-**Following the map order:** Activity 1 → Activity 2 → Activity 3
-
-#### Activity 1: Manage Music Scores
-- [x] **1.1 Add New Score** (File upload + local storage)
-- [x] **1.2 View & Select Existing Score** (Score list + selection)
-- [x] **BUG: After uploading a file the status message is displayed near the foot of the screen but the current score information is not updated**
-
-#### Activity 2: Analyze Score  
-- [x] **2.1 View PDF Score** (PDF.js integration + navigation)
-- [x] **BUG: After loading the application with scores in the database, then the first score is shown but the zoom controls are not updated**
-
-#### Activity 3: Practice Score
-- [x] **3.1 Distraction-Free Mode** (Remove UI elements so the musician is not distracted)
-
-#### Activity 4: Practice Marked Sections
-- [x] **4.1 Highlight Sections** (Drawing interface + color coding)
-- [ ] **4.2 Persist Highlights** (Save/load highlights)
-- [ ] **4.3 Focus on Highlighted Section** (Zoom/crop functionality)
-
 ### Phase 1: Basic PDF Upload & Display
 - [ ] **File Upload Handler** (scripts/main.js)
   - [x] Listen for file input change events
@@ -57,7 +13,7 @@
   - [ ] Set a file name alias
   - [ ] Basic file validation (PDF type, size limits)
 
-- [ ] **IndexedDB Storage** (db/**.js)
+- [x] **IndexedDB Storage** (db/**.js)
   - [x] Initialize PlayTimeDB with pdfFiles object store
   - [x] Save uploaded PDF files with metadata
   - [x] Retrieve stored PDF list
