@@ -7,6 +7,8 @@ class MemoryDatabase extends AbstractDatabase {
         this._store = new Map();
         this._nextId = 1;
         this._initialized = false;
+    this._sections = new Map(); // pdfId -> array of sections
+    this._nextSectionId = 1;
     }
 
     async init() {
@@ -41,6 +43,22 @@ class MemoryDatabase extends AbstractDatabase {
     async delete(id) {
         if (!this._initialized) throw new Error('Database not initialized');
         this._store.delete(id);
+    }
+
+    // ---- Sections (Practice Sections) API ----
+    async addHighlight(section) {
+        if (!this._initialized) throw new Error('Database not initialized');
+        if (!section || section.pdfId == null) return;
+        const id = this._nextSectionId++;
+        const record = { id, createdAt: new Date().toISOString(), ...section };
+        const list = this._sections.get(section.pdfId) || [];
+        list.push(record);
+        this._sections.set(section.pdfId, list);
+        return id;
+    }
+    async getHighlights(pdfId) {
+        if (!this._initialized) throw new Error('Database not initialized');
+        return (this._sections.get(pdfId) || []).slice();
     }
 }
 

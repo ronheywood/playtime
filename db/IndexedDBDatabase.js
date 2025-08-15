@@ -1,6 +1,7 @@
 const DB_NAME = 'PlayTimeDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // bumped for sections (practice sections) store
 const STORE_NAME = 'pdfFiles';
+const SECTIONS_STORE = 'sections';
 
 export class IndexedDBDatabase extends window.AbstractDatabase {
     // Abstract method: save(item)
@@ -142,6 +143,35 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
             };
         });
     }
+
+    // ---- Sections (Practice Sections) API ----
+    async addHighlight(section) {
+        if (!section || section.pdfId == null) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            if (!this._db) { return reject(new Error('Database not initialized')); }
+            try {
+                const tx = this._db.transaction([SECTIONS_STORE], 'readwrite');
+                const store = tx.objectStore(SECTIONS_STORE);
+                const record = { ...section, createdAt: section.createdAt || new Date().toISOString() };
+                const req = store.add(record);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            } catch (e) { reject(e); }
+        });
+    }
+    async getHighlights(pdfId) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { return reject(new Error('Database not initialized')); }
+            try {
+                const tx = this._db.transaction([SECTIONS_STORE], 'readonly');
+                const store = tx.objectStore(SECTIONS_STORE);
+                const idx = store.index('pdfId');
+                const req = idx.getAll(IDBKeyRange.only(pdfId));
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => reject(req.error);
+            } catch(e) { reject(e); }
+        });
+    }
     constructor(logger = console) {
         super();
         this._db = null;
@@ -168,14 +198,18 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
             };
             request.onupgradeneeded = (event) => {
                 const database = event.target.result;
+                // pdfFiles store
                 if (!database.objectStoreNames.contains(STORE_NAME)) {
-                    const store = database.createObjectStore(STORE_NAME, {
-                        keyPath: 'id',
-                        autoIncrement: true
-                    });
+                    const store = database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
                     store.createIndex('name', 'name', { unique: false });
                     store.createIndex('uploadDate', 'uploadDate', { unique: false });
-                    this.logger.info('✅ DB schema created');
+                    this.logger.info('✅ pdfFiles store created');
+                }
+                // sections relational-like store
+                if (!database.objectStoreNames.contains(SECTIONS_STORE)) {
+                    const s = database.createObjectStore(SECTIONS_STORE, { keyPath: 'id', autoIncrement: true });
+                    s.createIndex('pdfId', 'pdfId', { unique: false });
+                    this.logger.info('✅ sections store created');
                 }
             };
         });

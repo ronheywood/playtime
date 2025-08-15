@@ -14,17 +14,18 @@ describe('Highlighting pub/sub', () => {
       </div>`;
   });
 
-  test('updates active color when event is dispatched', async () => {
+  test('updates active confidence when event is dispatched', async () => {
     // Provide a logger with debug stub to avoid noise
     const testLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
     await Highlighting.init({}, testLogger);
-    // Initially null
-    expect(Highlighting._state.activeColor).toBe(null);
+    // Initially null confidence
+    expect(Highlighting._state.activeConfidence).toBe(null);
 
     // Dispatch event
     const ev = new CustomEvent('playtime:confidence-changed', { detail: { color: 'amber' } });
     window.dispatchEvent(ev);
 
-    expect(Highlighting._state.activeColor).toBe('amber');
+  // Expect enum value for amber (1)
+  expect(Highlighting._state.activeConfidence).toBe(1);
   });
 });

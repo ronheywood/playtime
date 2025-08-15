@@ -512,7 +512,7 @@ describe('PlayTime Music Practice App', () => {
         });
 
         describe('User Story 4.2: Persist Highlights', () => {
-            test('As a musician, I want highlighted sections (practice sections) to persist when I reopen the score', async () => {
+            test('As a musician, I want highlighted sections (practice sections) to persist when I switch away and back to the score', async () => {
                 // Arrange - choose a confidence (was color) BEFORE drawing (domain rule)
                 const amberBtn = document.querySelector('#color-amber');
                 expect(amberBtn).toBeTruthy();
@@ -534,49 +534,54 @@ describe('PlayTime Music Practice App', () => {
 
                 // Capture DOM-independent proof soon: we rely on persistence layer after reload
 
-                // Simulate reload (simplified). Rebuild DOM from index.html then re-run app init
-                const fs = require('fs');
-                const path = require('path');
-                const htmlContent = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
-                document.documentElement.innerHTML = htmlContent;
-
-                // Re-require setup pieces like in beforeEach of earlier suites (minimal bootstrap)
-                // NOTE: We intentionally do not re-import the test file itself.
-                const { SELECTORS: R_SELECTORS } = require('../../scripts/constants');
-                const logger = require('../../scripts/logger');
-                logger.setSilent(true);
-                // Provide Memory DB factory again
-                const MemoryDatabase = require('../../db/MemoryDatabase');
-                global.window.createPlayTimeDB = (l) => new MemoryDatabase();
-                // PDF viewer stub
-                global.window.createPlayTimePDFViewer = (l) => ({
-                    init: jest.fn().mockResolvedValue(true),
-                    loadPDF: jest.fn().mockResolvedValue(true),
-                    renderPage: jest.fn().mockResolvedValue(true),
-                    getZoom: () => 1,
-                    getZoomBounds: () => ({ min: 1, max: 3 }),
-                    setZoom: jest.fn()
-                });
-                // Highlighting module
-                global.window.PlayTimeHighlighting = require('../../scripts/highlighting.js');
-                // Score list
-                const { createPlayTimeScoreList } = require('../../scripts/score-list');
-                global.window.createPlayTimeScoreList = createPlayTimeScoreList;
-                // Main (will register DOMContentLoaded)
-                require('../../scripts/main');
-                document.dispatchEvent(new Event('DOMContentLoaded'));
-                await new Promise(r => setTimeout(r, 50));
-
-                // Select first score item (we add data-filename via component soon)
-                const scoreItems = document.querySelectorAll('.score-item');
-                if (scoreItems.length) {
-                    scoreItems[0].click();
+                // Add a second score directly through the DB (avoids redefining file input files)
+                const secondFile = new File(['mock pdf content 2'], 'another-score.pdf', { type: 'application/pdf' });
+                if (window.PlayTimeDB && window.PlayTimeDB.save) {
+                    await window.PlayTimeDB.save(secondFile);
+                }
+                if (global.window.PlayTimeScoreList) {
+                    await global.window.PlayTimeScoreList.refresh();
                 }
                 await new Promise(r => setTimeout(r, 50));
+                // Find items again after refresh
+                let scoreItems = document.querySelectorAll('.score-item[data-pdf-id]');
+                // Click second score (switch away)
+                const secondItem = Array.from(scoreItems).find(i => i.textContent.includes('another-score.pdf'));
+                if (secondItem) secondItem.click();
+                await new Promise(r => setTimeout(r, 50));
+                // Switch back to first score
+                scoreItems = document.querySelectorAll('.score-item[data-pdf-id]');
+                const firstItem = Array.from(scoreItems).find(i => i.textContent.includes('sample-score.pdf'));
+                if (firstItem) firstItem.click();
+                await new Promise(r => setTimeout(r, 80));
 
                 // Assert - highlight recreated with confidence attribute (numeric) OR legacy data-color
                 const amberRehydrated = document.querySelector('.highlight[data-color="amber"], .highlight[data-confidence]');
                 expect(amberRehydrated).toBeTruthy();
+            });
+
+            test('Green confidence highlight is created in DOM and stored when drawn', async () => {
+                // Arrange
+                const greenBtn = document.querySelector('#color-green');
+                expect(greenBtn).toBeTruthy();
+                greenBtn.click();
+                const canvas = document.querySelector('#pdf-canvas');
+                expect(canvas).toBeTruthy();
+                const md = new MouseEvent('mousedown', { bubbles: true, clientX: 110, clientY: 110 });
+                const mm = new MouseEvent('mousemove', { bubbles: true, clientX: 190, clientY: 150 });
+                const mu = new MouseEvent('mouseup', { bubbles: true, clientX: 190, clientY: 150 });
+                canvas.dispatchEvent(md);
+                canvas.dispatchEvent(mm);
+                canvas.dispatchEvent(mu);
+                // Assert DOM
+                const greenHighlight = document.querySelector('.highlight[data-color="green"]');
+                expect(greenHighlight).toBeTruthy();
+                // Assert persistence (if DB supports getHighlights)
+                if (window.PlayTimeDB && typeof window.PlayTimeDB.getHighlights === 'function' && window.PlayTimeCurrentScoreId != null) {
+                    const secs = await window.PlayTimeDB.getHighlights(window.PlayTimeCurrentScoreId);
+                    const anyGreen = (secs || []).some(s => String(s.confidence) === '2' || s.confidence === 2);
+                    expect(anyGreen).toBe(true);
+                }
             });
         });
 

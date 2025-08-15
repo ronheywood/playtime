@@ -100,6 +100,10 @@ function createPlayTimeScoreList(database, logger = console) {
                     _logger.error('PDF not found:', pdfId);
                     return;
                 }
+                // Expose current score id globally for highlight persistence
+                if (typeof window !== 'undefined') {
+                    window.PlayTimeCurrentScoreId = pdf.id;
+                }
                 // Hide any existing status message when selecting a score from the list
                 const msg = document.querySelector('.status-message');
                 if (msg && typeof msg.remove === 'function') msg.remove();
@@ -108,6 +112,21 @@ function createPlayTimeScoreList(database, logger = console) {
                 await this._loadIntoPDFViewer(pdf);
                 // Mark selected item in the list for accessibility and UI state
                 this._markSelectedItem(pdf.id);
+                // Remove existing highlight DOM nodes before rehydration (prevents duplication / cross-score bleed)
+                try {
+                    document.querySelectorAll('[data-role="highlight"]').forEach(h => h.remove());
+                } catch(_) { /* noop */ }
+                // Rehydrate practice sections (highlights)
+                try {
+                    if (_database.getHighlights && window.PlayTimeHighlighting) {
+                        // Attempt fetch with original id; if none and id is numeric-like, try numeric variant
+                        let sections = await _database.getHighlights(pdf.id);
+                        if ((!sections || sections.length === 0) && /^(\d+)$/.test(String(pdf.id))) {
+                            try { sections = await _database.getHighlights(Number(pdf.id)); } catch(_) {}
+                        }
+                        window.PlayTimeHighlighting.addSections(sections || []);
+                    }
+                } catch(e) { _logger.warn && _logger.warn('Failed rehydrating sections', e); }
                 if (onScoreLoaded && typeof onScoreLoaded === 'function') {
                     onScoreLoaded(pdf);
                 }

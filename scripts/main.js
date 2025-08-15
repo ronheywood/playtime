@@ -125,7 +125,8 @@ function getPagesFromViewerSafe() {
 async function saveFileWithMeta(database, file, pagesMeta) {
     if (!database || typeof database.save !== 'function') return;
     try {
-        await database.save(file, { pages: pagesMeta });
+    const id = await database.save(file, { pages: pagesMeta });
+    if (typeof window !== 'undefined') { window.PlayTimeCurrentScoreId = id; }
         if (window.PlayTimeScoreList && typeof window.PlayTimeScoreList.refresh === 'function') {
             await window.PlayTimeScoreList.refresh();
         }
