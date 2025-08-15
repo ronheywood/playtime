@@ -450,6 +450,9 @@
             const viewer = this._state.viewer;
             const canvas = this._state.canvas;
             if (!viewer || !canvas || !Array.isArray(sections)) return;
+            // Determine current page if viewer module available
+            let currentPage = null;
+            try { if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getCurrentPage === 'function') { currentPage = Number(window.PlayTimePDFViewer.getCurrentPage()); } } catch(_) {}
             sections.forEach(sec => {
                 if (sec && typeof sec.xPct === 'number') {
                     // Create element using pct geometry
@@ -469,9 +472,30 @@
                         viewer.appendChild(el);
                         // position now
                         try { repositionHighlight(el, viewer, canvas, this._state.logger); } catch(_){}
+                        // Visibility: show only if page matches current page (if known)
+                        try {
+                            if (Number.isFinite(currentPage) && el.dataset.page) {
+                                el.style.display = (Number(el.dataset.page) === currentPage) ? 'block' : 'none';
+                            }
+                        } catch(_) { /* noop */ }
                     } catch(_) { /* skip bad record */ }
                 }
             });
+            // If page unknown (e.g., PDF viewer not yet ready), schedule a deferred visibility sync after a tick
+            if (!Number.isFinite(currentPage)) {
+                try {
+                    setTimeout(() => {
+                        let cp = null; try { if (window.PlayTimePDFViewer && window.PlayTimePDFViewer.getCurrentPage) cp = Number(window.PlayTimePDFViewer.getCurrentPage()); } catch(_){}
+                        if (!Number.isFinite(cp)) return;
+                        const list = viewer.querySelectorAll(this.CONFIG.SELECTORS.HIGHLIGHT);
+                        list.forEach(el => {
+                            if (el.dataset.page) {
+                                el.style.display = (Number(el.dataset.page) === cp) ? 'block' : 'none';
+                            }
+                        });
+                    }, 0);
+                } catch(_) { /* noop */ }
+            }
         }
     };
 
