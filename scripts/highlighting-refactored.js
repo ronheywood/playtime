@@ -19,22 +19,10 @@
         require('./highlighting/HighlightPersistenceService') : global.HighlightPersistenceService;
     const HighlightEventCoordinatorClass = (typeof require !== 'undefined') ? 
         require('./highlighting/HighlightEventCoordinator') : global.HighlightEventCoordinator;
-    // Legacy compatibility: try to import constants and confidence modules
-    const CONST = (global && global.PlayTimeConstants) ? global.PlayTimeConstants : 
-        (function(){ try { return require('./constants'); } catch(_) { 
-            return { 
-                EVENTS: { CONFIDENCE_CHANGED: 'playtime:confidence-changed' }, 
-                SELECTORS: {} 
-            }; 
-        }})();
     
-    const CONF = (global && global.PlayTimeConfidence) ? global.PlayTimeConfidence : 
-        (function(){ try { return require('./confidence'); } catch(_) { 
-            return { 
-                ConfidenceLevel: { RED:0, AMBER:1, GREEN:2 }, 
-                confidenceToColor:(c)=>'red' 
-            }; 
-        }})();
+    // Dependencies will be injected via init() method
+    let CONST = null;
+    let CONF = null;
 
     // Default configuration with better organization
     const DEFAULT_CONFIG = {
@@ -92,14 +80,14 @@
 
         // Public API Methods
 
-        async init(config = {}, logger = console, confidenceModule = null) {
+        async init(config = {}, logger = console, confidenceModule = null, constantsModule = null) {
             this._state.logger = logger || console;
             
             // Merge configuration
             this.CONFIG = this._mergeConfig(config);
             
-            // Initialize components with optional confidence module injection
-            this._initializeComponents(confidenceModule);
+            // Initialize components with injected dependencies
+            this._initializeComponents(confidenceModule, constantsModule);
             
             // Discover DOM elements
             if (!this._discoverDOMElements()) {
@@ -260,10 +248,22 @@
             };
         },
 
-        _initializeComponents(confidenceModule = null) {
-            // Use injected confidence module or fall back to global resolution
-            const confidence = confidenceModule || CONF;
-            this._components.ConfidenceMapperClass = new ConfidenceMapperClass(confidence);
+        _initializeComponents(confidenceModule = null, constantsModule = null) {
+            // Ensure confidence module is available
+            if (!confidenceModule) {
+                throw new Error('Confidence module must be injected via init() method');
+            }
+            
+            // Ensure constants module is available
+            if (!constantsModule) {
+                throw new Error('Constants module must be injected via init() method');
+            }
+            
+            // Store dependencies for use by other methods
+            CONF = confidenceModule;
+            CONST = constantsModule;
+            
+            this._components.ConfidenceMapperClass = new ConfidenceMapperClass(confidenceModule);
             
             this._components.SelectionOverlayClass = new SelectionOverlayClass({
                 overlayClass: this.CONFIG.CSS.OVERLAY_CLASS

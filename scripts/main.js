@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         // Initialize refactored highlighting with dependency injection
         if (window.PlayTimeHighlighting) {
-            await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence);
+            await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants);
         }
     // (Removed legacy auto-select fallback; selection will be event driven in upcoming refactor)
         // Central SCORE_SELECTED event handler (unified selection pipeline)

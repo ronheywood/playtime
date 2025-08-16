@@ -51,6 +51,13 @@ describe('Second upload clears first score highlights', () => {
       </main>`;
 
     jest.resetModules();
+    
+    // Setup dependencies that main.js now requires for highlighting initialization
+    const confidence = require('../../scripts/confidence');
+    const { PT_CONSTANTS } = require('../../scripts/constants');
+    global.window.PlayTimeConfidence = confidence;
+    global.window.PlayTimeConstants = PT_CONSTANTS;
+    
     require('../../scripts/highlighting-refactored.js');
     require('../../scripts/main');
     document.dispatchEvent(new Event('DOMContentLoaded'));

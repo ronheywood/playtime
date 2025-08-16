@@ -1,6 +1,8 @@
 /** @jest-environment jsdom */
 // Verifies highlights get correct data-color for each confidence via _safeConfidenceToColor
 const Highlighting = require('../../scripts/highlighting-refactored.js');
+const confidence = require('../../scripts/confidence');
+const { PT_CONSTANTS } = require('../../scripts/constants');
 
 describe('Highlighting - safe confidence to color mapping', () => {
   beforeEach(() => {
@@ -14,7 +16,7 @@ describe('Highlighting - safe confidence to color mapping', () => {
 
   test('creates red, amber, green highlights for confidence 0,1,2', async () => {
     const logger = { debug: jest.fn(), warn: jest.fn() };
-    await Highlighting.init({}, logger);
+    await Highlighting.init({}, logger, confidence, PT_CONSTANTS);
     const canvas = document.getElementById('pdf-canvas');
 
     function drag(x1,y1,x2,y2) {

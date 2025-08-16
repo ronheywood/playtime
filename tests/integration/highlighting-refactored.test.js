@@ -76,7 +76,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
         test('initializes successfully with default config', async () => {
             const logger = { warn: jest.fn(), debug: jest.fn() };
             
-            await RefactoredHighlighting.init({}, logger);
+            await RefactoredHighlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
             
             expect(RefactoredHighlighting._state.initialized).toBe(true);
             expect(RefactoredHighlighting._state.viewer).toBeTruthy();
@@ -87,7 +87,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
             document.body.innerHTML = ''; // Remove required elements
             const logger = { warn: jest.fn(), debug: jest.fn() };
             
-            await RefactoredHighlighting.init({}, logger);
+            await RefactoredHighlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
             
             expect(logger.warn).toHaveBeenCalledWith('Required DOM elements not found');
         });
@@ -98,7 +98,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
                 TIMING: { REHYDRATION_DELAY: 100 }
             };
             
-            await RefactoredHighlighting.init(customConfig);
+            await RefactoredHighlighting.init(customConfig, console, mockConfidence, global.window.PlayTimeConstants);
             
             expect(RefactoredHighlighting.CONFIG.SELECTORS.CUSTOM).toBe('[data-custom]');
             expect(RefactoredHighlighting.CONFIG.TIMING.REHYDRATION_DELAY).toBe(100);
@@ -107,7 +107,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('confidence management', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init({}, console, mockConfidence);
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
         });
 
         test('sets active confidence from color', () => {
@@ -126,7 +126,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('highlight management', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init();
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
         });
 
         test('adds sections from database records', () => {
@@ -208,7 +208,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('mouse selection', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init();
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
             RefactoredHighlighting.setActiveConfidenceFromColor('red');
         });
 
@@ -264,7 +264,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('event handling', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init();
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
         });
 
         test('handles confidence changed events', () => {
@@ -319,7 +319,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('persistence', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init();
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
             RefactoredHighlighting.setActiveConfidenceFromColor('amber');
         });
 
@@ -370,7 +370,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('legacy API compatibility', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init();
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
         });
 
         test('maintains getHighlights() compatibility', () => {

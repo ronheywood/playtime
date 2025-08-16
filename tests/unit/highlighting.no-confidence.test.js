@@ -1,6 +1,8 @@
 /** @jest-environment jsdom */
 // Unit test: ensure no highlight created if confidence not chosen
 const Highlighting = require('../../scripts/highlighting-refactored.js');
+const confidence = require('../../scripts/confidence');
+const { PT_CONSTANTS } = require('../../scripts/constants');
 
 describe('Highlighting - no confidence selection', () => {
   beforeEach(() => {
@@ -12,7 +14,7 @@ describe('Highlighting - no confidence selection', () => {
 
   test('does not create highlight without activeConfidence', async () => {
     const logger = { warn: jest.fn(), debug: jest.fn() };
-    await Highlighting.init({}, logger);
+    await Highlighting.init({}, logger, confidence, PT_CONSTANTS);
     const canvas = document.querySelector('#pdf-canvas');
     const md = new MouseEvent('mousedown', { bubbles:true, clientX:50, clientY:50 });
     const mm = new MouseEvent('mousemove', { bubbles:true, clientX:150, clientY:120 });
