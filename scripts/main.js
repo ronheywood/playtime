@@ -281,9 +281,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 (window.logger || console).warn('Failed attaching PDF viewer UI controls', e);
             }
         }
-        // Initialize highlighting after viewer so it can read geometry reliably
+        // Initialize refactored highlighting with dependency injection
         if (window.PlayTimeHighlighting) {
-            await window.PlayTimeHighlighting.init({}, appLogger);
+            await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants);
         }
     // (Removed legacy auto-select fallback; selection will be event driven in upcoming refactor)
         // Central SCORE_SELECTED event handler (unified selection pipeline)

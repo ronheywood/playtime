@@ -30,8 +30,14 @@ describe('Highlighting Integration', () => {
     });
 
     // Ensure highlighting module is available for main.js
-    const Highlighting = require('../../scripts/highlighting.js');
+    const Highlighting = require('../../scripts/highlighting-refactored.js');
     global.window.PlayTimeHighlighting = Highlighting;
+
+    // Setup dependencies that main.js now requires for highlighting initialization
+    const confidence = require('../../scripts/confidence');
+    const { PT_CONSTANTS } = require('../../scripts/constants');
+    global.window.PlayTimeConfidence = confidence;
+    global.window.PlayTimeConstants = PT_CONSTANTS;
 
     // Fire DOM ready to initialize modules (main.js listener already registered by require at top)
     document.dispatchEvent(new Event('DOMContentLoaded'));

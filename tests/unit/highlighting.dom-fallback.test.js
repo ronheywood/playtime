@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
-const Highlighting = require('../../scripts/highlighting.js');
+const Highlighting = require('../../scripts/highlighting-refactored.js');
+const confidence = require('../../scripts/confidence');
+const { PT_CONSTANTS } = require('../../scripts/constants');
 
 describe('Highlighting - DOM fallback for pre-selected confidence', () => {
   beforeEach(() => {
@@ -14,7 +16,7 @@ describe('Highlighting - DOM fallback for pre-selected confidence', () => {
 
   test('sets activeConfidence from pre-selected button and creates highlight', async () => {
     const logger = { warn: jest.fn(), debug: jest.fn() };
-    await Highlighting.init({}, logger);
+    await Highlighting.init({}, logger, confidence, PT_CONSTANTS);
     expect(Highlighting._state.activeConfidence).not.toBeNull();
     const canvas = document.getElementById('pdf-canvas');
     canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles:true, clientX:50, clientY:50 }));

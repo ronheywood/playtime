@@ -19,6 +19,10 @@ function createPlayTimePDFViewer(logger = console) {
     let documentBaseFitScale = null;
     let lastEffectiveScale = 1; // exposed for deterministic tests
 
+    // Rendering state to prevent concurrent render operations
+    let isRendering = false;
+    let pendingRender = null;
+
     // Clamp helper
     const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 
@@ -121,6 +125,29 @@ function createPlayTimePDFViewer(logger = console) {
                 logger.warn('❌ No PDF loaded');
                 return Promise.reject(new Error('No PDF loaded'));
             }
+
+            // Prevent concurrent renders - if already rendering, wait for completion then render requested page
+            if (isRendering) {
+                logger.info(`⏳ Render in progress, queuing page ${pageNum}`);
+                pendingRender = pageNum;
+                return new Promise((resolve, reject) => {
+                    const checkCompletion = () => {
+                        if (!isRendering) {
+                            if (pendingRender === pageNum) {
+                                pendingRender = null;
+                                this.renderPage(pageNum).then(resolve).catch(reject);
+                            } else {
+                                resolve(); // Another page was rendered instead
+                            }
+                        } else {
+                            setTimeout(checkCompletion, 10);
+                        }
+                    };
+                    checkCompletion();
+                });
+            }
+
+            isRendering = true;
             try {
                 logger.info(`🖼️ Rendering page ${pageNum}`);
                 const page = await currentPDF.getPage(pageNum);
@@ -146,6 +173,12 @@ function createPlayTimePDFViewer(logger = console) {
                     logger.info(`ℹ️ Document base fit scale set: ${documentBaseFitScale.toFixed(3)}`);
                 }
 
+                // Safety check: ensure documentBaseFitScale is never null/undefined
+                if (!documentBaseFitScale || !isFinite(documentBaseFitScale)) {
+                    logger.warn('⚠️ documentBaseFitScale was invalid, resetting to 1.0');
+                    documentBaseFitScale = 1.0;
+                }
+
                 const effectiveScale = documentBaseFitScale * zoomMultiplier;
                 lastEffectiveScale = effectiveScale;
 
@@ -155,15 +188,25 @@ function createPlayTimePDFViewer(logger = console) {
                 const renderContext = { canvasContext: context, viewport: scaledViewport };
                 await page.render(renderContext).promise;
                 currentPage = pageNum;
-                logger.info(`✅ Page ${pageNum} rendered (zoom x${zoomMultiplier.toFixed(2)}) baseFit=${documentBaseFitScale.toFixed(2)} effective=${effectiveScale.toFixed(2)}`);
+                logger.info(`✅ Page ${pageNum} rendered (zoom x${zoomMultiplier.toFixed(2)}) baseFit=${documentBaseFitScale?.toFixed(2) || 'null'} effective=${effectiveScale.toFixed(2)}`);
                 // Publish page-changed for interested modules (e.g., highlighting visibility)
                 try {
                     const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.PAGE_CHANGED) || 'playtime:page-changed';
                     const ev = new CustomEvent(evName, { detail: { page: currentPage } });
                     window.dispatchEvent(ev);
                 } catch(_) { /* noop */ }
+                
+                isRendering = false;
+                // Check if there's a pending render request
+                if (pendingRender && pendingRender !== pageNum) {
+                    const nextPage = pendingRender;
+                    pendingRender = null;
+                    setTimeout(() => this.renderPage(nextPage), 0);
+                }
+                
                 return Promise.resolve();
             } catch (error) {
+                isRendering = false;
                 logger.error(`❌ Failed to render page ${pageNum}:`, error);
                 return Promise.reject(error);
             }

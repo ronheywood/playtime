@@ -42,8 +42,14 @@ describe('Highlighting Page Visibility Integration', () => {
     global.window.createPlayTimeDB = () => ({ init: jest.fn().mockResolvedValue(true), save: jest.fn().mockResolvedValue(true), getAll: jest.fn().mockResolvedValue([]) });
 
     // Real highlighting module
-    const Highlighting = require('../../scripts/highlighting.js');
+    const Highlighting = require('../../scripts/highlighting-refactored.js');
     global.window.PlayTimeHighlighting = Highlighting;
+
+    // Setup dependencies that main.js now requires for highlighting initialization
+    const confidence = require('../../scripts/confidence');
+    const { PT_CONSTANTS } = require('../../scripts/constants');
+    global.window.PlayTimeConfidence = confidence;
+    global.window.PlayTimeConstants = PT_CONSTANTS;
 
     // Trigger app init (main registers DOMContentLoaded listener on require)
     require('../../scripts/main');

@@ -3,7 +3,9 @@
  */
 /** Unit test: Highlighting subscribes to confidence change event and updates active color */
 
-const Highlighting = require('../../scripts/highlighting');
+const Highlighting = require('../../scripts/highlighting-refactored');
+const confidence = require('../../scripts/confidence');
+const { PT_CONSTANTS } = require('../../scripts/constants');
 
 describe('Highlighting pub/sub', () => {
   beforeEach(() => {
@@ -17,7 +19,7 @@ describe('Highlighting pub/sub', () => {
   test('updates active confidence when event is dispatched', async () => {
     // Provide a logger with debug stub to avoid noise
     const testLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-    await Highlighting.init({}, testLogger);
+    await Highlighting.init({}, testLogger, confidence, PT_CONSTANTS);
     // Initially null confidence
     expect(Highlighting._state.activeConfidence).toBe(null);
 

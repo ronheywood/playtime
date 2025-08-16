@@ -43,8 +43,14 @@ describe('PlayTime Music Practice App', () => {
             return viewer;
         };
         
+    // Setup dependencies for highlighting module (required after dependency injection refactoring)
+    const confidence = require('../../scripts/confidence');
+    const constants = require('../../scripts/constants');
+    global.window.PlayTimeConfidence = confidence;
+    global.window.PlayTimeConstants = constants.PT_CONSTANTS;
+    
     // Use real highlighting capability (data-role driven)
-    const Highlighting = require('../../scripts/highlighting.js');
+    const Highlighting = require('../../scripts/highlighting-refactored.js');
     global.window.PlayTimeHighlighting = Highlighting;
         
     // Setup score list component

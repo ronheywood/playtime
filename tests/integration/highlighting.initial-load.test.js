@@ -34,8 +34,14 @@ describe('Highlighting initial load rehydration', () => {
       getTotalPages: () => 2
     });
 
-    const Highlighting = require('../../scripts/highlighting.js');
+    const Highlighting = require('../../scripts/highlighting-refactored.js');
     global.window.PlayTimeHighlighting = Highlighting;
+
+    // Setup dependencies that main.js now requires for highlighting initialization
+    const confidence = require('../../scripts/confidence');
+    const { PT_CONSTANTS } = require('../../scripts/constants');
+    global.window.PlayTimeConfidence = confidence;
+    global.window.PlayTimeConstants = PT_CONSTANTS;
 
     // First app load
     require('../../scripts/main');
@@ -106,7 +112,7 @@ describe('Highlighting initial load rehydration', () => {
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
-    const Highlighting2 = require('../../scripts/highlighting.js');
+    const Highlighting2 = require('../../scripts/highlighting-refactored.js');
     global.window.PlayTimeHighlighting = Highlighting2;
     require('../../scripts/main');
     document.dispatchEvent(new Event('DOMContentLoaded'));

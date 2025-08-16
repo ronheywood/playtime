@@ -159,12 +159,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="scripts/logger.js"></script>
     <script src="scripts/theme.js"></script>
+    <script src="scripts/constants.js"></script>
+    <script src="scripts/confidence.js"></script>
     <script src="scripts/score.js"></script>
     <script type="module" src="db/AbstractDatabase.js"></script>
     <script type="module" src="db/IndexedDBDatabase.js"></script>
     <script src="scripts/pdf-viewer.js"></script>
     <script src="scripts/score-list.js"></script>
-    <script src="scripts/highlighting.js"></script>
+    <!-- Refactored highlighting architecture -->
+    <script src="scripts/highlighting/HighlightElement.js"></script>
+    <script src="scripts/highlighting/SelectionOverlay.js"></script>
+    <script src="scripts/highlighting/CoordinateMapper.js"></script>
+    <script src="scripts/highlighting/ConfidenceMapper.js"></script>
+    <script src="scripts/highlighting/MouseSelectionHandler.js"></script>
+    <script src="scripts/highlighting/HighlightPersistenceService.js"></script>
+    <script src="scripts/highlighting/HighlightEventCoordinator.js"></script>
+    <script src="scripts/highlighting-refactored.js"></script>
+    <!-- Focus mode styles -->
+    <link rel="stylesheet" href="styles/focus-mode.css">
     <script src="scripts/layout-commands.js"></script>
     <script src="scripts/focus-mode-handler.js"></script>
     <script src="scripts/focus-mode-commands.js"></script>

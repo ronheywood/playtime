@@ -61,7 +61,14 @@ describe('Highlighting multi score page 2 reselect', () => {
       </main>`;
 
     jest.resetModules();
-    require('../../scripts/highlighting.js');
+    
+    // Setup dependencies that main.js now requires for highlighting initialization
+    const confidence = require('../../scripts/confidence');
+    const { PT_CONSTANTS } = require('../../scripts/constants');
+    global.window.PlayTimeConfidence = confidence;
+    global.window.PlayTimeConstants = PT_CONSTANTS;
+    
+    require('../../scripts/highlighting-refactored.js');
     require('../../scripts/main');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,120)); // allow auto-select first score and rehydrate (page 1 only visible)
