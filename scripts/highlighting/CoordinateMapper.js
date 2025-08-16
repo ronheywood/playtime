@@ -115,6 +115,61 @@ class CoordinateMapper {
     }
 
     /**
+     * Calculate zoom and pan values needed to focus on a highlight area
+     * Returns scale and translation values for CSS transforms
+     */
+    static calculateFocusTransform(highlightRect, containerRect, padding = 20) {
+        if (!highlightRect || !containerRect) {
+            return { scale: 1, translateX: 0, translateY: 0 };
+        }
+
+        // Add padding around the highlight
+        const targetWidth = containerRect.width - (padding * 2);
+        const targetHeight = containerRect.height - (padding * 2);
+
+        // Calculate scale to fit highlight within container
+        const scaleX = targetWidth / highlightRect.width;
+        const scaleY = targetHeight / highlightRect.height;
+        const scale = Math.min(scaleX, scaleY, 4); // Max 4x zoom
+
+        // Calculate translation to center the highlight
+        const scaledWidth = highlightRect.width * scale;
+        const scaledHeight = highlightRect.height * scale;
+        
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        
+        const highlightCenterX = highlightRect.left + (highlightRect.width / 2);
+        const highlightCenterY = highlightRect.top + (highlightRect.height / 2);
+        
+        const translateX = centerX - (highlightCenterX * scale);
+        const translateY = centerY - (highlightCenterY * scale);
+
+        return { scale, translateX, translateY };
+    }
+
+    /**
+     * Calculate crop area coordinates for focus mode
+     * Returns the rectangle that should be visible when cropping to a highlight
+     */
+    static calculateCropArea(highlightPercentages, padding = 0.1) {
+        const { xPct, yPct, wPct, hPct } = highlightPercentages;
+        
+        // Add padding as percentage of total dimensions
+        const paddedX = Math.max(0, xPct - padding);
+        const paddedY = Math.max(0, yPct - padding);
+        const paddedW = Math.min(1 - paddedX, wPct + (padding * 2));
+        const paddedH = Math.min(1 - paddedY, hPct + (padding * 2));
+
+        return {
+            xPct: paddedX,
+            yPct: paddedY,
+            wPct: paddedW,
+            hPct: paddedH
+        };
+    }
+
+    /**
      * Safely get bounding client rect with error handling
      */
     static safeBoundingRect(element) {

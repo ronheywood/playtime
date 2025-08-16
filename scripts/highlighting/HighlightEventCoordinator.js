@@ -10,6 +10,8 @@ class HighlightEventCoordinator {
                 SCORE_SELECTED: 'playtime:score-selected',
                 PAGE_CHANGED: 'playtime:page-changed',
                 LAYOUT_CHANGED: 'playtime:layout-changed',
+                HIGHLIGHT_FOCUS_REQUESTED: 'playtime:highlight-focus-requested',
+                HIGHLIGHT_FOCUS_EXITED: 'playtime:highlight-focus-exited',
                 ...config.events
             },
             rehydrationDelay: 10,
@@ -30,7 +32,9 @@ class HighlightEventCoordinator {
             onConfidenceChanged: null,
             onScoreSelected: null,
             onPageChanged: null,
-            onLayoutChanged: null
+            onLayoutChanged: null,
+            onHighlightFocusRequested: null,
+            onHighlightFocusExited: null
         };
     }
 
@@ -73,6 +77,22 @@ class HighlightEventCoordinator {
      */
     onLayoutChanged(callback) {
         this.callbacks.onLayoutChanged = callback;
+        return this;
+    }
+
+    /**
+     * Set callback for highlight focus requests (User Story 4.3)
+     */
+    onHighlightFocusRequested(callback) {
+        this.callbacks.onHighlightFocusRequested = callback;
+        return this;
+    }
+
+    /**
+     * Set callback for highlight focus exit events
+     */
+    onHighlightFocusExited(callback) {
+        this.callbacks.onHighlightFocusExited = callback;
         return this;
     }
 

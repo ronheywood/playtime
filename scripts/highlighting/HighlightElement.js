@@ -100,6 +100,7 @@ class HighlightElement {
      * Create DOM element with proper styling and data attributes
      */
     createDOMElement(containerRect, canvasOffsetLeft = 0, canvasOffsetTop = 0, styleConfig = {}) {
+        const { enableFocus = true } = styleConfig;
         const el = document.createElement('div');
         
         // Set data attributes
@@ -116,6 +117,11 @@ class HighlightElement {
         el.dataset.hlWPct = String(this.wPct);
         el.dataset.hlHPct = String(this.hPct);
 
+        // Add unique identifier for focus mode interactions
+        if (this.id) {
+            el.dataset.hlId = String(this.id);
+        }
+
         // Apply positioning
         const rect = this.toAbsoluteRect(containerRect, canvasOffsetLeft, canvasOffsetTop);
         el.style.position = 'absolute';
@@ -123,6 +129,16 @@ class HighlightElement {
         el.style.top = rect.top + 'px';
         el.style.width = rect.width + 'px';
         el.style.height = rect.height + 'px';
+
+        // Enable focus mode interactions
+        if (enableFocus) {
+            el.style.cursor = 'pointer';
+            el.style.pointerEvents = 'auto';
+            el.setAttribute('tabindex', '0');
+            el.setAttribute('role', 'button');
+            el.setAttribute('aria-label', `Practice section (${this.color} confidence) - Click to focus`);
+            el.title = `Click to focus on this practice section`;
+        }
 
         // Apply styling (class for CSS, fallback for tests)
         el.className = styleConfig.highlightClass || 'highlight';

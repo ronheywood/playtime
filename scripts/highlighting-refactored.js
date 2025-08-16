@@ -153,6 +153,79 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
             return Promise.resolve(); 
         },
 
+        /**
+         * Enter focus mode for a specific highlight (User Story 4.3)
+         * @param {string|HTMLElement} target - Highlight ID or DOM element
+         * @param {Object} options - Focus options (zoom, crop, etc.)
+         */
+        focusOnHighlight(target, options = {}) {
+            const { mode = 'zoom', padding = 20 } = options;
+            
+            // Find the highlight element
+            let highlightElement = null;
+            if (typeof target === 'string') {
+                highlightElement = this._state.viewer.querySelector(`[data-hl-id="${target}"]`);
+            } else if (target && target.dataset && target.dataset.role === 'highlight') {
+                highlightElement = target;
+            }
+            
+            if (!highlightElement) {
+                this._state.logger.warn?.('Highlight not found for focus mode');
+                return;
+            }
+
+            // Extract highlight coordinates
+            const xPct = parseFloat(highlightElement.dataset.hlXPct);
+            const yPct = parseFloat(highlightElement.dataset.hlYPct);
+            const wPct = parseFloat(highlightElement.dataset.hlWPct);
+            const hPct = parseFloat(highlightElement.dataset.hlHPct);
+
+            if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || 
+                !Number.isFinite(wPct) || !Number.isFinite(hPct)) {
+                this._state.logger.warn?.('Invalid highlight coordinates for focus mode');
+                return;
+            }
+
+            // Calculate focus transformation
+            const canvasRect = this._components.coordinateMapper.safeBoundingRect(this._state.canvas);
+            if (!canvasRect) return;
+
+            const highlightRect = this._components.coordinateMapper.fromPercentages(
+                { xPct, yPct, wPct, hPct },
+                canvasRect,
+                { left: 0, top: 0 }
+            );
+
+            const containerRect = this._components.coordinateMapper.safeBoundingRect(this._state.viewer);
+            if (!containerRect) return;
+
+            // Apply focus mode based on selected mode
+            if (mode === 'zoom') {
+                this._applyZoomFocus(highlightRect, containerRect, padding);
+            } else if (mode === 'crop') {
+                this._applyCropFocus({ xPct, yPct, wPct, hPct }, padding);
+            }
+
+            // Fire focus event
+            this._dispatchFocusEvent(highlightElement, { mode, padding });
+        },
+
+        /**
+         * Exit focus mode and return to normal view
+         */
+        exitFocusMode() {
+            // Reset any transformations
+            if (this._state.canvas) {
+                this._state.canvas.style.transform = '';
+            }
+            if (this._state.viewer) {
+                this._state.viewer.classList.remove('focus-mode');
+            }
+
+            // Fire exit focus event
+            this._dispatchFocusExitEvent();
+        },
+
         enableSelection() { 
             // Selection enabled by default after init
         },
@@ -329,9 +402,26 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
                 canvasOffset.top,
                 {
                     highlightClass: this.CONFIG.CSS.HIGHLIGHT_CLASS,
-                    colorStyles: this.CONFIG.CSS.COLOR_STYLES
+                    colorStyles: this.CONFIG.CSS.COLOR_STYLES,
+                    enableFocus: true  // Enable focus mode interactions
                 }
             );
+
+            // Add click handler for focus mode (User Story 4.3)
+            domElement.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.focusOnHighlight(domElement);
+            });
+
+            // Add keyboard handler for accessibility
+            domElement.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.focusOnHighlight(domElement);
+                }
+            });
 
             this._state.viewer.appendChild(domElement);
 
@@ -424,6 +514,79 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
                    typeof section.wPct === 'number' &&
                    typeof section.hPct === 'number' &&
                    typeof section.confidence === 'number';
+        },
+
+        /**
+         * Apply zoom-based focus mode using CSS transforms
+         */
+        _applyZoomFocus(highlightRect, containerRect, padding) {
+            const transform = this._components.coordinateMapper.calculateFocusTransform(
+                highlightRect, 
+                containerRect, 
+                padding
+            );
+
+            if (this._state.canvas) {
+                this._state.canvas.style.transformOrigin = 'top left';
+                this._state.canvas.style.transform = 
+                    `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`;
+                this._state.canvas.style.transition = 'transform 0.3s ease-out';
+            }
+
+            if (this._state.viewer) {
+                this._state.viewer.classList.add('focus-mode');
+            }
+        },
+
+        /**
+         * Apply crop-based focus mode (for future implementation)
+         */
+        _applyCropFocus(highlightPercentages, padding) {
+            const cropArea = this._components.coordinateMapper.calculateCropArea(
+                highlightPercentages, 
+                padding
+            );
+
+            // This would integrate with PDF.js to render only the cropped area
+            // Implementation depends on PDF viewer integration
+            this._state.logger.debug?.('Crop focus mode requested:', cropArea);
+            
+            if (this._state.viewer) {
+                this._state.viewer.classList.add('focus-mode', 'crop-mode');
+            }
+        },
+
+        /**
+         * Dispatch highlight focus event
+         */
+        _dispatchFocusEvent(highlightElement, options) {
+            try {
+                const event = new CustomEvent('playtime:highlight-focus-requested', {
+                    detail: {
+                        highlight: highlightElement,
+                        highlightId: highlightElement.dataset.hlId,
+                        color: highlightElement.dataset.hlColor,
+                        confidence: parseInt(highlightElement.dataset.hlConfidence),
+                        page: highlightElement.dataset.page ? parseInt(highlightElement.dataset.page) : null,
+                        options
+                    }
+                });
+                
+                (this._state.viewer || document).dispatchEvent(event);
+            } catch (_) {}
+        },
+
+        /**
+         * Dispatch highlight focus exit event
+         */
+        _dispatchFocusExitEvent() {
+            try {
+                const event = new CustomEvent('playtime:highlight-focus-exited', {
+                    detail: { timestamp: Date.now() }
+                });
+                
+                (this._state.viewer || document).dispatchEvent(event);
+            } catch (_) {}
         },
 
         _scheduleLayoutAdjustments() {
