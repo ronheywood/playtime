@@ -75,7 +75,9 @@
             activeConfidence: null,
             initialized: false,
             logger: console,
-            scheduler: null
+            scheduler: null,
+            lastCanvasSize: null,
+            canvasSizeMonitor: null
         },
 
         // Public API Methods
@@ -120,9 +122,24 @@
         repositionAll() {
             if (!this._state.viewer || !this._state.canvas) return;
             
+            // Get current canvas size for logging and monitoring
+            const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
+            const canvasSize = canvasRect ? `${canvasRect.width}x${canvasRect.height}` : '0x0';
+            const highlightCount = this.getHighlights().length;
+            
+            // Log repositioning for debugging
+            this._state.logger.info && this._state.logger.info('🔄 repositionAll called', {
+                canvasSize,
+                highlightCount,
+                timestamp: Date.now()
+            });
+            
             this.getHighlights().forEach((el) => {
                 this._repositionHighlightElement(el);
             });
+            
+            // Update tracked canvas size
+            this._state.lastCanvasSize = canvasSize;
         },
 
         addSections(sections = []) {
@@ -371,6 +388,8 @@
         },
 
         async _handleScoreSelected(pdfId) {
+            this._state.logger.info && this._state.logger.info('🎯 Score selected, starting rehydration', { pdfId });
+            
             // Clear existing highlights
             this._clearHighlights();
 
@@ -378,8 +397,21 @@
             try {
                 const sections = await this._components.persistenceService.loadHighlights(pdfId);
                 if (sections && sections.length > 0) {
+                    this._state.logger.info && this._state.logger.info('📊 Loaded highlights from database', { 
+                        count: sections.length,
+                        sampleData: sections[0] ? {
+                            xPct: sections[0].xPct,
+                            yPct: sections[0].yPct,
+                            wPct: sections[0].wPct,
+                            hPct: sections[0].hPct
+                        } : null
+                    });
+                    
                     this.addSections(sections);
                     this._scheduleLayoutAdjustments();
+                    
+                    // Start monitoring canvas size changes
+                    this._startCanvasSizeMonitoring();
                 }
             } catch (error) {
                 this._state.logger.warn && this._state.logger.warn('Failed to load highlights:', error);
@@ -612,6 +644,72 @@
                     return setTimeout(() => raf(() => raf(callback)), 0);
                 }
             };
+        },
+
+        /**
+         * Monitor canvas size changes after rehydration
+         * Automatically repositions highlights when canvas grows significantly
+         */
+        _startCanvasSizeMonitoring() {
+            // Clear any existing monitor
+            this._stopCanvasSizeMonitoring();
+            
+            let checkCount = 0;
+            const maxChecks = 20; // Check for up to 4 seconds (20 * 200ms)
+            const checkInterval = 200; // Check every 200ms
+            
+            this._state.canvasSizeMonitor = setInterval(() => {
+                checkCount++;
+                
+                const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
+                if (!canvasRect) {
+                    if (checkCount >= maxChecks) {
+                        this._stopCanvasSizeMonitoring();
+                    }
+                    return;
+                }
+                
+                const currentSize = `${canvasRect.width}x${canvasRect.height}`;
+                const currentArea = canvasRect.width * canvasRect.height;
+                
+                // Check if canvas has grown significantly since last reposition
+                if (this._state.lastCanvasSize) {
+                    const [lastWidth, lastHeight] = this._state.lastCanvasSize.split('x').map(Number);
+                    const lastArea = lastWidth * lastHeight;
+                    
+                    // If canvas area has grown by more than 50%, reposition highlights
+                    if (currentArea > lastArea * 1.5) {
+                        this._state.logger.info && this._state.logger.info('📏 Canvas size grew significantly, repositioning highlights', {
+                            from: this._state.lastCanvasSize,
+                            to: currentSize,
+                            areaGrowth: Math.round((currentArea / lastArea) * 100) + '%'
+                        });
+                        
+                        this.repositionAll();
+                        this._stopCanvasSizeMonitoring();
+                        return;
+                    }
+                }
+                
+                // Stop monitoring after max checks or if canvas seems stable
+                if (checkCount >= maxChecks) {
+                    this._state.logger.info && this._state.logger.info('⏱️ Canvas size monitoring completed', {
+                        finalSize: currentSize,
+                        checksPerformed: checkCount
+                    });
+                    this._stopCanvasSizeMonitoring();
+                }
+            }, checkInterval);
+        },
+
+        /**
+         * Stop canvas size monitoring
+         */
+        _stopCanvasSizeMonitoring() {
+            if (this._state.canvasSizeMonitor) {
+                clearInterval(this._state.canvasSizeMonitor);
+                this._state.canvasSizeMonitor = null;
+            }
         }
     };
 
