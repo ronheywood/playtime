@@ -44,7 +44,7 @@ describe('PlayTime Music Practice App', () => {
         };
         
     // Use real highlighting capability (data-role driven)
-    const Highlighting = require('../../scripts/highlighting.js');
+    const Highlighting = require('../../scripts/highlighting-refactored.js');
     global.window.PlayTimeHighlighting = Highlighting;
         
     // Setup score list component

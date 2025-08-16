@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-const Highlighting = require('../../scripts/highlighting.js');
+const Highlighting = require('../../scripts/highlighting-refactored.js');
 
 describe('Highlighting - DOM fallback for pre-selected confidence', () => {
   beforeEach(() => {

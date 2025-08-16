@@ -61,7 +61,7 @@ describe('Highlighting multi score page 2 reselect', () => {
       </main>`;
 
     jest.resetModules();
-    require('../../scripts/highlighting.js');
+    require('../../scripts/highlighting-refactored.js');
     require('../../scripts/main');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,120)); // allow auto-select first score and rehydrate (page 1 only visible)

@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 // Verifies highlights get correct data-color for each confidence via _safeConfidenceToColor
-const Highlighting = require('../../scripts/highlighting.js');
+const Highlighting = require('../../scripts/highlighting-refactored.js');
 
 describe('Highlighting - safe confidence to color mapping', () => {
   beforeEach(() => {

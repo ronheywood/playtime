@@ -106,4 +106,10 @@ class ConfidenceMapper {
     }
 }
 
-module.exports = ConfidenceMapper;
+// Dual-mode export for Node.js and browser compatibility
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ConfidenceMapper;
+}
+if (typeof window !== 'undefined') {
+    window.ConfidenceMapper = ConfidenceMapper;
+}

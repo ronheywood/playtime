@@ -51,7 +51,7 @@ describe('Second upload clears first score highlights', () => {
       </main>`;
 
     jest.resetModules();
-    require('../../scripts/highlighting.js');
+    require('../../scripts/highlighting-refactored.js');
     require('../../scripts/main');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,60));

@@ -196,6 +196,12 @@ class HighlightEventCoordinator {
             this.config.events.LAYOUT_CHANGED,
             (e) => this.handleLayoutChanged(e)
         );
+
+        // Add window resize listener to trigger layout updates
+        this.addEventListenerTracked(
+            'resize',
+            (e) => this.handleWindowResize(e)
+        );
     }
 
     addEventListenerTracked(eventName, handler) {
@@ -252,6 +258,13 @@ class HighlightEventCoordinator {
         }
     }
 
+    handleWindowResize(event) {
+        // Trigger layout changed event for window resize
+        if (this.callbacks.onLayoutChanged) {
+            this.callbacks.onLayoutChanged({ type: 'resize' });
+        }
+    }
+
     checkForBufferedEvents() {
         try {
             let buffered = null;
@@ -273,4 +286,10 @@ class HighlightEventCoordinator {
     }
 }
 
-module.exports = HighlightEventCoordinator;
+// Dual-mode export for Node.js and browser compatibility
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = HighlightEventCoordinator;
+}
+if (typeof window !== 'undefined') {
+    window.HighlightEventCoordinator = HighlightEventCoordinator;
+}

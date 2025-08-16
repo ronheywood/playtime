@@ -180,4 +180,10 @@ class MouseSelectionHandler {
     }
 }
 
-module.exports = MouseSelectionHandler;
+// Dual-mode export for Node.js and browser compatibility
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = MouseSelectionHandler;
+}
+if (typeof window !== 'undefined') {
+    window.MouseSelectionHandler = MouseSelectionHandler;
+}

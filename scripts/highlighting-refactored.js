@@ -3,15 +3,22 @@
  * Uses composition of focused classes instead of monolithic approach
  */
 
-const HighlightElement = require('./highlighting/HighlightElement');
-const SelectionOverlay = require('./highlighting/SelectionOverlay');
-const CoordinateMapper = require('./highlighting/CoordinateMapper');
-const ConfidenceMapper = require('./highlighting/ConfidenceMapper');
-const MouseSelectionHandler = require('./highlighting/MouseSelectionHandler');
-const HighlightPersistenceService = require('./highlighting/HighlightPersistenceService');
-const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordinator');
-
 (function initRefactoredHighlightingModule(global) {
+    // Load dependencies using dual-mode pattern (Node.js vs Browser)
+    const HighlightElementClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/HighlightElement') : global.HighlightElement;
+    const SelectionOverlayClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/SelectionOverlay') : global.SelectionOverlay;
+    const CoordinateMapperClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/CoordinateMapper') : global.CoordinateMapper;
+    const ConfidenceMapperClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/ConfidenceMapper') : global.ConfidenceMapper;
+    const MouseSelectionHandlerClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/MouseSelectionHandler') : global.MouseSelectionHandler;
+    const HighlightPersistenceServiceClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/HighlightPersistenceService') : global.HighlightPersistenceService;
+    const HighlightEventCoordinatorClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/HighlightEventCoordinator') : global.HighlightEventCoordinator;
     // Legacy compatibility: try to import constants and confidence modules
     const CONST = (global && global.PlayTimeConstants) ? global.PlayTimeConstants : 
         (function(){ try { return require('./constants'); } catch(_) { 
@@ -65,12 +72,12 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
 
         // Internal components
         _components: {
-            confidenceMapper: null,
-            selectionOverlay: null,
+            ConfidenceMapperClass: null,
+            SelectionOverlayClass: null,
             mouseHandler: null,
             persistenceService: null,
             eventCoordinator: null,
-            coordinateMapper: CoordinateMapper
+            CoordinateMapperClass: CoordinateMapperClass
         },
 
         // Internal state
@@ -108,7 +115,7 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
         },
 
         setActiveConfidenceFromColor(color) {
-            const level = this._components.confidenceMapper.colorToConfidence(color);
+            const level = this._components.ConfidenceMapperClass.colorToConfidence(color);
             this._state.activeConfidence = level;
         },
 
@@ -143,7 +150,7 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
 
             sections.forEach(section => {
                 if (this._isValidSection(section)) {
-                    const highlightElement = HighlightElement.fromDatabaseRecord(section);
+                    const highlightElement = HighlightElementClass.fromDatabaseRecord(section);
                     this._createHighlightFromElement(highlightElement, currentPage);
                 }
             });
@@ -162,23 +169,23 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
             const { mode = 'zoom', padding = 20 } = options;
             
             // Find the highlight element
-            let highlightElement = null;
+            let HighlightElementClass = null;
             if (typeof target === 'string') {
-                highlightElement = this._state.viewer.querySelector(`[data-hl-id="${target}"]`);
+                HighlightElementClass = this._state.viewer.querySelector(`[data-hl-id="${target}"]`);
             } else if (target && target.dataset && target.dataset.role === 'highlight') {
-                highlightElement = target;
+                HighlightElementClass = target;
             }
             
-            if (!highlightElement) {
+            if (!HighlightElementClass) {
                 this._state.logger.warn?.('Highlight not found for focus mode');
                 return;
             }
 
             // Extract highlight coordinates
-            const xPct = parseFloat(highlightElement.dataset.hlXPct);
-            const yPct = parseFloat(highlightElement.dataset.hlYPct);
-            const wPct = parseFloat(highlightElement.dataset.hlWPct);
-            const hPct = parseFloat(highlightElement.dataset.hlHPct);
+            const xPct = parseFloat(HighlightElementClass.dataset.hlXPct);
+            const yPct = parseFloat(HighlightElementClass.dataset.hlYPct);
+            const wPct = parseFloat(HighlightElementClass.dataset.hlWPct);
+            const hPct = parseFloat(HighlightElementClass.dataset.hlHPct);
 
             if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || 
                 !Number.isFinite(wPct) || !Number.isFinite(hPct)) {
@@ -187,16 +194,16 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
             }
 
             // Calculate focus transformation
-            const canvasRect = this._components.coordinateMapper.safeBoundingRect(this._state.canvas);
+            const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
             if (!canvasRect) return;
 
-            const highlightRect = this._components.coordinateMapper.fromPercentages(
+            const highlightRect = this._components.CoordinateMapperClass.fromPercentages(
                 { xPct, yPct, wPct, hPct },
                 canvasRect,
                 { left: 0, top: 0 }
             );
 
-            const containerRect = this._components.coordinateMapper.safeBoundingRect(this._state.viewer);
+            const containerRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.viewer);
             if (!containerRect) return;
 
             // Apply focus mode based on selected mode
@@ -207,7 +214,7 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
             }
 
             // Fire focus event
-            this._dispatchFocusEvent(highlightElement, { mode, padding });
+            this._dispatchFocusEvent(HighlightElementClass, { mode, padding });
         },
 
         /**
@@ -256,19 +263,19 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
         _initializeComponents(confidenceModule = null) {
             // Use injected confidence module or fall back to global resolution
             const confidence = confidenceModule || CONF;
-            this._components.confidenceMapper = new ConfidenceMapper(confidence);
+            this._components.ConfidenceMapperClass = new ConfidenceMapperClass(confidence);
             
-            this._components.selectionOverlay = new SelectionOverlay({
+            this._components.SelectionOverlayClass = new SelectionOverlayClass({
                 overlayClass: this.CONFIG.CSS.OVERLAY_CLASS
             });
 
-            this._components.mouseHandler = new MouseSelectionHandler({
+            this._components.mouseHandler = new MouseSelectionHandlerClass({
                 minSelectionSize: this.CONFIG.SELECTION
             });
 
-            this._components.persistenceService = new HighlightPersistenceService();
+            this._components.persistenceService = new HighlightPersistenceServiceClass();
 
-            this._components.eventCoordinator = new HighlightEventCoordinator({
+            this._components.eventCoordinator = new HighlightEventCoordinatorClass({
                 events: CONST.EVENTS,
                 rehydrationDelay: this.CONFIG.TIMING.REHYDRATION_DELAY
             });
@@ -290,15 +297,15 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
 
         async _setupComponents() {
             // Initialize selection overlay
-            this._components.selectionOverlay.init(this._state.viewer);
+            this._components.SelectionOverlayClass.init(this._state.viewer);
 
             // Initialize mouse handler
             this._components.mouseHandler
                 .init(
                     this._state.viewer, 
                     this._state.canvas, 
-                    this._components.selectionOverlay,
-                    this._components.coordinateMapper
+                    this._components.SelectionOverlayClass,
+                    this._components.CoordinateMapperClass
                 )
                 .onComplete((selection) => this._handleSelectionComplete(selection));
 
@@ -336,19 +343,19 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
             } catch (_) {}
 
             // Create highlight element
-            const canvasRect = this._components.coordinateMapper.safeBoundingRect(this._state.canvas);
-            const canvasOffset = this._components.coordinateMapper.getCanvasOffset(this._state.viewer, this._state.canvas);
+            const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
+            const canvasOffset = this._components.CoordinateMapperClass.getCanvasOffset(this._state.viewer, this._state.canvas);
             
             if (!canvasRect) return;
 
-            const normalizedRect = this._components.coordinateMapper.normalizeToCanvas(
+            const normalizedRect = this._components.CoordinateMapperClass.normalizeToCanvas(
                 selection.rect, 
                 canvasRect, 
                 canvasOffset
             );
 
-            const color = this._components.confidenceMapper.confidenceToColor(this._state.activeConfidence);
-            const highlightElement = HighlightElement.fromRect(
+            const color = this._components.ConfidenceMapperClass.confidenceToColor(this._state.activeConfidence);
+            const highlightElement = HighlightElementClass.fromRect(
                 normalizedRect,
                 canvasRect,
                 color,
@@ -390,13 +397,13 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
             });
         },
 
-        _createHighlightFromElement(highlightElement, currentPage = null) {
-            const canvasRect = this._components.coordinateMapper.safeBoundingRect(this._state.canvas);
-            const canvasOffset = this._components.coordinateMapper.getCanvasOffset(this._state.viewer, this._state.canvas);
+        _createHighlightFromElement(HighlightElementClass, currentPage = null) {
+            const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
+            const canvasOffset = this._components.CoordinateMapperClass.getCanvasOffset(this._state.viewer, this._state.canvas);
             
             if (!canvasRect) return null;
 
-            const domElement = highlightElement.createDOMElement(
+            const domElement = HighlightElementClass.createDOMElement(
                 canvasRect, 
                 canvasOffset.left, 
                 canvasOffset.top,
@@ -426,18 +433,18 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
             this._state.viewer.appendChild(domElement);
 
             // Set visibility based on current page
-            if (currentPage !== null && highlightElement.page !== null) {
-                domElement.style.display = (highlightElement.page === currentPage) ? 'block' : 'none';
+            if (currentPage !== null && HighlightElementClass.page !== null) {
+                domElement.style.display = (HighlightElementClass.page === currentPage) ? 'block' : 'none';
             }
 
             return domElement;
         },
 
-        async _persistHighlight(highlightElement) {
+        async _persistHighlight(HighlightElementClass) {
             try {
                 const pdfId = this._getCurrentPdfId();
                 if (pdfId != null && this._components.persistenceService.isAvailable()) {
-                    await this._components.persistenceService.saveHighlight(highlightElement, pdfId);
+                    await this._components.persistenceService.saveHighlight(HighlightElementClass, pdfId);
                 }
             } catch (error) {
                 this._state.logger.warn && this._state.logger.warn('Failed to persist highlight:', error);
@@ -475,12 +482,12 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
                 return;
             }
 
-            const canvasRect = this._components.coordinateMapper.safeBoundingRect(this._state.canvas);
-            const canvasOffset = this._components.coordinateMapper.getCanvasOffset(this._state.viewer, this._state.canvas);
+            const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
+            const canvasOffset = this._components.CoordinateMapperClass.getCanvasOffset(this._state.viewer, this._state.canvas);
             
             if (!canvasRect) return;
 
-            const rect = this._components.coordinateMapper.fromPercentages(
+            const rect = this._components.CoordinateMapperClass.fromPercentages(
                 { xPct, yPct, wPct, hPct },
                 canvasRect,
                 canvasOffset
@@ -520,7 +527,7 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
          * Apply zoom-based focus mode using CSS transforms
          */
         _applyZoomFocus(highlightRect, containerRect, padding) {
-            const transform = this._components.coordinateMapper.calculateFocusTransform(
+            const transform = this._components.CoordinateMapperClass.calculateFocusTransform(
                 highlightRect, 
                 containerRect, 
                 padding
@@ -542,7 +549,7 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
          * Apply crop-based focus mode (for future implementation)
          */
         _applyCropFocus(highlightPercentages, padding) {
-            const cropArea = this._components.coordinateMapper.calculateCropArea(
+            const cropArea = this._components.CoordinateMapperClass.calculateCropArea(
                 highlightPercentages, 
                 padding
             );
@@ -559,15 +566,15 @@ const HighlightEventCoordinator = require('./highlighting/HighlightEventCoordina
         /**
          * Dispatch highlight focus event
          */
-        _dispatchFocusEvent(highlightElement, options) {
+        _dispatchFocusEvent(HighlightElementClass, options) {
             try {
                 const event = new CustomEvent('playtime:highlight-focus-requested', {
                     detail: {
-                        highlight: highlightElement,
-                        highlightId: highlightElement.dataset.hlId,
-                        color: highlightElement.dataset.hlColor,
-                        confidence: parseInt(highlightElement.dataset.hlConfidence),
-                        page: highlightElement.dataset.page ? parseInt(highlightElement.dataset.page) : null,
+                        highlight: HighlightElementClass,
+                        highlightId: HighlightElementClass.dataset.hlId,
+                        color: HighlightElementClass.dataset.hlColor,
+                        confidence: parseInt(HighlightElementClass.dataset.hlConfidence),
+                        page: HighlightElementClass.dataset.page ? parseInt(HighlightElementClass.dataset.page) : null,
                         options
                     }
                 });

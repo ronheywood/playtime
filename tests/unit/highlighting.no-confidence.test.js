@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 // Unit test: ensure no highlight created if confidence not chosen
-const Highlighting = require('../../scripts/highlighting.js');
+const Highlighting = require('../../scripts/highlighting-refactored.js');
 
 describe('Highlighting - no confidence selection', () => {
   beforeEach(() => {
@@ -22,6 +22,6 @@ describe('Highlighting - no confidence selection', () => {
     canvas.dispatchEvent(mu);
     const hl = document.querySelector('[data-role="highlight"]');
     expect(hl).toBeNull();
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Highlight not created'));
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No active confidence'));
   });
 });

@@ -107,4 +107,10 @@ class HighlightPersistenceService {
     }
 }
 
-module.exports = HighlightPersistenceService;
+// Dual-mode export for Node.js and browser compatibility
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = HighlightPersistenceService;
+}
+if (typeof window !== 'undefined') {
+    window.HighlightPersistenceService = HighlightPersistenceService;
+}

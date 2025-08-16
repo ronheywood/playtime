@@ -3,7 +3,7 @@
  */
 /** Unit test: Highlighting subscribes to confidence change event and updates active color */
 
-const Highlighting = require('../../scripts/highlighting');
+const Highlighting = require('../../scripts/highlighting-refactored');
 
 describe('Highlighting pub/sub', () => {
   beforeEach(() => {

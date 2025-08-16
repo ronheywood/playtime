@@ -52,12 +52,20 @@ class HighlightElement {
             throw new Error('fromDatabaseRecord requires a valid record object');
         }
 
+        // Import ConfidenceMapper for color conversion if needed
+        const ConfidenceMapper = (typeof require !== 'undefined') ? 
+            require('./ConfidenceMapper') : window.ConfidenceMapper;
+        const mapper = new ConfidenceMapper();
+        
+        // Derive color from confidence if not present
+        const color = record.color || mapper.confidenceToColor(record.confidence);
+
         return new HighlightElement({
             xPct: record.xPct,
             yPct: record.yPct,
             wPct: record.wPct,
             hPct: record.hPct,
-            color: record.color,
+            color: color,
             confidence: record.confidence,
             page: record.page,
             id: record.id
@@ -194,4 +202,10 @@ class HighlightElement {
     }
 }
 
-module.exports = HighlightElement;
+// Dual-mode export for Node.js and browser compatibility
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = HighlightElement;
+}
+if (typeof window !== 'undefined') {
+    window.HighlightElement = HighlightElement;
+}
