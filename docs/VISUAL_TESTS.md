@@ -2,6 +2,52 @@
 
 These tests help prevent unexpected UI regressions by comparing current screenshots to committed baselines using Playwright's `toHaveScreenshot()` (Pixelmatch under the hood).
 
+## Test Coverage
+
+### Baseline Tests (`baseline.spec.ts`)
+- **Core UI states**: Desktop/tablet × light/dark themes
+- **Confidence color states**: Green, amber, red button states
+- **Score selection**: Selected score appearance
+- **Multipage navigation**: PDF navigation controls in different states
+  - First page (prev disabled)
+  - Middle page (both buttons enabled) 
+  - Last page (next disabled)
+
+### Highlighting Tests (`highlighting.spec.ts`)
+- **Highlight rendering**: Seeded highlights on single-page PDFs
+- **Drag creation**: Mouse-drawn highlights
+- **Focus mode**: Zoom behavior and highlight persistence
+- **Resize handling**: Layout recalculation during focus mode
+
+### Multipage Tests (`multipage.spec.ts`)
+- **Page-specific highlights**: Highlights that appear only on their respective pages
+- **Navigation states**: Different page positions in multipage documents
+- **Multiple highlights**: Several highlights on the same page
+- **Focus mode**: Zoom behavior with multipage context
+- **Extended documents**: 5+ page document navigation
+
+## Data Approach
+
+All visual tests use **synthetic data injection** rather than real PDF files:
+- **Deterministic**: Same results every time
+- **Fast**: No file I/O or PDF parsing
+- **Lightweight**: No binary files in repository
+- **Flexible**: Easy to test edge cases
+
+Example synthetic multipage scenario:
+```typescript
+// Inject multipage PDF state via DOM manipulation
+await page.evaluate(() => {
+  const navControls = document.createElement('div');
+  navControls.innerHTML = `
+    <button data-role="nav-prev">Previous</button>
+    <span data-role="page-info">Page 2 of 5</span>
+    <button data-role="nav-next">Next</button>
+  `;
+  viewer.appendChild(navControls);
+});
+```
+
 ## One-time setup
 
 ```pwsh

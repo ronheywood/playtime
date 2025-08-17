@@ -433,6 +433,82 @@ const TestHelpers = {
     }
 };
 
+/**
+ * Loads fixture data into the browser's IndexedDB for Playwright tests.
+ * This function is executed in the browser context via page.evaluate().
+ *
+ * @param {import('playwright').Page} page - The Playwright page object.
+ * @param {object} fixture - The fixture data to load.
+ * @returns {Promise<void>}
+ */
+TestHelpers.loadFixtureIntoIndexedDB = async (page, fixture) => {
+  await page.evaluate(async (fixtureData) => {
+    const dbName = 'PlayTimeDatabase';
+    const dbVersion = 1;
+    const scoresStoreName = 'scores';
+    const highlightsStoreName = 'highlights';
+
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, dbVersion);
+
+      request.onerror = () => reject(new Error('Failed to open IndexedDB'));
+      
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        
+        // Create object stores if they don't exist
+        if (!db.objectStoreNames.contains(scoresStoreName)) {
+          db.createObjectStore(scoresStoreName, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(highlightsStoreName)) {
+          db.createObjectStore(highlightsStoreName, { keyPath: 'id' });
+        }
+      };
+
+      request.onsuccess = (event) => {
+        const db = event.target.result;
+
+        try {
+          const transaction = db.transaction([scoresStoreName, highlightsStoreName], 'readwrite');
+          const scoresStore = transaction.objectStore(scoresStoreName);
+          const highlightsStore = transaction.objectStore(highlightsStoreName);
+
+          // Clear existing data
+          scoresStore.clear();
+          highlightsStore.clear();
+
+          // Add score metadata and file
+          const scoreRecord = {
+            id: fixtureData.id,
+            name: fixtureData.name,
+            file: fixtureData.file,
+            meta: fixtureData.meta,
+          };
+          scoresStore.add(scoreRecord);
+
+          // Add all highlights
+          fixtureData.highlights.forEach(highlight => {
+            highlightsStore.add(highlight);
+          });
+
+          transaction.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          
+          transaction.onerror = (error) => {
+            db.close();
+            reject(new Error('Transaction failed while loading fixture: ' + error));
+          };
+        } catch (error) {
+          db.close();
+          reject(error);
+        }
+      };
+    });
+  }, fixture);
+};
+
 module.exports = TestHelpers;
 
 /**
