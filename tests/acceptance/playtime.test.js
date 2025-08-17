@@ -36,7 +36,15 @@ describe('PlayTime Music Practice App', () => {
                 renderPage: jest.fn().mockResolvedValue(true),
                 getZoom: () => zoom,
                 getZoomBounds: () => ({ min: ZOOM.MIN, max: ZOOM.MAX }),
-                setZoom: jest.fn().mockImplementation((v) => { zoom = clamp(Number(v) || 1.0); return zoom; })
+                setZoom: jest.fn().mockImplementation((v) => { zoom = clamp(Number(v) || 1.0); return zoom; }),
+                // Minimal implementation used by focus mode handler during tests
+                focusOnRectPercent: jest.fn().mockImplementation(async (pctRect, opts = {}) => {
+                    // Emulate logic: ensure zoom > 1 for focus highlight
+                    if (zoom <= 1) {
+                        viewer.setZoom(1.1);
+                    }
+                    return { zoom: viewer.getZoom(), centered: { deltaX: 0, deltaY: 0 } };
+                })
             };
             viewer.zoomIn = jest.fn(() => viewer.setZoom(zoom + ZOOM.STEP));
             viewer.zoomOut = jest.fn(() => viewer.setZoom(zoom - ZOOM.STEP));
@@ -622,9 +630,15 @@ describe('PlayTime Music Practice App', () => {
                 // Act - click highlight to trigger focus
                 highlight.click();
 
-                // Assert implemented behavior: focus-mode class added and transform applied
+                // Assert implemented behavior: focus-mode class added (zoom now handled by PDF viewer, not CSS transform)
                 expect(viewer.classList.contains('focus-mode')).toBe(true);
-                expect(canvas.style.transform).toMatch(/scale\(/);
+                // New architecture: zoom comes from PDF viewer API, not canvas.style.transform
+                if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getZoom === 'function') {
+                    // allow a microtask for async focusOnRectPercent scheduling
+                    await new Promise(r => setTimeout(r, 5));
+                    const z = window.PlayTimePDFViewer.getZoom();
+                    expect(z).toBeGreaterThan(1);
+                }
                 // Event dispatched with highlight information
                 expect(focusEventDetail).not.toBeNull();
                 expect(focusEventDetail.highlight).toBeTruthy();
@@ -657,16 +671,11 @@ describe('PlayTime Music Practice App', () => {
 
                 // Focus
                 highlight.click();
-                const transform = canvas.style.transform;
-                // Current implementation in JSDOM may yield invalid numeric values due to zero-sized canvas; ensure scale() present
-                expect(transform).toContain('scale(');
-                // If we have a finite scale value, assert it zoomed (>1)
-                const scaleMatch = transform.match(/scale\((-?[0-9.]+)\)/);
-                if (scaleMatch) {
-                    const parsed = parseFloat(scaleMatch[1]);
-                    if (Number.isFinite(parsed) && parsed > 0) {
-                        expect(parsed).toBeGreaterThan(1);
-                    }
+                // Verify zoom increased via PDF viewer API (no longer using CSS scale transform on canvas)
+                if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getZoom === 'function') {
+                    await new Promise(r => setTimeout(r, 5));
+                    const z = window.PlayTimePDFViewer.getZoom();
+                    expect(z).toBeGreaterThan(1);
                 }
                 expect(viewer.classList.contains('focus-mode')).toBe(true);
 
@@ -676,8 +685,73 @@ describe('PlayTime Music Practice App', () => {
                 }
 
                 expect(viewer.classList.contains('focus-mode')).toBe(false);
+                // Canvas transform should remain unset/none in new zoom architecture
                 expect(canvas.style.transform === '' || canvas.style.transform === 'none').toBe(true);
                 expect(exitEventFired).toBe(true);
+            });
+
+            test('Clicking (or focusing) a highlight dispatches a focus-mode layout command, increases pdf viewer zoom, and (conceptually) centers the highlight', async () => {
+                const { SELECTORS } = require('../../scripts/constants');
+                const HighlightElement = require('../../scripts/highlighting/HighlightElement');
+                const CoordinateMapper = require('../../scripts/highlighting/CoordinateMapper');
+
+                const viewer = document.querySelector(SELECTORS.VIEWER);
+                const canvas = document.querySelector(SELECTORS.CANVAS);
+                expect(viewer).toBeTruthy();
+                expect(canvas).toBeTruthy();
+
+                // Capture last layout command payload (RED: currently focusOnHighlight does NOT dispatch this)
+                let lastLayoutCommand = null;
+                window.addEventListener('playtime:layout-command', (e) => {
+                    lastLayoutCommand = e.detail;
+                });
+
+                // Mock non-zero geometry for viewer & canvas so focus math works (JSDOM normally returns 0 sizes)
+                const width = 1200; const height = 800;
+                viewer.getBoundingClientRect = () => ({ left: 0, top: 0, width, height, right: width, bottom: height });
+                canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width, height, right: width, bottom: height });
+
+                // Provide explicit canvas dimensions (some code may reference width/height props)
+                canvas.width = width; canvas.height = height;
+
+                // Create a highlight value object at an off-center location to verify translation
+                const highlightVO = new HighlightElement({ xPct: 0.25, yPct: 0.4, wPct: 0.2, hPct: 0.15, color: 'red', confidence: 3, page: null });
+                const absRect = CoordinateMapper.safeBoundingRect(canvas);
+                const highlightEl = highlightVO.createDOMElement(absRect, 0, 0, { highlightClass: 'highlight', enableFocus: true });
+                viewer.appendChild(highlightEl);
+                expect(highlightEl).toBeTruthy();
+
+                // Trigger focus mode via public API (manual creation bypassed internal click wiring)
+                if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.focusOnHighlight === 'function') {
+                    window.PlayTimeHighlighting.focusOnHighlight(highlightEl, { padding: 20 });
+                } else {
+                    highlightEl.click();
+                }
+
+                // NEW EXPECTATIONS (RED):
+                // 1. A layout command of type 'focus-mode' should have been dispatched carrying highlight percentages
+                expect(lastLayoutCommand && lastLayoutCommand.type).toBe('focus-mode');
+                expect(lastLayoutCommand.options).toBeTruthy();
+                expect(lastLayoutCommand.options.highlight).toMatchObject({
+                    xPct: expect.any(Number),
+                    yPct: expect.any(Number),
+                    wPct: expect.any(Number),
+                    hPct: expect.any(Number)
+                });
+
+                // 2. Viewer should have focus-mode class (may be added by handler after command)
+                expect(viewer.classList.contains('focus-mode')).toBe(true);
+
+                // 3. PDF viewer zoom API should reflect increased zoom (>1)
+                if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getZoom === 'function') {
+                    const z = window.PlayTimePDFViewer.getZoom();
+                    expect(z).toBeGreaterThan(1); // RED: currently remains 1
+                } else {
+                    // Force failure if pdf viewer unavailable (missing setup)
+                    expect('PDF_VIEWER_AVAILABLE').toBe('true');
+                }
+
+                // 4. (Conceptual) Centering: we can't measure scroll in JSDOM reliably yet; will assert in GREEN phase via returned zoom & future API
             });
         });
     });

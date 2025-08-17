@@ -193,44 +193,166 @@ describe('focus mode', () => {
 3. **Extensible**: Event system and modular design support future features
 4. **Backward Compatible**: Existing highlighting functionality unchanged
 
-## 🎭 Usage Examples
+## 🎯 Goals
+- [ ] Use focus mode command architecture (layout commands + FocusModeHandler) for entering focus mode from a highlight
+- [ ] Remove direct canvas transform logic from highlighting module for focus (delegate to pdf-viewer & handler)
+- [ ] Use pdf-viewer’s zoom API (setZoom / zoomIn) instead of ad‑hoc scale transforms
+- [ ] Introduce a scroll-to / focusOnRect API in pdf-viewer to center a highlighted region
+- [ ] Keep existing acceptance tests meaningful (update them to assert zoom + centering via new API, not CSS transform)
 
-### Basic Focus Mode
-```javascript
-// Focus on a specific highlight
-PlayTimeHighlighting.focusOnHighlight(highlightElement);
+## 🧩 Proposed Incremental Vertical Slice
 
-// Focus with custom options
-PlayTimeHighlighting.focusOnHighlight(highlightElement, {
-    mode: 'zoom',
-    padding: 40
-});
+### Phase 1: Extend pdf-viewer (new public APIs)
+Add:
+1. `focusOnRectPercent({ xPct, yPct, wPct, hPct }, { paddingPx = 20 })`
+   - Computes required effective scale so the rect (plus padding) fits inside container
+   - Converts to zoomMultiplier (effectiveScale / documentBaseFitScale, bounded by ZOOM)
+   - `await` re-render, then centers via scrolling (container.scrollLeft / scrollTop)
+   - Returns `{ zoom, centered: { deltaX, deltaY } }`
+2. `scrollRectIntoView(rectPx, { behavior = 'instant', center = true })`
+   - Utility used by focus routine
+3. Persist base page width/height on first render (store `basePageWidth`, `basePageHeight`) so percentage math is stable.
 
-// Exit focus mode
-PlayTimeHighlighting.exitFocusMode();
-```
+### Phase 2: Enhance FocusModeHandler
+- Add viewerContainer class toggle: `focus-mode` on enter, remove on exit (keeps existing test assertions).
+- Accept highlight focus options: if `options.highlight` present, call `window.PlayTimePDFViewer.focusOnRectPercent(options.highlight, { paddingPx: options.padding || 20 })` after entering focus mode (and before scheduling layout event).
+- Remove internal scaling logic duplication when highlight provided (fallback `applyFocusLayout` only when no highlight).
 
-### Event Integration
-```javascript
-// Listen for focus events
-document.addEventListener('playtime:highlight-focus-requested', (event) => {
-    console.log('Focusing on highlight:', event.detail.highlightId);
-    // Update practice timer, analytics, etc.
-});
+### Phase 3: Refactor Highlighting Module
+- In `focusOnHighlight`:
+  - Extract highlight percentages
+  - Dispatch layout command: `changeLayout('focus-mode', { action: 'enter', highlight: { xPct, yPct, wPct, hPct }, padding })`
+  - Delete / bypass `_applyZoomFocus` and `_applyCropFocus` for highlight-triggered path (leave crop stub for future)
+  - Keep legacy event dispatch (`playtime:highlight-focus-requested`) for compatibility (still fired after issuing command)
+- Update `exitFocusMode` to delegate: `changeLayout('focus-mode', { action: 'exit' })` (retain transform reset fallback for backward compatibility, but transform should now normally be untouched).
 
-document.addEventListener('playtime:highlight-focus-exited', (event) => {
-    console.log('Exited focus mode');
-    // Save practice session data
-});
-```
+### Phase 4: Update Acceptance Test
+- Replace transform-based assertions in “Clicking a highlight enters focus mode…”:
+  - Assert `viewer.classList.contains('focus-mode')` still true
+  - Assert `window.PlayTimePDFViewer.getZoom() > 1`
+  - (Optional) Since JSDOM lacks real layout & scrolling fidelity, mock `viewer.getBoundingClientRect` + store requested highlight percentages by listening to `playtime:layout-command` event; assert command carried the highlight payload.
+  - Remove strict `translate(...) scale(...)` transform parsing (canvas will rely on re-rendered size instead of CSS scaling).
+- Keep existing earlier simpler focus test but relax transform dependency similarly (or leave one legacy test temporarily until refactor done, then adjust).
 
-## ✅ Conclusion
+### Phase 5: Backward Compatibility & Risk Mitigation
+- Leave old transform code path only if command infra missing (defensive check).
+- If tests rely on `canvas.style.transform === ''` after exit, they’ll continue to pass (no transform applied).
+- Provide migration comments in code marking deprecation of `_applyZoomFocus`.
 
-The refactored highlighting architecture now fully supports **User Story 4.3** with:
+### Phase 6: Follow-up (Deferred)
+- Add integration test specifically for layout command dispatch carrying highlight
+- Add unit tests for new pdf-viewer `focusOnRectPercent`
+- Eventually remove deprecated transform code once all consumers updated
 
-1. **Risk Mitigation**: Precise coordinate mapping eliminates the high-risk concern
-2. **User Experience**: Smooth, accessible focus mode with multiple interaction methods
-3. **Technical Excellence**: Clean APIs, comprehensive testing, and event-driven architecture  
-4. **Future-Ready**: Extensible foundation for advanced practice features
+## 🔍 Edge Cases & Considerations
+- PDF not yet loaded when focus command arrives: guard inside FocusModeHandler (queue or no-op with warning)
+- Percentages near edges: scrolling clamps at 0 and max scroll; centering delta tolerance in test should allow minor rounding error
+- Zoom bounds: If highlight already small, zoom may hit MAX; test should assert `> 1` OR `>= 1.0 && <= max` with a reason (I’ll implement `> 1` but fall back to logging if capped)
+- JSDOM limitation: `scrollLeft`/`scrollTop` don’t affect `getBoundingClientRect`; so “centering” verification via geometry mocking + command payload rather than real scroll effects
 
-The design balances immediate functionality with future extensibility, ensuring musicians can focus on their practice while providing a solid foundation for advanced features like practice session tracking and deliberate practice integration.
+## 🧪 Test Adjustments (Minimal)
+- Modify only the advanced focus acceptance test in `playtime.test.js`
+- Add a listener to capture last focus-mode layout command payload for assertion
+
+## ✅ Success Criteria
+- All existing tests pass after refactor (except the updated one temporarily red while we implement)
+- New pdf-viewer methods exported and callable in browser & tests
+- Highlight module no longer sets transform for zoom focus
+- Focus mode entry uses command path and pdf-viewer zoom API
+
+## 🚧 Risks
+- Race between zoom re-render and scrolling (mitigated by awaiting `reRenderCurrentPage()`)
+- Minor performance hit from extra render (acceptable for focus interaction)
+- Acceptance test might need slight timing waits (we’ll add small `setTimeout` where needed)
+
+## 📝 Implementation Order
+1. Update acceptance test (introduce failing state) – RED
+2. Implement pdf-viewer additions – GREEN partial
+3. Refactor FocusModeHandler & highlighting module – GREEN
+4. Adjust exit logic & events
+5. Run tests, refine
+6. Document deprecations in comments
+
+Let me know: Approve this plan? (If yes I’ll proceed with the RED test update first, then iterate through edits.)  
+Reply with “Proceed” (or specify tweaks) and I’ll start the TDD cycle.## 🎯 Goals (from your request)
+- [ ] Use focus mode command architecture (layout commands + FocusModeHandler) for entering focus mode from a highlight
+- [ ] Remove direct canvas transform logic from highlighting module for focus (delegate to pdf-viewer & handler)
+- [ ] Use pdf-viewer’s zoom API (setZoom / zoomIn) instead of ad‑hoc scale transforms
+- [ ] Introduce a scroll-to / focusOnRect API in pdf-viewer to center a highlighted region
+- [ ] Keep existing acceptance tests meaningful (update them to assert zoom + centering via new API, not CSS transform)
+
+## 🧩 Proposed Incremental Vertical Slice
+
+### Phase 1: Extend pdf-viewer (new public APIs)
+Add:
+1. `focusOnRectPercent({ xPct, yPct, wPct, hPct }, { paddingPx = 20 })`
+   - Computes required effective scale so the rect (plus padding) fits inside container
+   - Converts to zoomMultiplier (effectiveScale / documentBaseFitScale, bounded by ZOOM)
+   - `await` re-render, then centers via scrolling (container.scrollLeft / scrollTop)
+   - Returns `{ zoom, centered: { deltaX, deltaY } }`
+2. `scrollRectIntoView(rectPx, { behavior = 'instant', center = true })`
+   - Utility used by focus routine
+3. Persist base page width/height on first render (store `basePageWidth`, `basePageHeight`) so percentage math is stable.
+
+### Phase 2: Enhance FocusModeHandler
+- Add viewerContainer class toggle: `focus-mode` on enter, remove on exit (keeps existing test assertions).
+- Accept highlight focus options: if `options.highlight` present, call `window.PlayTimePDFViewer.focusOnRectPercent(options.highlight, { paddingPx: options.padding || 20 })` after entering focus mode (and before scheduling layout event).
+- Remove internal scaling logic duplication when highlight provided (fallback `applyFocusLayout` only when no highlight).
+
+### Phase 3: Refactor Highlighting Module
+- In `focusOnHighlight`:
+  - Extract highlight percentages
+  - Dispatch layout command: `changeLayout('focus-mode', { action: 'enter', highlight: { xPct, yPct, wPct, hPct }, padding })`
+  - Delete / bypass `_applyZoomFocus` and `_applyCropFocus` for highlight-triggered path (leave crop stub for future)
+  - Keep legacy event dispatch (`playtime:highlight-focus-requested`) for compatibility (still fired after issuing command)
+- Update `exitFocusMode` to delegate: `changeLayout('focus-mode', { action: 'exit' })` (retain transform reset fallback for backward compatibility, but transform should now normally be untouched).
+
+### Phase 4: Update Acceptance Test
+- Replace transform-based assertions in “Clicking a highlight enters focus mode…”:
+  - Assert `viewer.classList.contains('focus-mode')` still true
+  - Assert `window.PlayTimePDFViewer.getZoom() > 1`
+  - (Optional) Since JSDOM lacks real layout & scrolling fidelity, mock `viewer.getBoundingClientRect` + store requested highlight percentages by listening to `playtime:layout-command` event; assert command carried the highlight payload.
+  - Remove strict `translate(...) scale(...)` transform parsing (canvas will rely on re-rendered size instead of CSS scaling).
+- Keep existing earlier simpler focus test but relax transform dependency similarly (or leave one legacy test temporarily until refactor done, then adjust).
+
+### Phase 5: Backward Compatibility & Risk Mitigation
+- Leave old transform code path only if command infra missing (defensive check).
+- If tests rely on `canvas.style.transform === ''` after exit, they’ll continue to pass (no transform applied).
+- Provide migration comments in code marking deprecation of `_applyZoomFocus`.
+
+### Phase 6: Follow-up (Deferred)
+- Add integration test specifically for layout command dispatch carrying highlight
+- Add unit tests for new pdf-viewer `focusOnRectPercent`
+- Eventually remove deprecated transform code once all consumers updated
+
+## 🔍 Edge Cases & Considerations
+- PDF not yet loaded when focus command arrives: guard inside FocusModeHandler (queue or no-op with warning)
+- Percentages near edges: scrolling clamps at 0 and max scroll; centering delta tolerance in test should allow minor rounding error
+- Zoom bounds: If highlight already small, zoom may hit MAX; test should assert `> 1` OR `>= 1.0 && <= max` with a reason (I’ll implement `> 1` but fall back to logging if capped)
+- JSDOM limitation: `scrollLeft`/`scrollTop` don’t affect `getBoundingClientRect`; so “centering” verification via geometry mocking + command payload rather than real scroll effects
+
+## 🧪 Test Adjustments (Minimal)
+- Modify only the advanced focus acceptance test in `playtime.test.js`
+- Add a listener to capture last focus-mode layout command payload for assertion
+
+## ✅ Success Criteria
+- All existing tests pass after refactor (except the updated one temporarily red while we implement)
+- New pdf-viewer methods exported and callable in browser & tests
+- Highlight module no longer sets transform for zoom focus
+- Focus mode entry uses command path and pdf-viewer zoom API
+
+## 🚧 Risks
+- Race between zoom re-render and scrolling (mitigated by awaiting `reRenderCurrentPage()`)
+- Minor performance hit from extra render (acceptable for focus interaction)
+- Acceptance test might need slight timing waits (we’ll add small `setTimeout` where needed)
+
+## 📝 Implementation Order
+1. Update acceptance test (introduce failing state) – RED
+2. Implement pdf-viewer additions – GREEN partial
+3. Refactor FocusModeHandler & highlighting module – GREEN
+4. Adjust exit logic & events
+5. Run tests, refine
+6. Document deprecations in comments
+
+Let me know: Approve this plan? (If yes I’ll proceed with the RED test update first, then iterate through edits.)  
+Reply with “Proceed” (or specify tweaks) and I’ll start the

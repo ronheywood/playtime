@@ -172,69 +172,78 @@
          */
         focusOnHighlight(target, options = {}) {
             const { mode = 'zoom', padding = 20 } = options;
-            
-            // Find the highlight element
-            let HighlightElementClass = null;
+            // Locate highlight element
+            let highlightEl = null;
             if (typeof target === 'string') {
-                HighlightElementClass = this._state.viewer.querySelector(`[data-hl-id="${target}"]`);
+                highlightEl = this._state.viewer.querySelector(`[data-hl-id="${target}"]`);
             } else if (target && target.dataset && target.dataset.role === 'highlight') {
-                HighlightElementClass = target;
+                highlightEl = target;
             }
-            
-            if (!HighlightElementClass) {
+            if (!highlightEl) {
                 this._state.logger.warn?.('Highlight not found for focus mode');
                 return;
             }
-
-            // Extract highlight coordinates
-            const xPct = parseFloat(HighlightElementClass.dataset.hlXPct);
-            const yPct = parseFloat(HighlightElementClass.dataset.hlYPct);
-            const wPct = parseFloat(HighlightElementClass.dataset.hlWPct);
-            const hPct = parseFloat(HighlightElementClass.dataset.hlHPct);
-
-            if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || 
-                !Number.isFinite(wPct) || !Number.isFinite(hPct)) {
+            const xPct = parseFloat(highlightEl.dataset.hlXPct);
+            const yPct = parseFloat(highlightEl.dataset.hlYPct);
+            const wPct = parseFloat(highlightEl.dataset.hlWPct);
+            const hPct = parseFloat(highlightEl.dataset.hlHPct);
+            if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || !Number.isFinite(wPct) || !Number.isFinite(hPct)) {
                 this._state.logger.warn?.('Invalid highlight coordinates for focus mode');
                 return;
             }
-
-            // Calculate focus transformation
-            const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
-            if (!canvasRect) return;
-
-            const highlightRect = this._components.CoordinateMapperClass.fromPercentages(
-                { xPct, yPct, wPct, hPct },
-                canvasRect,
-                { left: 0, top: 0 }
-            );
-
-            const containerRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.viewer);
-            if (!containerRect) return;
-
-            // Apply focus mode based on selected mode
-            if (mode === 'zoom') {
-                this._applyZoomFocus(highlightRect, containerRect, padding);
-            } else if (mode === 'crop') {
-                this._applyCropFocus({ xPct, yPct, wPct, hPct }, padding);
+            // NEW: Dispatch layout command instead of directly applying CSS transform.
+            try {
+                if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.changeLayout === 'function') {
+                    window.PlayTimeLayoutCommands.changeLayout('focus-mode', {
+                        action: 'enter',
+                        highlight: { xPct, yPct, wPct, hPct },
+                        padding,
+                        mode
+                    });
+                    // Immediate zoom/center attempt (handler also does this) for responsiveness
+                    if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.focusOnRectPercent === 'function') {
+                        window.PlayTimePDFViewer.focusOnRectPercent({ xPct, yPct, wPct, hPct }, { paddingPx: padding }).catch(()=>{});
+                    }
+                    // NOTE: Removed legacy CSS transform duplication when command path active to prevent double scaling/UI mismatch
+                } else {
+                    // Fallback to legacy transform approach (deprecated) to maintain backward compatibility
+                    const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
+                    const containerRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.viewer);
+                    if (canvasRect && containerRect) {
+                        const highlightRect = this._components.CoordinateMapperClass.fromPercentages({ xPct, yPct, wPct, hPct }, canvasRect, { left:0, top:0 });
+                        if (mode === 'zoom') {
+                            this._applyZoomFocus(highlightRect, containerRect, padding);
+                        }
+                    }
+                }
+            } catch (e) {
+                this._state.logger.warn?.('Focus mode command dispatch failed; using fallback', e);
             }
-
-            // Fire focus event
-            this._dispatchFocusEvent(HighlightElementClass, { mode, padding });
+            // Fire focus event (legacy contract retained)
+            this._dispatchFocusEvent(highlightEl, { mode, padding });
         },
 
         /**
          * Exit focus mode and return to normal view
          */
         exitFocusMode() {
-            // Reset any transformations
-            if (this._state.canvas) {
-                this._state.canvas.style.transform = '';
+            // Preferred path: delegate to layout command handler
+            let delegated = false;
+            try {
+                if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.changeLayout === 'function') {
+                    window.PlayTimeLayoutCommands.changeLayout('focus-mode', { action: 'exit' });
+                    delegated = true;
+                }
+            } catch(_) {}
+            if (!delegated) {
+                // Legacy direct DOM cleanup (deprecated)
+                if (this._state.canvas) {
+                    this._state.canvas.style.transform = '';
+                }
+                if (this._state.viewer) {
+                    this._state.viewer.classList.remove('focus-mode');
+                }
             }
-            if (this._state.viewer) {
-                this._state.viewer.classList.remove('focus-mode');
-            }
-
-            // Fire exit focus event
             this._dispatchFocusExitEvent();
         },
 

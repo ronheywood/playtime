@@ -92,24 +92,34 @@ class FocusModeHandler {
      * @param {object} options - Focus options (currently unused)
      */
     enterFocusMode(options = {}) {
-        const selected = document.querySelector('.highlight.selected');
         this.canvas.setAttribute('data-focus-mode', 'active');
-        
-        // Distraction-free: hide sidebar and add body class
         if (this.sidebar) this.sidebar.style.display = 'none';
+        // Add focus-mode class to viewer container (was previously done in highlighting module)
+        try {
+            if (this.viewerContainer && this.viewerContainer.classList && !this.viewerContainer.classList.contains('focus-mode')) {
+                this.viewerContainer.classList.add('focus-mode');
+            }
+        } catch(_) { /* non-fatal for tests providing stub objects */ }
         if (document && document.body) document.body.classList.add('distraction-free');
-        
-        // Preserve original styles to restore later
         if (!this.canvas.dataset._origTransform) this.canvas.dataset._origTransform = this.canvas.style.transform || '';
         if (!this.canvas.dataset._origTransition) this.canvas.dataset._origTransition = this.canvas.style.transition || '';
         if (!this.viewerContainer.dataset._origOverflow) this.viewerContainer.dataset._origOverflow = this.viewerContainer.style.overflow || '';
-        
-        // Prevent scrollbars fighting the transform
         this.viewerContainer.style.overflow = 'hidden';
-        
-        this.applyFocusLayout();
 
-        // Update button visibility
+        // NEW PATH: if highlight coordinates provided and pdf viewer API available, delegate zooming/centering to viewer
+        if (options.highlight && window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.focusOnRectPercent === 'function') {
+            try {
+                const p = window.PlayTimePDFViewer.focusOnRectPercent(options.highlight, { paddingPx: options.padding || 20 });
+                Promise.resolve(p).then(() => {
+                    // Dispatch layout changed so any zoom UI (if present) can refresh
+                    this._scheduleLayoutDispatch({ waitForTransition: false, detail: { phase: 'enter-highlight' } });
+                });
+            } catch(e) { /* non-fatal */ }
+        } else {
+            // Legacy fallback behavior (no specific highlight)
+            this.applyFocusLayout();
+        }
+
         this.focusBtn.style.display = 'none';
         this.exitBtn.style.display = '';
         if (this.toggleBtn) {
@@ -124,26 +134,19 @@ class FocusModeHandler {
      */
     exitFocusMode(options = {}) {
         this.canvas.removeAttribute('data-focus-mode');
-        
-        // Restore original transform/transition and container overflow
         this.canvas.style.transform = this.canvas.dataset._origTransform || '';
         this.canvas.style.transition = this.canvas.dataset._origTransition || '';
         this.viewerContainer.style.overflow = this.viewerContainer.dataset._origOverflow || '';
-        
-        // Restore sidebar visibility and remove body class
-        if (this.sidebar) this.sidebar.style.display = '';
+    if (this.sidebar) this.sidebar.style.display = '';
+    try { if (this.viewerContainer && this.viewerContainer.classList) this.viewerContainer.classList.remove('focus-mode'); } catch(_) {}
         if (document && document.body) document.body.classList.remove('distraction-free');
-        
-        // Update button visibility
         this.exitBtn.style.display = 'none';
         this.focusBtn.style.display = '';
         if (this.toggleBtn) {
             this.toggleBtn.setAttribute('aria-pressed', 'false');
             this.toggleBtn.classList.remove('active');
         }
-
-    // Notify highlighting / layout listeners that layout changed after exit (scale returns to 1)
-    this._scheduleLayoutDispatch({ waitForTransition: false, detail: { phase: 'exit', scale: 1 } });
+        this._scheduleLayoutDispatch({ waitForTransition: false, detail: { phase: 'exit', scale: 1 } });
     }
 
     /**
