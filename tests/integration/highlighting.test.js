@@ -2,8 +2,8 @@
  * Integration tests for PlayTime Highlighting capability
  */
 
-const { CONFIG } = require('../../scripts/main');
-const { SELECTORS } = require('../../scripts/constants');
+require('../../scripts/main');
+const { PT_CONSTANTS } = require('../../scripts/constants');
 
 describe('Highlighting Integration', () => {
   beforeEach(async () => {
@@ -45,10 +45,10 @@ describe('Highlighting Integration', () => {
   });
 
   test('selection overlay appears while dragging and as hidden after mouseup', async () => {
-  const canvas = document.querySelector(SELECTORS.CANVAS);
+  const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
     expect(canvas).toBeTruthy();
 
-  const overlay = document.querySelector(SELECTORS.SELECTION_OVERLAY);
+  const overlay = document.querySelector(PT_CONSTANTS.SELECTORS.SELECTION_OVERLAY);
     expect(overlay).toBeTruthy();
     // Initially hidden
     const startStyle = window.getComputedStyle(overlay);
@@ -66,16 +66,16 @@ describe('Highlighting Integration', () => {
   });
 
   test('clicking a color then dragging creates a highlight element', async () => {
-  const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN);
+  const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN);
     expect(greenBtn).toBeTruthy();
     greenBtn.click();
 
-  const canvas = document.querySelector(SELECTORS.CANVAS);
+  const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
     canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 120, clientY: 120 }));
     canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 170 }));
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 170 }));
 
-    const highlight = document.querySelector('[data-role="highlight"]');
+    const highlight = document.querySelector(PT_CONSTANTS.SELECTORS.HIGHLIGHT);
     expect(highlight).toBeTruthy();
     expect(highlight.getAttribute('data-color')).toBe('green');
   });
@@ -89,8 +89,8 @@ describe('Highlighting Integration', () => {
     global.window.PlayTimeHighlighting.setScheduler(testScheduler);
     
     try {
-      const viewer = document.querySelector(SELECTORS.VIEWER);
-      const canvas = document.querySelector(SELECTORS.CANVAS);
+      const viewer = document.querySelector(PT_CONSTANTS.SELECTORS.VIEWER);
+      const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
       expect(viewer).toBeTruthy();
       expect(canvas).toBeTruthy();
 
@@ -99,13 +99,13 @@ describe('Highlighting Integration', () => {
       canvas.getBoundingClientRect = () => ({ left: 50, top: 20, width: 300, height: 260, right: 350, bottom: 280 });
 
       // Pick a color and draw a small highlight at local position (10,10) to (60,40) inside the canvas
-      const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN);
+      const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN);
       greenBtn.click();
       canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 50 + 10, clientY: 20 + 10 }));
       canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 50 + 60, clientY: 20 + 40 }));
       canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 50 + 60, clientY: 20 + 40 }));
 
-      const highlight = document.querySelector('[data-role="highlight"]');
+      const highlight = document.querySelector(PT_CONSTANTS.SELECTORS.HIGHLIGHT);
       expect(highlight).toBeTruthy();
       const beforeLeft = parseFloat(highlight.style.left || '0');
       const beforeTop = parseFloat(highlight.style.top || '0');
@@ -139,8 +139,8 @@ describe('Highlighting Integration', () => {
   });
 
   test('highlight resizes immediately after zoom in/out', async () => {
-    const viewer = document.querySelector(SELECTORS.VIEWER);
-    const canvas = document.querySelector(SELECTORS.CANVAS);
+    const viewer = document.querySelector(PT_CONSTANTS.SELECTORS.VIEWER);
+    const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
     expect(viewer).toBeTruthy();
     expect(canvas).toBeTruthy();
 
@@ -150,14 +150,14 @@ describe('Highlighting Integration', () => {
     canvas.getBoundingClientRect = () => ({ ...base, right: base.left + base.width, bottom: base.top + base.height });
 
     // Create a highlight that covers the entire canvas (by dragging corners)
-    const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN);
+    const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN);
     greenBtn.click();
     // Drag from top-left inside canvas to bottom-right
     canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: base.left + 1, clientY: base.top + 1 }));
     canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: base.left + base.width - 1, clientY: base.top + base.height - 1 }));
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: base.left + base.width - 1, clientY: base.top + base.height - 1 }));
 
-    const highlight = document.querySelector('[data-role="highlight"]');
+    const highlight = document.querySelector(PT_CONSTANTS.SELECTORS.HIGHLIGHT);
     expect(highlight).toBeTruthy();
 
     const wBefore = parseFloat(highlight.style.width || '0');
@@ -170,7 +170,7 @@ describe('Highlighting Integration', () => {
     canvas.getBoundingClientRect = () => ({ ...zoomed, right: zoomed.left + zoomed.width, bottom: zoomed.top + zoomed.height });
 
     // Click zoom-in button which also dispatches layout-changed
-    const zoomInBtn = document.querySelector('[data-role="zoom-in"]');
+    const zoomInBtn = document.querySelector(PT_CONSTANTS.SELECTORS.ZOOM_IN);
     expect(zoomInBtn).toBeTruthy();
     zoomInBtn.click();
     await new Promise((r) => setTimeout(r, 20));
@@ -183,7 +183,7 @@ describe('Highlighting Integration', () => {
 
     // Simulate zoom out back to base size
     canvas.getBoundingClientRect = () => ({ ...base, right: base.left + base.width, bottom: base.top + base.height });
-    const zoomOutBtn = document.querySelector('[data-role="zoom-out"]');
+    const zoomOutBtn = document.querySelector(PT_CONSTANTS.SELECTORS.ZOOM_OUT);
     expect(zoomOutBtn).toBeTruthy();
     zoomOutBtn.click();
     await new Promise((r) => setTimeout(r, 20));

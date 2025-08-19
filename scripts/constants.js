@@ -22,6 +22,8 @@ const SELECTORS = {
   SIDEBAR: '[data-role="sidebar"]',
   FOCUS_SECTION_BTN: '#focus-section-btn',
   EXIT_FOCUS_BTN: '#exit-focus-btn',
+  ZOOM_IN: '[data-role="zoom-in"]',
+  ZOOM_OUT: '[data-role="zoom-out"]'
 };
 
 const PT_CONSTANTS = { EVENTS, SELECTORS };
