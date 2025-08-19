@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-const Highlighting = require('../../scripts/highlighting-refactored.js');
+const Highlighting = require('../../scripts/highlighting.js');
 const confidence = require('../../scripts/confidence');
 const { PT_CONSTANTS } = require('../../scripts/constants');
 

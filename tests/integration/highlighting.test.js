@@ -30,7 +30,7 @@ describe('Highlighting Integration', () => {
     });
 
     // Ensure highlighting module is available for main.js
-    const Highlighting = require('../../scripts/highlighting-refactored.js');
+    const Highlighting = require('../../scripts/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
 
     // Setup dependencies that main.js now requires for highlighting initialization

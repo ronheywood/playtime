@@ -3,7 +3,7 @@
  * Uses composition of focused classes instead of monolithic approach
  */
 
-(function initRefactoredHighlightingModule(global) {
+(function init(global) {
     // Load dependencies using dual-mode pattern (Node.js vs Browser)
     const HighlightElementClass = (typeof require !== 'undefined') ? 
         require('./highlighting/HighlightElement') : global.HighlightElement;

@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 // Verifies highlights get correct data-color for each confidence via _safeConfidenceToColor
-const Highlighting = require('../../scripts/highlighting-refactored.js');
+const Highlighting = require('../../scripts/highlighting.js');
 const confidence = require('../../scripts/confidence');
 const { PT_CONSTANTS } = require('../../scripts/constants');
 
