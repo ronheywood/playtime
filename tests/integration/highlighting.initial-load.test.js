@@ -1,11 +1,11 @@
 /** @jest-environment jsdom */
 // Integration test: after refresh, first score auto-selected triggers highlight rehydration
-const { SELECTORS } = require('../../scripts/constants');
+const { PT_CONSTANTS } = require('../../scripts/constants');
 
 describe('Highlighting initial load rehydration', () => {
   beforeEach(async () => {
     const logger = require('../../scripts/logger');
-  logger.setSilent(false); // enable for debugging this test
+    logger.setSilent(true);
     global.logger = logger;
 
     // Minimal DB with persistence across reload simulation (in-memory variable)
@@ -60,13 +60,13 @@ describe('Highlighting initial load rehydration', () => {
     }
 
     // Select confidence & draw highlight
-    const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN) || document.getElementById('color-green');
+    const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN) || document.getElementById('color-green');
     greenBtn && greenBtn.click();
-    const canvas = document.querySelector(SELECTORS.CANVAS) || document.getElementById('pdf-canvas');
+    const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS) || document.getElementById('pdf-canvas');
     canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles:true, clientX:50, clientY:50 }));
     canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles:true, clientX:150, clientY:150 }));
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles:true, clientX:150, clientY:150 }));
-    expect(document.querySelectorAll('[data-role="highlight"]').length).toBe(1);
+    expect(document.querySelectorAll(PT_CONSTANTS.SELECTORS.HIGHLIGHT).length).toBe(1);
     // Wait for persistence (addHighlight async) to ensure section stored before refresh
     for (let i=0;i<20;i++) { // up to ~200ms
       if (store.sections.length > 0) break;

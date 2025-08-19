@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 // Upload score1, create highlight page1, upload score2 -> score1 highlight should not remain visible.
 
-const { PT_CONSTANTS, SELECTORS } = require('../../scripts/constants');
+const { PT_CONSTANTS } = require('../../scripts/constants');
 
 describe('Second upload clears first score highlights', () => {
   beforeEach(async () => {
@@ -31,7 +31,8 @@ describe('Second upload clears first score highlights', () => {
       getCurrentPage: () => currentPage,
       getTotalPages: () => 2
     });
-
+    const helpers = require('../helpers/test-helpers.js');
+    //TODO - use the helper to create this DOM
     document.body.innerHTML = `
       <main>
         <section id="upload-section"><input type="file" id="pdf-upload" accept="application/pdf"></section>
@@ -65,7 +66,7 @@ describe('Second upload clears first score highlights', () => {
   });
 
   test('uploading second score removes visible first score highlight', async () => {
-    const fileInput = document.querySelector(SELECTORS.FILE_INPUT) || document.getElementById('pdf-upload');
+    const fileInput = document.querySelector(PT_CONSTANTS.SELECTORS.FILE_INPUT) || document.getElementById('pdf-upload');
     // Upload score 1
     const file1 = new File(['pdf1'], 'score1.pdf', { type:'application/pdf' });
     Object.defineProperty(fileInput,'files',{ value:[file1], configurable:true });
@@ -73,13 +74,13 @@ describe('Second upload clears first score highlights', () => {
     // Wait for current score id
     for(let i=0;i<40;i++){ if(window.PlayTimeCurrentScoreId===1) break; await new Promise(r=>setTimeout(r,10)); }
     // Select color & create highlight on page1
-    const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN); greenBtn && greenBtn.click();
-    const canvas = document.querySelector(SELECTORS.CANVAS);
+    const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN); greenBtn && greenBtn.click();
+    const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
     canvas.dispatchEvent(new MouseEvent('mousedown',{ bubbles:true, clientX:30, clientY:30 }));
     canvas.dispatchEvent(new MouseEvent('mousemove',{ bubbles:true, clientX:120, clientY:120 }));
     canvas.dispatchEvent(new MouseEvent('mouseup',{ bubbles:true, clientX:120, clientY:120 }));
     // Ensure highlight persisted
-    let hCount=0; for(let i=0;i<30;i++){ hCount=document.querySelectorAll('[data-role="highlight"]').length; if(hCount===1) break; await new Promise(r=>setTimeout(r,10)); }
+    let hCount=0; for(let i=0;i<30;i++){ hCount=document.querySelectorAll(PT_CONSTANTS.SELECTORS.HIGHLIGHT).length; if(hCount===1) break; await new Promise(r=>setTimeout(r,10)); }
     expect(hCount).toBe(1);
 
     // Upload score 2
@@ -90,7 +91,7 @@ describe('Second upload clears first score highlights', () => {
     await new Promise(r=>setTimeout(r,80));
 
     // Check visible highlights (display != none)
-    const visible = Array.from(document.querySelectorAll('[data-role="highlight"]')).filter(h=>h.style.display!=="none").length;
+    const visible = Array.from(document.querySelectorAll(PT_CONSTANTS.SELECTORS.HIGHLIGHT)).filter(h=>h.style.display!=="none").length;
     expect(visible).toBe(0);
   });
 });

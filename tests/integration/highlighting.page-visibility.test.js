@@ -69,7 +69,7 @@ describe('Highlighting Page Visibility Integration', () => {
     canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles:true, clientX:180, clientY:170 }));
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles:true, clientX:180, clientY:170 }));
 
-    const highlights = () => Array.from(document.querySelectorAll('[data-role="highlight"]'));
+    const highlights = () => Array.from(document.querySelectorAll(PT_CONSTANTS.SELECTORS.HIGHLIGHT));
     expect(highlights().length).toBe(1);
     const h1 = highlights()[0];
     expect(h1.dataset.page).toBe('1');
