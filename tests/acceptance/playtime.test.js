@@ -5,7 +5,8 @@
 
 const { SCORE_LIST_CONFIG } = require('../../scripts/score-list');
 const { CONFIG } = require('../../scripts/main');
-const { SELECTORS } = require('../../scripts/constants');
+const { PT_CONSTANTS } = require('../../scripts/constants');
+const SELECTORS = PT_CONSTANTS.SELECTORS;
 
 describe('PlayTime Music Practice App', () => {
     beforeAll(async () => {
@@ -53,9 +54,8 @@ describe('PlayTime Music Practice App', () => {
         
     // Setup dependencies for highlighting module (required after dependency injection refactoring)
     const confidence = require('../../scripts/confidence');
-    const constants = require('../../scripts/constants');
     global.window.PlayTimeConfidence = confidence;
-    global.window.PlayTimeConstants = constants.PT_CONSTANTS;
+    global.window.PlayTimeConstants = PT_CONSTANTS;
     
     // Use real highlighting capability (data-role driven)
     const Highlighting = require('../../scripts/highlighting-refactored.js');
@@ -131,7 +131,6 @@ describe('PlayTime Music Practice App', () => {
                 fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                 
                 // Assert - Check if PDF canvas and viewer are present (these will fail until we implement them)
-                const { SELECTORS } = require('../../scripts/constants');
                 const pdfCanvas = document.querySelector(SELECTORS.CANVAS) || document.querySelector('#pdf-canvas');
                 const pdfViewer = document.querySelector(SELECTORS.VIEWER) || document.querySelector('.pdf-viewer-container');
                 expect(pdfCanvas).toBeTruthy();
@@ -601,7 +600,6 @@ describe('PlayTime Music Practice App', () => {
 
         describe('User Story 4.3: Focus on a Highlighted Section', () => {
             test('As a musician, I want to select one of my highlighted sections from the score', async () => {
-                const { SELECTORS } = require('../../scripts/constants');
                 const canvas = document.querySelector(SELECTORS.CANVAS);
                 const viewer = document.querySelector(SELECTORS.VIEWER);
                 expect(canvas).toBeTruthy();
@@ -645,7 +643,6 @@ describe('PlayTime Music Practice App', () => {
             });
 
             test('As a musician, I want the application to zoom in on the selected section for focused practice', async () => {
-                const { SELECTORS } = require('../../scripts/constants');
                 const canvas = document.querySelector(SELECTORS.CANVAS);
                 const viewer = document.querySelector(SELECTORS.VIEWER);
                 expect(canvas).toBeTruthy();
@@ -691,7 +688,6 @@ describe('PlayTime Music Practice App', () => {
             });
 
             test('Clicking (or focusing) a highlight dispatches a focus-mode layout command, increases pdf viewer zoom, and (conceptually) centers the highlight', async () => {
-                const { SELECTORS } = require('../../scripts/constants');
                 const HighlightElement = require('../../scripts/highlighting/HighlightElement');
                 const CoordinateMapper = require('../../scripts/highlighting/CoordinateMapper');
 

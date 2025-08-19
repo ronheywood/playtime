@@ -2,7 +2,7 @@
  * Integration test: highlights are associated with a page and hidden when navigating away.
  */
 
-const { SELECTORS } = require('../../scripts/constants');
+const { PT_CONSTANTS } = require('../../scripts/constants');
 
 describe('Highlighting Page Visibility Integration', () => {
   beforeEach(async () => {
@@ -47,7 +47,6 @@ describe('Highlighting Page Visibility Integration', () => {
 
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../scripts/confidence');
-    const { PT_CONSTANTS } = require('../../scripts/constants');
     global.window.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
 
@@ -58,10 +57,10 @@ describe('Highlighting Page Visibility Integration', () => {
   });
 
   test('highlight visibility toggles across page navigation', async () => {
-    const canvas = document.querySelector(SELECTORS.CANVAS);
+    const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
     expect(canvas).toBeTruthy();
 
-    const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN);
+    const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN);
     expect(greenBtn).toBeTruthy();
     greenBtn.click();
 
@@ -83,7 +82,7 @@ describe('Highlighting Page Visibility Integration', () => {
     expect(h1.style.display).toBe('none');
 
     // Draw highlight on page 2
-    const amberBtn = document.querySelector(SELECTORS.COLOR_AMBER);
+    const amberBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_AMBER);
     amberBtn.click();
     canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles:true, clientX:140, clientY:140 }));
     canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles:true, clientX:200, clientY:200 }));
