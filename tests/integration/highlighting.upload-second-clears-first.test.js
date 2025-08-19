@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 // Upload score1, create highlight page1, upload score2 -> score1 highlight should not remain visible.
 
-const { SELECTORS, EVENTS } = require('../../scripts/constants');
+const { PT_CONSTANTS, SELECTORS } = require('../../scripts/constants');
 
 describe('Second upload clears first score highlights', () => {
   beforeEach(async () => {
@@ -27,7 +27,7 @@ describe('Second upload clears first score highlights', () => {
     global.window.createPlayTimePDFViewer = () => ({
       init: jest.fn().mockResolvedValue(true),
       loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockImplementation(async(p=1)=>{ currentPage=p; const ev = EVENTS.PAGE_CHANGED || 'playtime:page-changed'; window.dispatchEvent(new CustomEvent(ev,{ detail:{ page:p }})); }),
+      renderPage: jest.fn().mockImplementation(async(p=1)=>{ currentPage=p; window.dispatchEvent(new CustomEvent(PT_CONSTANTS.EVENTS.PAGE_CHANGED,{ detail:{ page:p }})); }),
       getCurrentPage: () => currentPage,
       getTotalPages: () => 2
     });

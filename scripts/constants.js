@@ -30,7 +30,7 @@ const PT_CONSTANTS = { EVENTS, SELECTORS };
 
 // CommonJS export
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {SELECTORS, EVENTS, PT_CONSTANTS};
+  module.exports = {SELECTORS, PT_CONSTANTS};
 }
 
 // Browser global

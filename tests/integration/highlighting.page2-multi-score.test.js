@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 // Scenario: Two scores. First has highlight on page 2. After navigating to page 2 highlight scales, after switching scores and back it still appears on page 2.
 
-const { SELECTORS, EVENTS } = require('../../scripts/constants');
+const { PT_CONSTANTS, SELECTORS } = require('../../scripts/constants');
 
 describe('Highlighting multi score page 2 reselect', () => {
   beforeEach(async () => {
@@ -36,7 +36,7 @@ describe('Highlighting multi score page 2 reselect', () => {
     global.window.createPlayTimePDFViewer = () => ({
       init: jest.fn().mockResolvedValue(true),
       loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockImplementation(async (p) => { currentPage = p; const ev = EVENTS.PAGE_CHANGED || 'playtime:page-changed'; window.dispatchEvent(new CustomEvent(ev,{ detail:{ page:p }})); }),
+      renderPage: jest.fn().mockImplementation(async (p) => { currentPage = p; window.dispatchEvent(new CustomEvent(PT_CONSTANTS.EVENTS.PAGE_CHANGED,{ detail:{ page:p }})); }),
       getCurrentPage: () => currentPage,
       getTotalPages: () => 3
     });
