@@ -16,7 +16,8 @@
     "screenshots": "node scripts/capture-screenshots.mjs",
     "test:visual": "playwright test -c playwright.config.ts",
     "test:visual:update": "playwright test -c playwright.config.ts --update-snapshots",
-    "build": "pwsh -ExecutionPolicy Bypass -File build.ps1 -Task Package",
+    "build": "node build.js package",
+    "build:psake": "pwsh -ExecutionPolicy Bypass -File build.ps1 -Task Package",
     "package": "pwsh -ExecutionPolicy Bypass -File build.ps1 -Task Archive",
     "deploy:build": "npm run build"
   },

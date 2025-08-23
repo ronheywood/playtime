@@ -6,8 +6,24 @@
 # Build configuration
 Properties {
     $ProjectRoot = $PSScriptRoot
-    $TestPath = Join-Path $ProjectRoot "tests"
-    $AcceptanceTestPath = Join-Path $TestPath "acceptance"
+    $TestPath = Join-Path $Projec    Write-Host "🎭 Running acceptance tests..." -ForegroundColor Cyan
+    
+    try {
+        # Run Jest tests using cross-platform execution
+        Write-Host "⚡ Executing Jest acceptance tests..." -ForegroundColor Yellow
+        $result = Invoke-NpmCommand "npm run test"
+        
+        Write-Host $result.Output
+        
+        if ($result.ExitCode -eq 0) {
+            Write-Host "✅ All acceptance tests passed!" -ForegroundColor Green
+        } else {
+            Write-Host "❌ Some acceptance tests failed (this is expected in Outside-In TDD)" -ForegroundColor Red
+            Write-Host "📝 Use failing tests to guide implementation" -ForegroundColor Cyan
+        }
+        
+        return $result.ExitCode
+    }cceptanceTestPath = Join-Path $TestPath "acceptance"
     $FixturesPath = Join-Path $TestPath "fixtures" 
     $NodeModulesPath = Join-Path $ProjectRoot "node_modules"
     $PackageJsonPath = Join-Path $ProjectRoot "package.json"
@@ -17,6 +33,37 @@ Properties {
     $DistPath = Join-Path $ProjectRoot "dist"
     $PackagePath = Join-Path $ProjectRoot "package"
     $Version = "1.0.0"
+}
+
+# Helper function for cross-platform npm command execution
+function Invoke-NpmCommand {
+    param(
+        [string]$Command,
+        [string]$WorkingDirectory = $ProjectRoot
+    )
+    
+    $originalLocation = Get-Location
+    try {
+        Set-Location $WorkingDirectory
+        
+        if ($IsWindows -or $env:OS -eq "Windows_NT") {
+            # Windows: Use cmd /c for compatibility
+            $result = cmd /c $Command 2>&1
+            $exitCode = $LASTEXITCODE
+        } else {
+            # Unix/Linux/macOS: Use direct execution
+            $result = Invoke-Expression $Command 2>&1
+            $exitCode = $LASTEXITCODE
+        }
+        
+        return @{
+            Output = $result
+            ExitCode = $exitCode
+        }
+    }
+    finally {
+        Set-Location $originalLocation
+    }
 }
 
 # Default task
@@ -76,18 +123,15 @@ Task Install -depends Clean {
       if ($needsInstall) {
         Write-Host "⬇️ Running npm install..." -ForegroundColor Yellow
         
-        # Use cmd /c to ensure npm works correctly on Windows
-        $npmCommand = "cmd /c npm install"
-        $result = Invoke-Expression $npmCommand
+        # Use cross-platform npm execution
+        $result = Invoke-NpmCommand "npm install"
         
-        # Check if node_modules was created successfully
-        if (-not (Test-Path $NodeModulesPath)) {
-            throw "❌ npm install failed - node_modules directory not created"
+        if ($result.ExitCode -eq 0) {
+            Write-Host "✅ Dependencies installed successfully" -ForegroundColor Green
+        } else {
+            Write-Host $result.Output
+            throw "❌ npm install failed with exit code $($result.ExitCode)"
         }
-        Write-Host "✅ Dependencies installed successfully" -ForegroundColor Green
-    } else {
-        Write-Host "✅ Dependencies are up to date" -ForegroundColor Green
-    }
 }
 
 # Validate test setup
@@ -178,11 +222,9 @@ Task UnitTest -depends Install {
     Write-Host "🧪 Running unit tests..." -ForegroundColor Cyan
     
     # For now, just validate the test setup
-    $testCommand = "cmd /c npm run test -- --testPathPattern=unit --passWithNoTests"
-    $output = Invoke-Expression $testCommand 2>&1
-    $exitCode = $LASTEXITCODE
+    $result = Invoke-NpmCommand "npm run test -- --testPathPattern=unit --passWithNoTests"
     
-    if ($exitCode -eq 0) {
+    if ($result.ExitCode -eq 0) {
         Write-Host "✅ Unit tests passed" -ForegroundColor Green
     } else {
         Write-Host "⚠️ Unit tests issues detected (expected in Outside-In approach)" -ForegroundColor Yellow
@@ -194,22 +236,20 @@ Task AcceptanceTest -depends StartServer {
     Write-Host "🎭 Running acceptance tests..." -ForegroundColor Cyan
     
     try {
-        # Run Jest tests using cmd /c for Windows compatibility
+        # Run Jest tests using cross-platform execution
         Write-Host "⚡ Executing Jest acceptance tests..." -ForegroundColor Yellow
-        $testCommand = "cmd /c npm run test"
-        $output = Invoke-Expression $testCommand 2>&1
-        $exitCode = $LASTEXITCODE
+        $result = Invoke-NpmCommand "npm run test"
         
-        Write-Host $output
+        Write-Host $result.Output
         
-        if ($exitCode -eq 0) {
+        if ($result.ExitCode -eq 0) {
             Write-Host "✅ All acceptance tests passed!" -ForegroundColor Green
         } else {
             Write-Host "❌ Some acceptance tests failed (this is expected in Outside-In TDD)" -ForegroundColor Red
             Write-Host "📝 Use failing tests to guide implementation" -ForegroundColor Cyan
         }
         
-        return $exitCode
+        return $result.ExitCode
     }
     catch {
         Write-Host "❌ Error running acceptance tests: $($_.Exception.Message)" -ForegroundColor Red
@@ -233,8 +273,7 @@ Task Watch -depends Install {
         
         # For watch mode, we'll just run tests once and recommend using npm directly
         Write-Host "⚡ Running tests once. For continuous watching, use: npm run test:watch" -ForegroundColor Yellow
-        $testCommand = "cmd /c npm run test"
-        Invoke-Expression $testCommand
+        $result = Invoke-NpmCommand "npm run test"
         
         Write-Host "" -ForegroundColor Gray
         Write-Host "💡 TIP: For true watch mode, run 'npm run test:watch' in a separate terminal" -ForegroundColor Cyan
