@@ -1,6 +1,6 @@
 /**
- * Mouse interaction handler for highlight selection
- * Manages mouse events and coordinates with overlay for visual feedback
+ * Mouse and touch interaction handler for highlight selection
+ * Manages mouse/touch events and coordinates with overlay for visual feedback
  */
 class MouseSelectionHandler {
     constructor(config = {}) {
@@ -12,16 +12,23 @@ class MouseSelectionHandler {
         this.state = {
             isSelecting: false,
             startPoint: null,
-            currentPoint: null
+            currentPoint: null,
+            activePointerId: null // Track active touch/pointer
         };
         
         this.selectionOverlay = null;
         this.coordinateMapper = null;
+        // Event handlers
         this.onSelectionComplete = null;
+        this.onSelectionStart = null;
+        this.onSelectionEnd = null;
         
         // Bound methods for event cleanup
         this.handleMouseMove = this.handleMouseMove.bind(this);
         this.handleMouseUp = this.handleMouseUp.bind(this);
+        this.handleTouchStart = this.handleTouchStart.bind(this);
+        this.handleTouchMove = this.handleTouchMove.bind(this);
+        this.handleTouchEnd = this.handleTouchEnd.bind(this);
     }
 
     /**
@@ -45,16 +52,33 @@ class MouseSelectionHandler {
         return this;
     }
 
+    onStart(callback) {
+        this.onSelectionStart = callback;
+        return this;
+    }
+
+    onEnd(callback) {
+        this.onSelectionEnd = callback;
+        return this;
+    }
+
     /**
      * Clean up event listeners and state
      */
     destroy() {
         this.removeDocumentListeners();
         if (this.canvas && this.canvas.removeEventListener) {
+            // Remove mouse events
             this.canvas.removeEventListener('mousedown', this.handleMouseDown);
             this.canvas.removeEventListener('mousemove', this.handleCanvasMouseMove);
             this.canvas.removeEventListener('mouseup', this.handleMouseUp);
             this.canvas.removeEventListener('mouseleave', this.handleMouseLeave);
+            
+            // Remove touch events
+            this.canvas.removeEventListener('touchstart', this.handleTouchStart);
+            this.canvas.removeEventListener('touchmove', this.handleTouchMove);
+            this.canvas.removeEventListener('touchend', this.handleTouchEnd);
+            this.canvas.removeEventListener('touchcancel', this.handleTouchEnd);
         }
         this.reset();
     }
@@ -66,6 +90,7 @@ class MouseSelectionHandler {
         this.state.isSelecting = false;
         this.state.startPoint = null;
         this.state.currentPoint = null;
+        this.state.activePointerId = null;
         if (this.selectionOverlay) {
             this.selectionOverlay.hide();
         }
@@ -76,10 +101,17 @@ class MouseSelectionHandler {
     setupEventListeners() {
         if (!this.canvas) return;
 
+        // Mouse events
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleCanvasMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
         this.canvas.addEventListener('mouseleave', (e) => this.handleMouseLeave(e));
+        
+        // Touch events for mobile/tablet support
+        this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+        this.canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        this.canvas.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+        this.canvas.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
     }
 
     handleMouseDown(event) {
@@ -116,7 +148,6 @@ class MouseSelectionHandler {
     handleMouseUp(event) {
         if (!this.state.isSelecting) return;
         
-        this.state.isSelecting = false;
         this.removeDocumentListeners();
         
         const finalPoint = this.coordinateMapper.getRelativePoint(
@@ -125,6 +156,102 @@ class MouseSelectionHandler {
             event.clientY
         );
 
+        this.completeSelectionWithEndPoint(finalPoint);
+    }
+
+    handleMouseLeave(event) {
+        if (this.state.isSelecting) {
+            this.handleMouseUp(event);
+        }
+    }
+
+    updateSelection(clientX, clientY) {
+        this.state.currentPoint = this.coordinateMapper.getRelativePoint(
+            this.container,
+            clientX,
+            clientY
+        );
+
+        this.selectionOverlay.updateFromPoints(
+            this.state.startPoint,
+            this.state.currentPoint
+        );
+    }
+
+    // Touch event handlers for mobile/tablet support
+    
+    handleTouchStart(event) {
+        // Prevent scrolling and other default behaviors during selection
+        event.preventDefault();
+        
+        // Only handle single touch for selection
+        if (event.touches.length !== 1) return;
+        
+        const touch = event.touches[0];
+        this.state.activePointerId = touch.identifier;
+        this.state.isSelecting = true;
+        
+        this.state.startPoint = this.coordinateMapper.getRelativePoint(
+            this.container,
+            touch.clientX,
+            touch.clientY
+        );
+        this.state.currentPoint = this.state.startPoint;
+
+        // Show minimal overlay for immediate feedback
+        this.selectionOverlay.show(
+            this.state.startPoint.x,
+            this.state.startPoint.y,
+            1,
+            1
+        );
+
+        // Add document touch listeners for drag outside canvas
+        document.addEventListener('touchmove', this.handleTouchMove, { passive: false, capture: true });
+        document.addEventListener('touchend', this.handleTouchEnd, { passive: false, capture: true });
+        document.addEventListener('touchcancel', this.handleTouchEnd, { passive: false, capture: true });
+    }
+
+    handleTouchMove(event) {
+        if (!this.state.isSelecting) return;
+        
+        // Prevent scrolling during selection
+        event.preventDefault();
+        
+        // Find the touch we're tracking
+        let activeTouch = null;
+        for (let touch of event.touches) {
+            if (touch.identifier === this.state.activePointerId) {
+                activeTouch = touch;
+                break;
+            }
+        }
+        
+        if (!activeTouch) return;
+        
+        this.updateSelection(activeTouch.clientX, activeTouch.clientY);
+    }
+
+    handleTouchEnd(event) {
+        if (!this.state.isSelecting) return;
+        
+        // Prevent default behaviors
+        event.preventDefault();
+        
+        // Remove document touch listeners
+        document.removeEventListener('touchmove', this.handleTouchMove, true);
+        document.removeEventListener('touchend', this.handleTouchEnd, true);
+        document.removeEventListener('touchcancel', this.handleTouchEnd, true);
+        
+        // Use current point as final point (updated during touch move)
+        this.completeSelectionWithEndPoint(this.state.currentPoint);
+    }
+
+    // Shared completion logic
+    
+    completeSelectionWithEndPoint(finalPoint) {
+        this.state.isSelecting = false;
+        
         const selectionRect = this.coordinateMapper.rectFromPoints(
             this.state.startPoint,
             finalPoint
@@ -148,25 +275,6 @@ class MouseSelectionHandler {
 
         this.selectionOverlay.hide();
         this.reset();
-    }
-
-    handleMouseLeave(event) {
-        if (this.state.isSelecting) {
-            this.handleMouseUp(event);
-        }
-    }
-
-    updateSelection(clientX, clientY) {
-        this.state.currentPoint = this.coordinateMapper.getRelativePoint(
-            this.container,
-            clientX,
-            clientY
-        );
-
-        this.selectionOverlay.updateFromPoints(
-            this.state.startPoint,
-            this.state.currentPoint
-        );
     }
 
     addDocumentListeners() {

@@ -475,5 +475,18 @@ body {
   * { transition: none !important; animation: none !important; }
 }
 
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Prevent zoom on double-tap for canvas */
+    #pdf-canvas {
+        touch-action: pan-x pan-y pinch-zoom; /* Allow pan and pinch, but not double-tap zoom */
+    }
+    
+    /* When selecting, disable all touch actions */
+    .pdf-viewer-container.selecting #pdf-canvas {
+        touch-action: none;
+    }
+}
+
 /* Sidebar section padding rhythm */
 .sidebar > .p-4 { padding: var(--gutter-2); }
