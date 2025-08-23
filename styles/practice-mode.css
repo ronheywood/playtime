@@ -248,7 +248,7 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
-    z-index: 50;
+    z-index: 1002; /* Higher than focus mode canvas (999) and highlights (1000) */
 }
 
 .distraction-free .focus-mode-page-controls {
