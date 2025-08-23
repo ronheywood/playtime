@@ -220,6 +220,7 @@ body {
     position: absolute;
     border-width: 2px;
     border-style: solid;
+    z-index: 10; /* Base z-index for normal mode highlights */
 }
 .highlight[data-color="green"] {
     border-color: hsl(var(--practice-confident));

@@ -105,13 +105,19 @@
 
 /* Enhanced highlight hover states for better UX */
 [data-role="highlight"] {
-    transition: all 0.2s ease;
+    transition: border-width 0.2s ease, box-shadow 0.2s ease, z-index 0s; /* Avoid transitioning position/size properties */
 }
 
+/* Normal mode highlight hover */
 [data-role="highlight"]:hover {
     border-width: 3px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    z-index: 100;
+    z-index: 100; /* Higher than normal elements */
+}
+
+/* Focus mode highlight hover - needs higher z-index */
+.focus-mode [data-role="highlight"]:hover {
+    z-index: 1001; /* Higher than base focus mode highlights (1000) */
 }
 
 [data-role="highlight"]:focus {
