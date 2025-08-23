@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "PlayTime - Music Practice Application Prototype",
   "main": "index.html",
+  "homepage": "https://ronheywood.github.io/playtime",
   "scripts": {
     "test": "jest",
     "test:acceptance": "jest tests/acceptance/",
@@ -14,7 +15,10 @@
     "playwright:install": "npx playwright install --with-deps",
     "screenshots": "node scripts/capture-screenshots.mjs",
     "test:visual": "playwright test -c playwright.config.ts",
-    "test:visual:update": "playwright test -c playwright.config.ts --update-snapshots"
+    "test:visual:update": "playwright test -c playwright.config.ts --update-snapshots",
+    "build": "pwsh -ExecutionPolicy Bypass -File build.ps1 -Task Package",
+    "package": "pwsh -ExecutionPolicy Bypass -File build.ps1 -Task Archive",
+    "deploy:build": "npm run build"
   },
   "devDependencies": {
     "jest": "^29.7.0",

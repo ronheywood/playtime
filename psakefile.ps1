@@ -14,6 +14,9 @@ Properties {
     $ServerPort = 3000
     $ServerUrl = "http://localhost:$ServerPort"
     $TestTimeout = 60
+    $DistPath = Join-Path $ProjectRoot "dist"
+    $PackagePath = Join-Path $ProjectRoot "package"
+    $Version = "1.0.0"
 }
 
 # Default task
@@ -357,4 +360,230 @@ Task Help {
     Write-Host "  2. Implement code to make tests pass" -ForegroundColor Gray
     Write-Host "  3. Use 'Invoke-psake Watch' for continuous feedback" -ForegroundColor Gray
     Write-Host ""
+    Write-Host "Packaging:" -ForegroundColor Yellow
+    Write-Host "  Invoke-psake Package   - Create production package" -ForegroundColor Gray
+    Write-Host "  Invoke-psake Archive   - Create deployable archive" -ForegroundColor Gray
+    Write-Host ""
+}
+
+# Package the application for deployment
+Task Package -depends Test {
+    Write-Host "📦 Packaging PlayTime for deployment..." -ForegroundColor Cyan
+    
+    # Clean and create dist directory
+    if (Test-Path $DistPath) {
+        Remove-Item $DistPath -Recurse -Force
+        Write-Host "  🧹 Cleaned existing dist directory" -ForegroundColor Yellow
+    }
+    New-Item -ItemType Directory -Path $DistPath -Force | Out-Null
+    
+    # Copy main HTML file
+    Write-Host "  📄 Copying index.html..." -ForegroundColor Green
+    Copy-Item -Path (Join-Path $ProjectRoot "index.html") -Destination $DistPath
+    
+    # Copy JavaScript files
+    Write-Host "  ⚡ Copying JavaScript files..." -ForegroundColor Green
+    $scriptsSource = Join-Path $ProjectRoot "scripts"
+    $scriptsTarget = Join-Path $DistPath "scripts"
+    Copy-Item -Path $scriptsSource -Destination $scriptsTarget -Recurse
+    
+    # Copy CSS files
+    Write-Host "  🎨 Copying CSS files..." -ForegroundColor Green
+    $stylesSource = Join-Path $ProjectRoot "styles"
+    $stylesTarget = Join-Path $DistPath "styles"
+    Copy-Item -Path $stylesSource -Destination $stylesTarget -Recurse
+    
+    # Copy database files
+    Write-Host "  🗄️  Copying database files..." -ForegroundColor Green
+    $dbSource = Join-Path $ProjectRoot "db"
+    $dbTarget = Join-Path $DistPath "db"
+    Copy-Item -Path $dbSource -Destination $dbTarget -Recurse
+    
+    # Create a simple web.config for IIS hosting (if needed)
+    Write-Host "  ⚙️  Creating web.config..." -ForegroundColor Green
+    $webConfig = @'
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <system.webServer>
+        <staticContent>
+            <mimeMap fileExtension=".js" mimeType="application/javascript" />
+            <mimeMap fileExtension=".json" mimeType="application/json" />
+        </staticContent>
+        <defaultDocument>
+            <files>
+                <clear />
+                <add value="index.html" />
+            </files>
+        </defaultDocument>
+        <httpErrors errorMode="Custom" defaultResponseMode="File">
+            <remove statusCode="404" subStatusCode="-1" />
+            <error statusCode="404" path="index.html" responseMode="ExecuteURL" />
+        </httpErrors>
+    </system.webServer>
+</configuration>
+'@
+    $webConfig | Out-File -FilePath (Join-Path $DistPath "web.config") -Encoding UTF8
+    
+    # Create .htaccess for Apache hosting
+    Write-Host "  🌐 Creating .htaccess..." -ForegroundColor Green
+    $htaccess = @'
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+
+# Enable GZIP compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Set cache headers for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/html "access plus 1 hour"
+</IfModule>
+'@
+    $htaccess | Out-File -FilePath (Join-Path $DistPath ".htaccess") -Encoding UTF8
+    
+    # Create package.json for the distribution
+    Write-Host "  📋 Creating distribution package.json..." -ForegroundColor Green
+    $distPackageJson = @{
+        name = "playtime"
+        version = $Version
+        description = "PlayTime - Music Practice Application"
+        main = "index.html"
+        homepage = "."
+        engines = @{
+            node = ">=16.0.0"
+        }
+        keywords = @("music", "practice", "pdf", "score")
+        license = "MIT"
+    }
+    $distPackageJson | ConvertTo-Json -Depth 5 | Out-File -FilePath (Join-Path $DistPath "package.json") -Encoding UTF8
+    
+    # Create README for deployment
+    Write-Host "  📖 Creating deployment README..." -ForegroundColor Green
+    $deployReadme = @"
+# PlayTime - Deployment Package
+
+This is a production-ready package of the PlayTime music practice application.
+
+## Deployment Options
+
+### Static Hosting (Netlify, Vercel, GitHub Pages)
+1. Upload the contents of this directory to your hosting provider
+2. Set index.html as your default document
+3. Enable SPA routing (redirect all 404s to index.html)
+
+### Apache Server
+1. Upload all files to your web directory
+2. The .htaccess file will handle routing and caching
+3. Ensure mod_rewrite and mod_deflate are enabled
+
+### IIS Server
+1. Upload all files to your web directory
+2. The web.config file will handle routing and MIME types
+3. Ensure URL Rewrite module is installed
+
+### Docker/Container
+1. Use a static file server like nginx
+2. Serve files from this directory
+3. Configure fallback to index.html for SPA routing
+
+## Files Included
+- index.html - Main application entry point
+- scripts/ - Application JavaScript
+- styles/ - Application CSS
+- db/ - Database implementations
+- web.config - IIS configuration
+- .htaccess - Apache configuration
+
+Built on: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+Version: $Version
+"@
+    $deployReadme | Out-File -FilePath (Join-Path $DistPath "README.md") -Encoding UTF8
+    
+    Write-Host "✅ Package created successfully in ./dist/" -ForegroundColor Green
+    $distFiles = Get-ChildItem -Path $DistPath -Recurse | Measure-Object
+    Write-Host "  📊 Total files: $($distFiles.Count)" -ForegroundColor Gray
+    
+    $distSize = Get-ChildItem -Path $DistPath -Recurse | Measure-Object -Property Length -Sum
+    $sizeKB = [math]::Round($distSize.Sum / 1KB, 2)
+    Write-Host "  💾 Package size: $sizeKB KB" -ForegroundColor Gray
+}
+
+# Create deployable archive
+Task Archive -depends Package {
+    Write-Host "🗜️  Creating deployable archive..." -ForegroundColor Cyan
+    
+    # Clean package directory
+    if (Test-Path $PackagePath) {
+        Remove-Item $PackagePath -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $PackagePath -Force | Out-Null
+    
+    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $archiveName = "playtime-$Version-$timestamp"
+    
+    # Create ZIP archive
+    $zipPath = Join-Path $PackagePath "$archiveName.zip"
+    Write-Host "  📦 Creating ZIP: $archiveName.zip" -ForegroundColor Green
+    
+    try {
+        Compress-Archive -Path "$DistPath\*" -DestinationPath $zipPath -CompressionLevel Optimal
+        Write-Host "✅ Archive created successfully!" -ForegroundColor Green
+        
+        $archiveSize = Get-Item $zipPath | Select-Object -ExpandProperty Length
+        $sizeMB = [math]::Round($archiveSize / 1MB, 2)
+        Write-Host "  💾 Archive size: $sizeMB MB" -ForegroundColor Gray
+        Write-Host "  📁 Location: $zipPath" -ForegroundColor Gray
+        
+        # Create deployment instructions
+        $deployInstructions = @"
+# PlayTime Deployment Instructions
+
+## Quick Deploy to Popular Platforms
+
+### Netlify
+1. Go to https://app.netlify.com/
+2. Drag and drop the 'dist' folder or upload $archiveName.zip
+3. Set publish directory to '/' if uploading the zip
+4. Your app will be live at your-app-name.netlify.app
+
+### Vercel
+1. Install Vercel CLI: npm i -g vercel
+2. Extract this archive
+3. Run 'vercel' in the extracted directory
+4. Follow the prompts
+
+### GitHub Pages
+1. Extract this archive to your repository
+2. Go to repository Settings > Pages
+3. Select source branch and root folder
+4. Your app will be live at username.github.io/repository
+
+### Firebase Hosting
+1. Install Firebase CLI: npm i -g firebase-tools
+2. Extract this archive
+3. Run 'firebase init hosting' in the extracted directory
+4. Set public directory to '.'
+5. Run 'firebase deploy'
+
+## Archive Contents
+- playtime-$Version-$timestamp.zip - Complete deployable package
+- All necessary files for static hosting
+- Configuration files for Apache (.htaccess) and IIS (web.config)
+
+Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')
+"@
+        $deployInstructions | Out-File -FilePath (Join-Path $PackagePath "DEPLOY.md") -Encoding UTF8
+        
+        Write-Host "  📋 Deployment instructions created: .\package\DEPLOY.md" -ForegroundColor Yellow
+    }
+    catch {
+        Write-Host "❌ Failed to create archive: $_" -ForegroundColor Red
+        throw
+    }
 }
