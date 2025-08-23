@@ -204,6 +204,10 @@
                     if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.focusOnRectPercent === 'function') {
                         window.PlayTimePDFViewer.focusOnRectPercent({ xPct, yPct, wPct, hPct }, { paddingPx: padding }).catch(()=>{});
                     }
+                    
+                    // Ensure highlight is scrolled into view
+                    this._scrollHighlightIntoView(highlightEl, { xPct, yPct, wPct, hPct });
+                    
                     // NOTE: Removed legacy CSS transform duplication when command path active to prevent double scaling/UI mismatch
                 } else {
                     // Fallback to legacy transform approach (deprecated) to maintain backward compatibility
@@ -214,6 +218,8 @@
                         if (mode === 'zoom') {
                             this._applyZoomFocus(highlightRect, containerRect, padding);
                         }
+                        // Also ensure scrolling for legacy mode
+                        this._scrollHighlightIntoView(highlightEl, { xPct, yPct, wPct, hPct });
                     }
                 }
             } catch (e) {
@@ -718,6 +724,80 @@
             if (this._state.canvasSizeMonitor) {
                 clearInterval(this._state.canvasSizeMonitor);
                 this._state.canvasSizeMonitor = null;
+            }
+        },
+
+        /**
+         * Scroll the highlight into view in the viewport
+         */
+        _scrollHighlightIntoView(highlightEl, coordinates, options = {}) {
+            const { padding = 50, behavior = 'smooth' } = options;
+            
+            if (!highlightEl) {
+                this._state.logger?.warn?.('No highlight element provided for scrolling');
+                return;
+            }
+
+            // Try using the highlight element's scrollIntoView first
+            try {
+                highlightEl.scrollIntoView({
+                    behavior,
+                    block: 'center',
+                    inline: 'center'
+                });
+                return;
+            } catch (e) {
+                this._state.logger?.warn?.('scrollIntoView failed, trying manual scroll', e);
+            }
+
+            // Fallback to manual scrolling calculation
+            try {
+                const viewerElement = this._state.viewer;
+                if (!viewerElement) {
+                    this._state.logger?.warn?.('No viewer element found for manual scrolling');
+                    return;
+                }
+
+                const highlightRect = highlightEl.getBoundingClientRect();
+                const viewerRect = viewerElement.getBoundingClientRect();
+                
+                // Check if highlight is already in view
+                const isInView = highlightRect.top >= viewerRect.top && 
+                               highlightRect.bottom <= viewerRect.bottom &&
+                               highlightRect.left >= viewerRect.left && 
+                               highlightRect.right <= viewerRect.right;
+                
+                if (isInView) {
+                    return; // Already in view
+                }
+
+                // Calculate scroll offsets to center the highlight
+                const scrollContainer = viewerElement.closest('.scroll-container') || 
+                                      document.documentElement || 
+                                      document.body;
+
+                const targetScrollTop = highlightRect.top + window.scrollY - 
+                                      (window.innerHeight / 2) + 
+                                      (highlightRect.height / 2);
+
+                const targetScrollLeft = highlightRect.left + window.scrollX - 
+                                       (window.innerWidth / 2) + 
+                                       (highlightRect.width / 2);
+
+                // Smooth scroll to position
+                if (scrollContainer.scrollTo) {
+                    scrollContainer.scrollTo({
+                        top: Math.max(0, targetScrollTop),
+                        left: Math.max(0, targetScrollLeft),
+                        behavior
+                    });
+                } else {
+                    // Fallback for older browsers
+                    scrollContainer.scrollTop = Math.max(0, targetScrollTop);
+                    scrollContainer.scrollLeft = Math.max(0, targetScrollLeft);
+                }
+            } catch (e) {
+                this._state.logger?.warn?.('Manual scroll calculation failed', e);
             }
         }
     };
