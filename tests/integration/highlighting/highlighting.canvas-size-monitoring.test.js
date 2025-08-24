@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const RefactoredHighlighting = require('../../scripts/highlighting');
+const RefactoredHighlighting = require('../../../scripts/highlighting');
 
 describe('Highlighting: Canvas Size Monitoring System', () => {
     let mockConfidence, mockConstants, mockDB;

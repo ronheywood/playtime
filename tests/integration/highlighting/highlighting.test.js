@@ -2,13 +2,13 @@
  * Integration tests for PlayTime Highlighting capability
  */
 
-require('../../scripts/main');
-const { PT_CONSTANTS } = require('../../scripts/constants');
+require('../../../scripts/main.js');
+const { PT_CONSTANTS } = require('../../../scripts/constants.js');
 
 describe('Highlighting Integration', () => {
   beforeEach(async () => {
     // Silence logs in tests
-    const logger = require('../../scripts/logger');
+    const logger = require('../../../scripts/logger.js');
     logger.setSilent(true);
     global.logger = logger;
 
@@ -30,12 +30,12 @@ describe('Highlighting Integration', () => {
     });
 
     // Ensure highlighting module is available for main.js
-    const Highlighting = require('../../scripts/highlighting.js');
+    const Highlighting = require('../../../scripts/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
 
     // Setup dependencies that main.js now requires for highlighting initialization
-    const confidence = require('../../scripts/confidence');
-    const { PT_CONSTANTS } = require('../../scripts/constants');
+    const confidence = require('../../../scripts/confidence.js');
+    const { PT_CONSTANTS } = require('../../../scripts/constants.js');
     global.window.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
 

@@ -1,11 +1,11 @@
 /** @jest-environment jsdom */
 // Upload score1, create highlight page1, upload score2 -> score1 highlight should not remain visible.
 
-const { PT_CONSTANTS } = require('../../scripts/constants');
+const { PT_CONSTANTS } = require('../../../scripts/constants.js');
 
 describe('Second upload clears first score highlights', () => {
   beforeEach(async () => {
-    const logger = require('../../scripts/logger');
+    const logger = require('../../../scripts/logger.js');
     logger.setSilent(false);
     global.window.createPlayTimeDB = () => ({
       init: jest.fn().mockResolvedValue(true),
@@ -31,7 +31,7 @@ describe('Second upload clears first score highlights', () => {
       getCurrentPage: () => currentPage,
       getTotalPages: () => 2
     });
-    const helpers = require('../helpers/test-helpers.js');
+    const helpers = require('../../helpers/test-helpers.js');
     //TODO - use the helper to create this DOM
     document.body.innerHTML = `
       <main>
@@ -54,13 +54,13 @@ describe('Second upload clears first score highlights', () => {
     jest.resetModules();
     
     // Setup dependencies that main.js now requires for highlighting initialization
-    const confidence = require('../../scripts/confidence');
-    const { PT_CONSTANTS } = require('../../scripts/constants');
+    const confidence = require('../../../scripts/confidence.js');
+    const { PT_CONSTANTS } = require('../../../scripts/constants.js');
     global.window.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
     
-    require('../../scripts/highlighting.js');
-    require('../../scripts/main');
+    require('../../../scripts/highlighting.js');
+    require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,60));
   });

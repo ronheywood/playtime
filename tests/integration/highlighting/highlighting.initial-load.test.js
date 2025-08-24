@@ -1,10 +1,10 @@
 /** @jest-environment jsdom */
 // Integration test: after refresh, first score auto-selected triggers highlight rehydration
-const { PT_CONSTANTS } = require('../../scripts/constants');
+const { PT_CONSTANTS } = require('../../../scripts/constants.js');
 
 describe('Highlighting initial load rehydration', () => {
   beforeEach(async () => {
-    const logger = require('../../scripts/logger');
+    const logger = require('../../../scripts/logger.js');
     logger.setSilent(true);
     global.logger = logger;
 
@@ -34,17 +34,17 @@ describe('Highlighting initial load rehydration', () => {
       getTotalPages: () => 2
     });
 
-    const Highlighting = require('../../scripts/highlighting.js');
+    const Highlighting = require('../../../scripts/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
 
     // Setup dependencies that main.js now requires for highlighting initialization
-    const confidence = require('../../scripts/confidence');
-    const { PT_CONSTANTS } = require('../../scripts/constants');
+    const confidence = require('../../../scripts/confidence.js');
+    const { PT_CONSTANTS } = require('../../../scripts/constants.js');
     global.window.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
 
     // First app load
-    require('../../scripts/main');
+    require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r => setTimeout(r, 25));
 
@@ -112,9 +112,9 @@ describe('Highlighting initial load rehydration', () => {
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
-    const Highlighting2 = require('../../scripts/highlighting.js');
+    const Highlighting2 = require('../../../scripts/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting2;
-    require('../../scripts/main');
+    require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r => setTimeout(r, 50));
   });

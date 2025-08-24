@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-const RefactoredHighlighting = require('../../scripts/highlighting');
+const RefactoredHighlighting = require('../../../scripts/highlighting');
 
 describe('RefactoredHighlighting - Integration Tests', () => {
     let mockDatabase, mockPDFViewer, mockConfidence;

@@ -1,11 +1,11 @@
 /** @jest-environment jsdom */
 // Scenario: Two scores. First has highlight on page 2. After navigating to page 2 highlight scales, after switching scores and back it still appears on page 2.
 
-const { PT_CONSTANTS, SELECTORS } = require('../../scripts/constants');
+const { PT_CONSTANTS, SELECTORS } = require('../../../scripts/constants.js');
 
 describe('Highlighting multi score page 2 reselect', () => {
   beforeEach(async () => {
-    const logger = require('../../scripts/logger');
+    const logger = require('../../../scripts/logger.js');
     logger.setSilent(false);
 
     // Shared store to mimic persistence
@@ -63,13 +63,13 @@ describe('Highlighting multi score page 2 reselect', () => {
     jest.resetModules();
     
     // Setup dependencies that main.js now requires for highlighting initialization
-    const confidence = require('../../scripts/confidence');
-    const { PT_CONSTANTS } = require('../../scripts/constants');
+    const confidence = require('../../../scripts/confidence.js');
+    const { PT_CONSTANTS } = require('../../../scripts/constants.js');
     global.window.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
     
-    require('../../scripts/highlighting.js');
-    require('../../scripts/main');
+    require('../../../scripts/highlighting.js');
+    require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,120)); // allow auto-select first score and rehydrate (page 1 only visible)
   });
