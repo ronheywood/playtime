@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: false,
   retries: process.env.CI ? 2 : 0,
-  reporter: [['list']],
+  reporter: process.env.CI ? [['html'], ['github']] : [['list']],
   use: {
     baseURL: process.env.PLAYTIME_BASE_URL || 'http://localhost:3000',
     viewport: { width: 1280, height: 800 },
