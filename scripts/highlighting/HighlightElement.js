@@ -145,7 +145,7 @@ class HighlightElement {
             el.setAttribute('tabindex', '0');
             el.setAttribute('role', 'button');
             el.setAttribute('aria-label', `Practice section (${this.color} confidence) - Click to focus`);
-            el.title = `Click to focus on this practice section`;
+            el.title = `Double click to focus on this practice section`;
         }
 
         // Apply styling (class for CSS, fallback for tests)

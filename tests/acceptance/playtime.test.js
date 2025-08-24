@@ -634,8 +634,8 @@ describe('PlayTime Music Practice App', () => {
                 let focusEventDetail = null;
                 viewer.addEventListener('playtime:highlight-focus-requested', (e) => { focusEventDetail = e.detail; });
 
-                // Act - click highlight to trigger focus
-                highlight.click();
+                // Act - double-click highlight to trigger focus
+                highlight.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
 
                 // Assert implemented behavior: focus-mode class added (zoom now handled by PDF viewer, not CSS transform)
                 expect(viewer.classList.contains('focus-mode')).toBe(true);
@@ -675,8 +675,8 @@ describe('PlayTime Music Practice App', () => {
                 let exitEventFired = false;
                 viewer.addEventListener('playtime:highlight-focus-exited', () => { exitEventFired = true; });
 
-                // Focus
-                highlight.click();
+                // Focus with double-click
+                highlight.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
                 // Verify zoom increased via PDF viewer API (no longer using CSS scale transform on canvas)
                 if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getZoom === 'function') {
                     await new Promise(r => setTimeout(r, 5));
@@ -696,7 +696,7 @@ describe('PlayTime Music Practice App', () => {
                 expect(exitEventFired).toBe(true);
             });
 
-            test('Clicking (or focusing) a highlight dispatches a focus-mode layout command, increases pdf viewer zoom, and (conceptually) centers the highlight', async () => {
+            test('Double-clicking (or focusing) a highlight dispatches a focus-mode layout command, increases pdf viewer zoom, and (conceptually) centers the highlight', async () => {
                 const HighlightElement = require('../../scripts/highlighting/HighlightElement');
                 const CoordinateMapper = require('../../scripts/highlighting/CoordinateMapper');
 
@@ -730,7 +730,7 @@ describe('PlayTime Music Practice App', () => {
                 if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.focusOnHighlight === 'function') {
                     window.PlayTimeHighlighting.focusOnHighlight(highlightEl, { padding: 20 });
                 } else {
-                    highlightEl.click();
+                    highlightEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
                 }
 
                 // NEW EXPECTATIONS (RED):

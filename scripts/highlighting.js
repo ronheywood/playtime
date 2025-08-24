@@ -532,14 +532,14 @@
                 }
             );
 
-            // Add click handler for focus mode (maintaining backward compatibility)
+            // Add click handler to show action button
             domElement.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                this.focusOnHighlight(domElement);
+                this._showActionButtonForHighlight(domElement);
             });
 
-            // Add double-click handler as alternative focus mode trigger
+            // Add double-click handler for focus mode
             domElement.addEventListener('dblclick', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -558,13 +558,6 @@
                     event.stopPropagation();
                     this._showActionButtonForHighlight(domElement);
                 }
-            });
-
-            // Add right-click handler for action button
-            domElement.addEventListener('contextmenu', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                this._showActionButtonForHighlight(domElement);
             });
 
             this._state.viewer.appendChild(domElement);
