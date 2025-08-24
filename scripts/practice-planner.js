@@ -78,16 +78,19 @@ class PracticePlanner {
         this.logger.info('Practice Planner event handlers attached');
 
         // Listen for score changes to update current score context
-        window.addEventListener('playtime:score-loaded', this.handleScoreLoaded.bind(this));
+        window.addEventListener('playtime:score-selected', this.handleScoreSelected.bind(this));
         
         this.logger.info('Practice Planner initialized successfully');
         return true;
     }
 
-    handleScoreLoaded(event) {
-        if (event.detail && event.detail.scoreId) {
-            this.currentScoreId = event.detail.scoreId;
-            this.logger.info('Practice Planner: Score context updated', { scoreId: this.currentScoreId });
+    handleScoreSelected(event) {
+        if (event.detail && event.detail.pdfId) {
+            this.currentScoreId = event.detail.pdfId;
+            this.logger.info('Practice Planner: Score context updated from score-selected event', { 
+                scoreId: this.currentScoreId,
+                eventDetail: event.detail
+            });
         }
     }
 
@@ -99,22 +102,31 @@ class PracticePlanner {
         
         if (!this.currentScoreId) {
             this.logger.warn('Practice Planner: No active score ID');
-            // Try to get the current score from the database
-            const scores = await this.database.getAll();
-            this.logger.info('Practice Planner: Retrieved scores from database', { 
-                scoresCount: scores.length,
-                scores: scores.map(s => ({ id: s.id, name: s.name }))
-            });
             
-            if (scores.length > 0) {
-                this.currentScoreId = scores[scores.length - 1].id; // Use the most recent score
-                this.logger.info('Practice Planner: Using most recent score', { 
-                    scoreId: this.currentScoreId,
-                    scoreName: scores[scores.length - 1].name
+            // Try to get from global state first
+            if (window.PlayTimeCurrentScoreId) {
+                this.currentScoreId = window.PlayTimeCurrentScoreId;
+                this.logger.info('Practice Planner: Using global current score ID', { 
+                    scoreId: this.currentScoreId
                 });
             } else {
-                this.logger.error('Practice Planner: No scores available');
-                return;
+                // Fallback: Try to get the current score from the database
+                const scores = await this.database.getAll();
+                this.logger.info('Practice Planner: Retrieved scores from database', { 
+                    scoresCount: scores.length,
+                    scores: scores.map(s => ({ id: s.id, name: s.name }))
+                });
+                
+                if (scores.length > 0) {
+                    this.currentScoreId = scores[scores.length - 1].id; // Use the most recent score
+                    this.logger.warn('Practice Planner: Using most recent score as fallback', { 
+                        scoreId: this.currentScoreId,
+                        scoreName: scores[scores.length - 1].name
+                    });
+                } else {
+                    this.logger.error('Practice Planner: No scores available');
+                    return;
+                }
             }
         }
 

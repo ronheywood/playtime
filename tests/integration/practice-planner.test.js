@@ -92,20 +92,23 @@ describe('Practice Planner Integration Tests', () => {
             practicePlanner.init();
         });
 
-        test('should update current score ID when score loaded event is dispatched', () => {
-            const scoreId = 'test-score-123';
-            const event = new window.CustomEvent('playtime:score-loaded', {
-                detail: { scoreId }
+        test('should update current score ID when score selected event is dispatched', () => {
+            const pdfId = 'test-score-123';
+            const event = new window.CustomEvent('playtime:score-selected', {
+                detail: { pdfId }
             });
             
             window.dispatchEvent(event);
             
-            expect(practicePlanner.currentScoreId).toBe(scoreId);
-            expect(mockLogger.info).toHaveBeenCalledWith('Practice Planner: Score context updated', { scoreId });
+            expect(practicePlanner.currentScoreId).toBe(pdfId);
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                'Practice Planner: Score context updated from score-selected event', 
+                expect.objectContaining({ scoreId: pdfId })
+            );
         });
 
-        test('should handle score loaded event without score ID', () => {
-            const event = new window.CustomEvent('playtime:score-loaded', {
+        test('should handle score selected event without score ID', () => {
+            const event = new window.CustomEvent('playtime:score-selected', {
                 detail: {}
             });
             
