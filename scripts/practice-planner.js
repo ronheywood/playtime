@@ -303,6 +303,7 @@ class PracticePlanner {
         });
 
         sectionsList.innerHTML = sectionsHTML;
+        lucide.createIcons();
 
         // Update section count
         if (sectionCount) {

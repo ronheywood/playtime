@@ -154,7 +154,7 @@ const PracticePlannerTemplates = {
                             </span>
                         </div>
                         <button class="remove-section btn btn-outline btn-icon btn-sm" title="Remove section">
-                            <i data-lucide="x" class="w-3 h-3"></i>
+                            <i data-lucide="x" class="lucide lucide-x w-3 h-3"></i>
                         </button>
                     </div>
 
@@ -202,27 +202,27 @@ const PracticePlannerTemplates = {
      */
     getConfidenceBadgeClass: (confidence) => {
         switch (confidence) {
-            case 'green': return 'badge-success';
-            case 'amber': return 'badge-warning';
-            case 'red': return 'badge-error';
+            case 2: return 'badge-success';
+            case 1: return 'badge-warning';
+            case 0: return 'badge-error';
             default: return 'badge-outline';
         }
     },
 
     getConfidenceLabel: (confidence) => {
         switch (confidence) {
-            case 'green': return 'Confident';
-            case 'amber': return 'Unsure';
-            case 'red': return 'Needs Work';
+            case 2: return 'Confident';
+            case 1: return 'Unsure';
+            case 0: return 'Needs Work';
             default: return 'Unknown';
         }
     },
 
     getDefaultTime: (confidence) => {
         switch (confidence) {
-            case 'green': return '3';
-            case 'amber': return '5';
-            case 'red': return '8';
+            case 2: return '3';
+            case 1: return '5';
+            case 0: return '8';
             default: return '5';
         }
     }
