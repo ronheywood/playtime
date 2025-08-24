@@ -19,6 +19,8 @@
         require('./highlighting/HighlightPersistenceService') : global.HighlightPersistenceService;
     const HighlightEventCoordinatorClass = (typeof require !== 'undefined') ? 
         require('./highlighting/HighlightEventCoordinator') : global.HighlightEventCoordinator;
+    const HighlightActionButtonClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/HighlightActionButton').HighlightActionButton : window.HighlightActionButton;
     
     // Dependencies will be injected via init() method
     let CONST = null;
@@ -100,6 +102,7 @@
             mouseHandler: null,
             persistenceService: null,
             eventCoordinator: null,
+            actionButton: null,
             CoordinateMapperClass: CoordinateMapperClass
         },
 
@@ -270,6 +273,9 @@
          * Exit focus mode and return to normal view
          */
         exitFocusMode() {
+            // Hide action button when exiting focus mode
+            this.hideActionButton();
+            
             // Preferred path: delegate to layout command handler
             let delegated = false;
             try {
@@ -349,6 +355,12 @@
                 rehydrationDelay: this.CONFIG.TIMING.REHYDRATION_DELAY
             });
 
+            // Initialize action button
+            this._components.actionButton = new HighlightActionButtonClass({
+                containerId: 'pdf-canvas',
+                position: 'bottom-right'
+            });
+
             // Setup scheduler
             this._state.scheduler = this._state.scheduler || this._createDefaultScheduler();
         },
@@ -392,6 +404,11 @@
                 .onScoreSelected(({ pdfId }) => this._handleScoreSelected(pdfId))
                 .onPageChanged(({ page }) => this._handlePageChanged(page))
                 .onLayoutChanged(() => this.repositionAll());
+
+            // Initialize action button
+            this._components.actionButton
+                .init()
+                .onClick((highlightElement) => this._handleActionButtonClick(highlightElement));
 
             // Register focus-mode layout command handler
             if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.registerHandler === 'function') {
@@ -443,12 +460,18 @@
             // Create DOM element
             const domElement = this._createHighlightFromElement(highlightElement);
 
+            // Show action button for newly created highlight
+            this._showActionButtonForHighlight(domElement);
+
             // Persist to database
             this._persistHighlight(highlightElement);
         },
 
         async _handleScoreSelected(pdfId) {
             this._state.logger.info && this._state.logger.info('🎯 Score selected, starting rehydration', { pdfId });
+            
+            // Hide action button when score changes
+            this.hideActionButton();
             
             // Clear existing highlights
             this._clearHighlights();
@@ -481,6 +504,9 @@
         _handlePageChanged(page) {
             if (!Number.isFinite(page)) return;
             
+            // Hide action button when page changes
+            this.hideActionButton();
+            
             // Update highlight visibility
             this.getHighlights().forEach(el => {
                 if (el.dataset.page) {
@@ -506,8 +532,15 @@
                 }
             );
 
-            // Add click handler for focus mode (User Story 4.3)
+            // Add click handler for focus mode (maintaining backward compatibility)
             domElement.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.focusOnHighlight(domElement);
+            });
+
+            // Add double-click handler as alternative focus mode trigger
+            domElement.addEventListener('dblclick', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 this.focusOnHighlight(domElement);
@@ -519,7 +552,19 @@
                     event.preventDefault();
                     event.stopPropagation();
                     this.focusOnHighlight(domElement);
+                } else if (event.key === 'a' || event.key === 'A') {
+                    // 'A' key for annotation
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this._showActionButtonForHighlight(domElement);
                 }
+            });
+
+            // Add right-click handler for action button
+            domElement.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this._showActionButtonForHighlight(domElement);
             });
 
             this._state.viewer.appendChild(domElement);
@@ -843,6 +888,70 @@
                 }
             } catch (e) {
                 this._state.logger?.warn?.('Manual scroll calculation failed', e);
+            }
+        },
+
+        /**
+         * Show the action button for a specific highlight
+         * @param {HTMLElement} highlightElement - The highlight element to show action button for
+         */
+        _showActionButtonForHighlight(highlightElement) {
+            if (!this._components.actionButton || !highlightElement) return;
+            this._components.actionButton.showForHighlight(highlightElement);
+        },
+
+        /**
+         * Handle action button click - opens annotation dialog for the highlight
+         * @param {HTMLElement} highlightElement - The highlight element to annotate
+         */
+        _handleActionButtonClick(highlightElement) {
+            if (!highlightElement) return;
+
+            // Hide the action button
+            this._components.actionButton.hide();
+
+            // TODO: Open annotation dialog/modal here
+            // For now, we'll dispatch an event that other modules can listen to
+            this._dispatchAnnotationRequestEvent(highlightElement);
+        },
+
+        /**
+         * Dispatch annotation request event for other modules to handle
+         * @param {HTMLElement} highlightElement - The highlight element to annotate
+         */
+        _dispatchAnnotationRequestEvent(highlightElement) {
+            try {
+                const event = new CustomEvent('playtime:highlight-annotation-requested', {
+                    detail: {
+                        highlightId: highlightElement.dataset.hlId,
+                        color: highlightElement.dataset.hlColor,
+                        confidence: parseInt(highlightElement.dataset.hlConfidence),
+                        page: highlightElement.dataset.page ? parseInt(highlightElement.dataset.page) : null,
+                        coordinates: {
+                            xPct: parseFloat(highlightElement.dataset.hlXPct),
+                            yPct: parseFloat(highlightElement.dataset.hlYPct),
+                            wPct: parseFloat(highlightElement.dataset.hlWPct),
+                            hPct: parseFloat(highlightElement.dataset.hlHPct)
+                        },
+                        element: highlightElement
+                    }
+                });
+                
+                (this._state.viewer || document).dispatchEvent(event);
+                this._state.logger.info?.('Annotation request event dispatched', { 
+                    highlightId: highlightElement.dataset.hlId 
+                });
+            } catch (e) {
+                this._state.logger.warn?.('Failed to dispatch annotation request event', e);
+            }
+        },
+
+        /**
+         * Hide the action button (called when focus changes)
+         */
+        hideActionButton() {
+            if (this._components.actionButton) {
+                this._components.actionButton.hide();
             }
         }
     };

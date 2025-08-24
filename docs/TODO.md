@@ -67,6 +67,8 @@
 
  - [ ] **Practice Session Planning & Progress Tracking**
    - [x] Practice session configuration UI (replacing score canvas)
+   - [x] Floating action button for highlight annotation (notebook icon)
+   - [ ] Annotation dialog/modal for adding titles and notes to highlights
    - [ ] Select sections, reorder, remove, set method, duration, notes
   - [ ] Save/load/delete practice plans (IndexedDB)
   - [ ] Start session: timer, section navigation, progress indicator
