@@ -322,6 +322,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (window.PlayTimePracticePlanner) { 
             await window.PlayTimePracticePlanner.init(); 
         }
+        
+        // Register practice mode layout command handler
+        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.registerHandler === 'function') {
+            window.PlayTimeLayoutCommands.registerHandler('practice-mode', (type, options) => {
+                const viewerSection = document.querySelector('#viewer-section');
+                
+                switch (options.action) {
+                    case 'enter':
+                        // Set data attribute to indicate practice mode is active
+                        if (viewerSection) {
+                            viewerSection.setAttribute('data-practice-mode', 'active');
+                        }
+                        (window.logger || console).info('Practice mode: Entered practice planning mode');
+                        break;
+                    case 'exit':
+                        // Remove data attribute to return to normal mode
+                        if (viewerSection) {
+                            viewerSection.removeAttribute('data-practice-mode');
+                        }
+                        (window.logger || console).info('Practice mode: Exited practice planning mode');
+                        break;
+                    default:
+                        (window.logger || console).warn('Unknown practice mode action:', options.action);
+                }
+            });
+            (window.logger || console).info('Practice mode layout command handler registered');
+        }
         // Reload scenario: current score id already set but no highlights rendered yet -> replay SCORE_SELECTED
         try {
             if (window.PlayTimeCurrentScoreId != null && !window.__playTimeReloadReplayed) {

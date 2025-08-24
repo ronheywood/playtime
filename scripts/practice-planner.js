@@ -3,19 +3,39 @@
  * Handles practice session planning functionality
  */
 
+// Configuration
+const PRACTICE_PLANNER_CONFIG = {
+    SELECTORS: {
+        // Practice planner UI elements
+        PRACTICE_PLANNER_CARD: '[data-role="practice-planner"]',
+        SETUP_PRACTICE_BTN: '[data-role="setup-practice"]',
+        RETURN_TO_HIGHLIGHTING_BTN: '[data-role="return-to-highlighting"]',
+        PRACTICE_SESSION_FORM: '[data-role="practice-session-form"]',
+        SESSION_NAME_INPUT: '[data-role="session-name"]',
+        SESSION_DURATION_INPUT: '[data-role="session-duration"]',
+        SESSION_FOCUS_SELECT: '[data-role="session-focus"]',
+        START_SESSION_BTN: '[data-role="start-session"]'
+    },
+    
+    CSS_CLASSES: {
+        HIDDEN: 'd-none',
+        VISIBLE: 'd-block'
+    }
+};
+
 class PracticePlanner {
     constructor(logger, database, highlightingModule) {
+        this.config = PRACTICE_PLANNER_CONFIG;
         this.logger = logger;
         this.database = database;
         this.highlighting = highlightingModule;
         this.currentScoreId = null;
         this.isActive = false;
         
-        // DOM elements
+        // DOM elements - will be populated by init()
         this.setupButton = null;
         this.exitButton = null;
         this.returnToHighlightingButton = null;
-        this.pdfCanvas = null;
         this.practiceInterface = null;
         this.noHighlightsMessage = null;
         this.practiceContent = null;
@@ -28,7 +48,6 @@ class PracticePlanner {
         this.setupButton = document.querySelector('[data-role="setup-practice-plan"]');
         this.exitButton = document.querySelector('[data-role="exit-practice-planning"]');
         this.returnToHighlightingButton = document.querySelector('[data-role="return-to-highlighting"]');
-        this.pdfCanvas = document.querySelector('[data-role="pdf-canvas"]');
         this.practiceInterface = document.querySelector('[data-role="practice-planner"]');
         this.noHighlightsMessage = document.querySelector('[data-role="no-highlights-message"]');
         this.practiceContent = document.querySelector('[data-role="practice-plan-content"]');
@@ -36,7 +55,6 @@ class PracticePlanner {
         this.logger.info('Practice Planner DOM elements found:', {
             setupButton: !!this.setupButton,
             exitButton: !!this.exitButton,
-            pdfCanvas: !!this.pdfCanvas,
             practiceInterface: !!this.practiceInterface
         });
 
@@ -136,9 +154,15 @@ class PracticePlanner {
     showPracticeInterface(highlights = []) {
         this.isActive = true;
         
-        // Hide PDF canvas
-        if (this.pdfCanvas) {
-            this.pdfCanvas.style.display = 'none';
+        // Dispatch layout command to hide PDF viewer
+        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.changeLayout === 'function') {
+            window.PlayTimeLayoutCommands.changeLayout('practice-mode', {
+                action: 'enter',
+                highlights: highlights,
+                highlightCount: highlights.length
+            });
+        } else {
+            this.logger.warn?.('Practice Planner: PlayTimeLayoutCommands not available');
         }
 
         // Show practice interface
@@ -169,9 +193,13 @@ class PracticePlanner {
     hidePracticeInterface() {
         this.isActive = false;
         
-        // Show PDF canvas
-        if (this.pdfCanvas) {
-            this.pdfCanvas.style.display = 'block';
+        // Dispatch layout command to show PDF viewer
+        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.changeLayout === 'function') {
+            window.PlayTimeLayoutCommands.changeLayout('practice-mode', {
+                action: 'exit'
+            });
+        } else {
+            this.logger.warn?.('Practice Planner: PlayTimeLayoutCommands not available');
         }
 
         // Hide practice interface
@@ -184,6 +212,25 @@ class PracticePlanner {
 
     isInPracticeMode() {
         return this.isActive;
+    }
+
+    /**
+     * Dispatch a custom event
+     * @param {string} eventType - The event type to dispatch
+     * @param {object} detail - Event detail data
+     */
+    _dispatchEvent(eventType, detail) {
+        try {
+            const event = new CustomEvent(eventType, {
+                detail: detail,
+                bubbles: true,
+                cancelable: true
+            });
+            document.dispatchEvent(event);
+            this.logger.debug?.(`Practice Planner: Dispatched event ${eventType}`, detail);
+        } catch (error) {
+            this.logger.warn?.(`Practice Planner: Failed to dispatch event ${eventType}`, error);
+        }
     }
 }
 

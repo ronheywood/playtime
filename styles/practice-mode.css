@@ -310,3 +310,23 @@ body {
         min-height: 44px;
     }
 }
+
+/* Practice Mode UI State Management */
+/* When practice mode is active, hide the PDF viewer card and show the practice planner */
+#viewer-section[data-practice-mode="active"] .card:has([data-role="pdf-viewer"]) {
+    display: none;
+}
+
+#viewer-section[data-practice-mode="active"] .card[data-role="practice-planner"] {
+    display: block;
+}
+
+/* Ensure PDF canvas is hidden when practice mode is active */
+#viewer-section[data-practice-mode="active"] [data-role="pdf-canvas"] {
+    display: none;
+}
+
+/* Ensure practice planner is hidden when practice mode is not active */
+#viewer-section:not([data-practice-mode="active"]) .card[data-role="practice-planner"] {
+    display: none;
+}

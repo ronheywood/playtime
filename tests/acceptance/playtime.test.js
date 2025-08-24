@@ -844,8 +844,9 @@ describe('PlayTime Music Practice App', () => {
                 // Wait for async operations
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                // THEN: The PDF canvas should be hidden
-                expect(canvas.style.display).toBe('none');
+                // THEN: The viewer section should be in practice mode
+                const viewerSection = document.querySelector('#viewer-section');
+                expect(viewerSection.getAttribute('data-practice-mode')).toBe('active');
                 
                 // AND: A practice planning interface should be visible
                 const practiceInterface = document.querySelector('[data-role="practice-planner"]');
@@ -861,9 +862,10 @@ describe('PlayTime Music Practice App', () => {
                 // Wait for async operations
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                const canvas = document.querySelector(SELECTORS.CANVAS);
+                // GIVEN: Practice mode should be active
+                const viewerSection = document.querySelector('#viewer-section');
+                expect(viewerSection.getAttribute('data-practice-mode')).toBe('active');
                 const practiceInterface = document.querySelector('[data-role="practice-planner"]');
-                expect(canvas.style.display).toBe('none');
                 expect(practiceInterface.style.display).not.toBe('none');
                 
                 // WHEN: I click the exit practice planning button
@@ -882,8 +884,8 @@ describe('PlayTime Music Practice App', () => {
                 // THEN: A practice session exit event should be dispatched
                 expect(practiceSessionExitEvent).toBeTruthy();
                 
-                // AND: The PDF canvas should be visible again
-                expect(canvas.style.display).not.toBe('none');
+                // AND: Practice mode should be inactive
+                expect(viewerSection.getAttribute('data-practice-mode')).toBeNull();
                 
                 // AND: The practice planning interface should be hidden
                 expect(practiceInterface.style.display).toBe('none');
