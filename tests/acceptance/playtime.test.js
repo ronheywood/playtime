@@ -931,7 +931,7 @@ describe('PlayTime Music Practice App', () => {
                         yPct: 0.3, 
                         wPct: 0.4, 
                         hPct: 0.1, 
-                        confidence: 'red' 
+                        confidence: 0
                     },
                     { 
                         id: 'highlight-2', 
@@ -941,7 +941,7 @@ describe('PlayTime Music Practice App', () => {
                         yPct: 0.1, 
                         wPct: 0.3, 
                         hPct: 0.1, 
-                        confidence: 'amber' 
+                        confidence: 1 
                     },
                     { 
                         id: 'highlight-3', 
@@ -951,7 +951,7 @@ describe('PlayTime Music Practice App', () => {
                         yPct: 0.5, 
                         wPct: 0.5, 
                         hPct: 0.1, 
-                        confidence: 'green' 
+                        confidence: 2 
                     },
                 ];
                 
