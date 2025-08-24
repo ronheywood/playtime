@@ -157,7 +157,85 @@ beforeEach(() => {
                         <button data-role="return-to-highlighting">Return to highlighting</button>
                     </div>
                     <div data-role="practice-plan-content" style="display: none;">
-                        <p>Practice plan content...</p>
+                        <div class="space-y-6">
+                            <!-- Session Configuration -->
+                            <div class="space-y-4">
+                                <h4 class="text-lg font-semibold text-foreground">Session Configuration</h4>
+                                
+                                <!-- Session Name -->
+                                <div>
+                                    <label for="session-name" class="block text-sm font-medium text-foreground mb-2">
+                                        Session Name
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="session-name" 
+                                        data-role="session-name"
+                                        class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Enter session name (e.g., Morning Practice)"
+                                    />
+                                </div>
+
+                                <!-- Session Duration & Focus -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="session-duration" class="block text-sm font-medium text-foreground mb-2">
+                                            Target Duration (minutes)
+                                        </label>
+                                        <input 
+                                            type="number" 
+                                            id="session-duration" 
+                                            data-role="session-duration"
+                                            class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                            placeholder="30"
+                                            min="5"
+                                            max="180"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label for="session-focus" class="block text-sm font-medium text-foreground mb-2">
+                                            Session Focus
+                                        </label>
+                                        <select 
+                                            id="session-focus" 
+                                            data-role="session-focus"
+                                            class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        >
+                                            <option value="accuracy">Accuracy</option>
+                                            <option value="tempo">Tempo Building</option>
+                                            <option value="expression">Expression</option>
+                                            <option value="technique">Technique</option>
+                                            <option value="memorization">Memorization</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Practice Sections -->
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <h4 class="text-lg font-semibold text-foreground">Practice Sections</h4>
+                                    <span class="text-sm text-muted-foreground" data-role="section-count">0 sections</span>
+                                </div>
+                                
+                                <!-- Sections List -->
+                                <div data-role="practice-sections-list" class="space-y-3">
+                                    <!-- Dynamic content: practice sections will be inserted here -->
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex gap-3 pt-4 border-t border-border">
+                                <button data-role="start-practice-session" class="btn btn-default flex-1">
+                                    <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                                    Start Practice Session
+                                </button>
+                                <button data-role="save-practice-plan" class="btn btn-outline">
+                                    <i data-lucide="save" class="w-4 h-4 mr-2"></i>
+                                    Save Plan
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="highlight-controls">

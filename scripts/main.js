@@ -261,10 +261,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (typeof window.createPlayTimeScoreList === 'function') {
             window.PlayTimeScoreList = window.createPlayTimeScoreList(null, appLogger); // Database will be set after initialization
         }
-        if (typeof window.createPlayTimePracticePlanner === 'function') {
-            window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, window.PlayTimeHighlighting);
-        }
-        // PlayTimeHighlighting doesn't need refactoring yet - keeping as is
+        // Practice planner will be initialized after highlighting module is ready
         
         // Initialize file upload handler first (driven by failing tests)
         await initializeFileUpload(window.PlayTimeDB);
@@ -287,6 +284,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Initialize refactored highlighting with dependency injection
         if (window.PlayTimeHighlighting) {
             await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants);
+        }
+        
+        // Initialize practice planner after highlighting is ready
+        if (typeof window.createPlayTimePracticePlanner === 'function') {
+            // Pass the persistence service from the highlighting module for highlight retrieval
+            const highlightPersistenceService = window.PlayTimeHighlighting?._components?.persistenceService;
+            if (highlightPersistenceService) {
+                window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, highlightPersistenceService);
+                (window.logger || console).info('Practice planner initialized with highlight persistence service');
+            } else {
+                (window.logger || console).warn('Practice planner: Highlight persistence service not available');
+                // Create without persistence service as fallback
+                window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, null);
+            }
         }
     // (Removed legacy auto-select fallback; selection will be event driven in upcoming refactor)
         // Central SCORE_SELECTED event handler (unified selection pipeline)

@@ -6,7 +6,12 @@
 const { SCORE_LIST_CONFIG } = require('../../scripts/score-list');
 const { CONFIG } = require('../../scripts/main');
 const { PT_CONSTANTS } = require('../../scripts/constants');
+// Import templates needed for practice planner
+const { PracticePlannerTemplates } = require('../../scripts/templates/practice-planner-template');
 const SELECTORS = PT_CONSTANTS.SELECTORS;
+
+// Make templates available globally for tests
+global.window.PracticePlannerTemplates = PracticePlannerTemplates;
 
 describe('PlayTime Music Practice App', () => {
     beforeAll(async () => {
@@ -914,6 +919,88 @@ describe('PlayTime Music Practice App', () => {
                 const returnToHighlightingButton = practiceInterface.querySelector('[data-role="return-to-highlighting"]');
                 expect(returnToHighlightingButton).toBeTruthy();
             });
+            test('As a musician, I want to see the highlights I have created for a score listed in a sortable list', async () => {
+                // GIVEN: several highlights exist for the score  
+                const scoreId = 1;
+                const highlights = [
+                    { 
+                        id: 'highlight-1', 
+                        scoreId: scoreId, 
+                        page: 2, 
+                        xPct: 0.1, 
+                        yPct: 0.3, 
+                        wPct: 0.4, 
+                        hPct: 0.1, 
+                        confidence: 'red' 
+                    },
+                    { 
+                        id: 'highlight-2', 
+                        scoreId: scoreId, 
+                        page: 1, 
+                        xPct: 0.2, 
+                        yPct: 0.1, 
+                        wPct: 0.3, 
+                        hPct: 0.1, 
+                        confidence: 'amber' 
+                    },
+                    { 
+                        id: 'highlight-3', 
+                        scoreId: scoreId, 
+                        page: 1, 
+                        xPct: 0.1, 
+                        yPct: 0.5, 
+                        wPct: 0.5, 
+                        hPct: 0.1, 
+                        confidence: 'green' 
+                    },
+                ];
+                
+                // Save the highlights in the database
+                await Promise.all(highlights.map(highlight => {
+                    return window.PlayTimeDB.addHighlight({ ...highlight, pdfId: scoreId });
+                }));
+
+                // WHEN: I enter practice planning mode
+                const practicePlanButton = document.querySelector('[data-role="setup-practice-plan"]');
+                practicePlanButton.click();
+                
+                // Wait for async operations
+                await new Promise(resolve => setTimeout(resolve, 150));
+
+                // THEN: The practice content should be visible
+                const practiceContent = document.querySelector('[data-role="practice-plan-content"]');
+                expect(practiceContent).toBeTruthy();
+                expect(practiceContent.style.display).not.toBe('none');
+
+                // AND: I should see a list of practice sections
+                const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+                expect(sectionsList).toBeTruthy();
+
+                // AND: The sections should be sorted by page and position
+                const sections = sectionsList.querySelectorAll('.practice-section');
+                expect(sections.length).toBe(3);
+
+                // Verify sorting: Page 1 sections should come first, then Page 2
+                const firstSection = sections[0];
+                const secondSection = sections[1]; 
+                const thirdSection = sections[2];
+
+                // Check that page 1 sections come before page 2
+                expect(firstSection.textContent).toContain('Page 1');
+                expect(secondSection.textContent).toContain('Page 1');
+                expect(thirdSection.textContent).toContain('Page 2');
+
+                // AND: Each section should show confidence level
+                expect(firstSection.textContent).toContain('Unsure'); // amber from highlight-2
+                expect(secondSection.textContent).toContain('Confident'); // green from highlight-3  
+                expect(thirdSection.textContent).toContain('Needs Work'); // red from highlight-1
+
+                // AND: Section count should be displayed
+                const sectionCount = document.querySelector('[data-role="section-count"]');
+                expect(sectionCount).toBeTruthy();
+                expect(sectionCount.textContent).toBe('3 sections');
+            });
+            
         });
     });
 });
