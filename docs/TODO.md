@@ -39,6 +39,7 @@
 - [x] **Highlight Persistence**
   - [x] Save highlights to IndexedDB with PDF reference
   - [x] Load and display saved highlights
+  - [ ] Add description and notes to highlight
   - [ ] Edit/delete existing highlights
 
 ### Phase 4: Practice Features
@@ -58,15 +59,32 @@
   - [ ] Acceptance: User can practice only the selected trouble spot, avoiding other areas of the score
   - [ ] Note: Start with PNG images as the simplest solution. If image quality or scaling issues arise during testing, consider investigating SVG extraction using PDF.js SVGGraphics. So far, canvas quality at 300% zoom has been excellent, so PNG extraction is likely sufficient for most use cases.
 
+ - [ ] **Score list practice plan behavior**
+   - [ ] Show an indicator on score card in score list if a practice plan is saved
+   - [ ] If the selected score has a practice plan the call to action should be Start Practice plan
+   - [ ] The Mark Section Confidence tool should show details of the practice plan
+   - [ ] There should be an edit practice plan call to action in this component, allowing new highlights to be added to the score, or the setup UI to be launched
+
  - [ ] **Practice Session Planning & Progress Tracking**
-   - [ ] Practice session configuration UI (replacing score canvas, alternate sidebar control set)
+   - [x] Practice session configuration UI (replacing score canvas)
    - [ ] Select sections, reorder, remove, set method, duration, notes
-   - [ ] Save/load/delete practice plans (IndexedDB)
-   - [ ] Start session: timer, section navigation, progress indicator
-   - [ ] Record practice notes per section
-   - [ ] Update confidence after each section
-   - [ ] Track session history and progress
-   - [ ] Acceptance: See docs/practice-session-guide.html for workflow and criteria
+  - [ ] Save/load/delete practice plans (IndexedDB)
+  - [ ] Start session: timer, section navigation, progress indicator
+  - [ ] Record practice notes per section
+  - [ ] Update confidence after each section
+  - [ ] Track session history and progress
+  - [ ] Alternate sidebar control set
+  - [ ] Acceptance: See docs/practice-session-guide.html for workflow and criteria
+
+---
+**Practice Plan Thoughts (for future work):**
+
+- Sections in the list only show page number and confidence, so it's not easy to prioritise the order.
+  - Need to be able to add descriptions to the highlights (e.g., measure numbers, section name).
+  - Consider showing a preview image from the canvas for each section.
+
+- Target duration in the practice session config is probably the sum of the target time for all sections.
+  - Instead of a manual entry, just label it "Duration" and have it be calculated automatically.
 
 ## 📁 Test Fixtures & Assets
 - [x] Create sample PDF files for testing
