@@ -42,6 +42,19 @@
     --practice-needs-work: 0 74% 60%;
 }
 
+/* Dark mode input and select styling */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #2a2d34;
+  color: #f1f1f1;
+  border: 1px solid #444;
+}
+
+.dark input::placeholder {
+  color: #b0b3b8;
+}
+
 /* Typography refinements */
 body {
     font-family: 'Inter', sans-serif;
