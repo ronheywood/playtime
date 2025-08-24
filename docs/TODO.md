@@ -42,11 +42,31 @@
   - [ ] Edit/delete existing highlights
 
 ### Phase 4: Practice Features
-- [ ] **Section Focus Mode**
   - [x] Focus whole score (See todo-focus-mode.html for an example)
-  - [ ] Zoom/crop view to highlighted section
-  - [ ] Exit focus mode back to full view
+  - [x] Zoom/crop view to highlighted section
+  - [x] Exit focus mode back to full view
   - [ ] Section navigation (next/previous)
+
+- [ ] **Extract Highlighted Section as PNG**
+  - [ ] Module to extract selected rectangle from PDF canvas and convert to PNG
+  - [ ] Store PNG in IndexedDB, linked to score and highlight metadata
+  - [ ] Replace full score canvas with extracted PNG for focused practice
+  - [ ] Research: Use HTMLCanvasElement's getContext('2d').drawImage to copy region, then toDataURL('image/png') for export
+  - [ ] Consider using Blob for efficient storage and retrieval
+  - [ ] Integrate with existing highlighting workflow (scripts/highlighting.js)
+  - [ ] Ensure compatibility with PDF.js rendering and scaling
+  - [ ] Acceptance: User can practice only the selected trouble spot, avoiding other areas of the score
+  - [ ] Note: Start with PNG images as the simplest solution. If image quality or scaling issues arise during testing, consider investigating SVG extraction using PDF.js SVGGraphics. So far, canvas quality at 300% zoom has been excellent, so PNG extraction is likely sufficient for most use cases.
+
+ - [ ] **Practice Session Planning & Progress Tracking**
+   - [ ] Practice session configuration UI (replacing score canvas, alternate sidebar control set)
+   - [ ] Select sections, reorder, remove, set method, duration, notes
+   - [ ] Save/load/delete practice plans (IndexedDB)
+   - [ ] Start session: timer, section navigation, progress indicator
+   - [ ] Record practice notes per section
+   - [ ] Update confidence after each section
+   - [ ] Track session history and progress
+   - [ ] Acceptance: See docs/practice-session-guide.html for workflow and criteria
 
 ## 📁 Test Fixtures & Assets
 - [x] Create sample PDF files for testing
@@ -55,8 +75,8 @@
   - [x] Multi-page PDF for navigation testing
 
 ## 🎨 UI/UX Enhancements
-- [ ] Responsive design improvements for tablet use
-- [ ] Touch-friendly controls and gestures
+- [x] Responsive design improvements for tablet use
+- [x] Touch-friendly controls and gestures
 - [ ] Accessibility improvements (ARIA labels, keyboard nav)
 - [ ] Visual polish and modern design
 
@@ -65,10 +85,10 @@
   - [x] Define Acceptance tests
   - [x] CI/CD Supported
 
-- [ ] **Integration Tests**
-  - [ ] Cross-module functionality
-  - [ ] PDF.js integration testing
-  - [ ] Database integration testing
+- [x] **Integration Tests**
+  - [x] Cross-module functionality
+  - [x] PDF.js integration testing
+  - [x] Database integration testing
 
 ## 📦 Deployment & Distribution
 - [ ] **Progressive Web App (PWA)**
@@ -78,7 +98,7 @@
 
 - [ ] **Build Optimization**
   - [ ] Asset minification and bundling
-  - [ ] Production build pipeline
+  - [x] Production build pipeline
   - [ ] Performance optimization
 
 ## 🔧 Technical Debt & Improvements
@@ -126,7 +146,7 @@
 - [x] URL param theme override for screenshots (?theme=dark|light)
 
 ## Typography
-- [ ] Apply typographic scale (12/14/16/20/24)
+- [x] Apply typographic scale (12/14/16/20/24)
 - [x] Tighten heading letter-spacing (-0.003em), labels +0.01em
 - [x] Set line-height: body 1.6, headings 1.25
 - [x] Use tabular numbers for dates and page badges
@@ -140,7 +160,7 @@
 - [x] Pages badge: outline or soft fill in dark mode
 - [x] Confidence buttons: aria-pressed, subtle hover, ring focus
 - [x] Confidence controls JS initialization (toggles pressed/selected)
-- [ ] Wire setActiveColor into highlighting module API (non-breaking)
+- [x] Wire setActiveColor into highlighting module API (non-breaking)
 
 ## Layout & Spacing
 - [x] Sidebar gutter consistency (16/24/32)
