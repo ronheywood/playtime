@@ -116,10 +116,20 @@ class HighlightActionButton {
      * Create the floating action button element
      */
     createButton() {
-        // Find the container
-        const container = document.getElementById(this.config.containerId) || 
-                         document.querySelector(`[data-role="${this.config.containerId}"]`) ||
-                         document.body;
+        // Find the container - prefer the parent container over the canvas itself
+        let container = document.getElementById(this.config.containerId);
+        
+        // If container is a canvas, use its parent instead
+        if (container && container.tagName === 'CANVAS') {
+            container = container.parentElement;
+        }
+        
+        // Fallback to other selectors
+        if (!container) {
+            container = document.querySelector(`[data-role="${this.config.containerId}"]`) ||
+                       document.querySelector('.pdf-viewer-container') ||
+                       document.body;
+        }
 
         // Ensure container has relative positioning
         if (container.style.position !== 'absolute' && container.style.position !== 'relative') {
@@ -135,14 +145,18 @@ class HighlightActionButton {
             opacity: 0;
             pointer-events: none;
             z-index: 1010;
-            background: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-            border: 2px solid hsl(var(--background));
+            background: #2563eb;
+            color: white;
+            border: 2px solid white;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             transition: all 0.2s ease;
             border-radius: 50%;
             width: 40px;
             height: 40px;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
         `;
 
         // Add hover effects via CSS
@@ -156,16 +170,17 @@ class HighlightActionButton {
             this.button.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
         });
 
-        // Create icon (using notebook icon to indicate annotation)
+        // Create icon using Lucide notebook-pen icon
         const icon = document.createElement('i');
         icon.setAttribute('data-lucide', 'notebook-pen');
         icon.className = this.config.iconSize;
+        icon.style.color = 'white'; // Ensure icon is visible on blue background
         this.button.appendChild(icon);
 
         // Add to container
         container.appendChild(this.button);
 
-        // Initialize Lucide icons if available
+        // Trigger Lucide icon rendering after DOM insertion
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
         }
