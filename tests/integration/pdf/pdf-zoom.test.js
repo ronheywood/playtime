@@ -1,8 +1,8 @@
 // Integration Test: PDF Viewer Zoom Functionality
 // Drives inner-loop development of zoom API before acceptance focus-mode feature
 
-const TestHelpers = require('../helpers/test-helpers');
-const TEST_CONSTANTS = require('../helpers/test-constants');
+const TestHelpers = require('../../helpers/test-helpers');
+const TEST_CONSTANTS = require('../../helpers/test-constants');
 
 /**
  * EXPECTED NEW VIEWER API (to be implemented):

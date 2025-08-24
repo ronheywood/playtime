@@ -2,8 +2,8 @@
 // Tests the integration between file upload and PDF.js rendering
 
 // Import shared test utilities
-const TEST_CONSTANTS = require('../helpers/test-constants');
-const TestHelpers = require('../helpers/test-helpers');
+const TEST_CONSTANTS = require('../../helpers/test-constants');
+const TestHelpers = require('../../helpers/test-helpers');
 
 describe('PDF Rendering Integration', () => {
     let mockPDFViewer;
