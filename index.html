@@ -57,6 +57,13 @@
                         <i data-lucide="chevron-right" class="w-4 h-4"></i>
                     </button>
                 </div>
+                <!-- Practice Planning Call to Action -->
+                <div class="flex items-center justify-center mb-2">
+                    <button data-role="setup-practice-plan" id="setup-practice-plan" class="btn btn-default w-full text-xs">
+                        <i data-lucide="list-checks" class="w-4 h-4 mr-1"></i>
+                        <span>Setup practice plan</span>
+                    </button>
+                </div>
                 <!-- Focus Mode Quick Toggle -->
                 <div class="flex items-center justify-center mb-2">
                     <button data-role="toggle-focus-mode" id="focus-mode-toggle" class="btn btn-outline w-full text-xs" aria-pressed="false">
@@ -150,6 +157,40 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Practice Planning Interface (initially hidden) -->
+                    <div class="card shadow-lg" data-role="practice-planner" style="display: none;">
+                        <div class="p-0">
+                            <!-- Practice Planning Header -->
+                            <div class="practice-planner-toolbar flex items-center gap-2 p-4 border-b border-border">
+                                <h3 class="font-medium text-foreground flex-1">Practice Session Planning</h3>
+                                <button data-role="exit-practice-planning" class="btn btn-outline btn-icon" title="Exit practice planning" aria-label="Exit practice planning">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Practice Planning Content -->
+                            <div class="practice-planner-content p-6">
+                                <!-- No Highlights Message -->
+                                <div data-role="no-highlights-message" class="text-center py-8">
+                                    <i data-lucide="target" class="w-12 h-12 mx-auto mb-4 text-muted-foreground"></i>
+                                    <h4 class="text-lg font-medium mb-2 text-foreground">No highlighted sections yet</h4>
+                                    <p class="text-muted-foreground mb-4">
+                                        To create a practice plan, you'll need to mark some sections of your score first.
+                                    </p>
+                                    <button data-role="return-to-highlighting" class="btn btn-default">
+                                        <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                                        Return to highlighting
+                                    </button>
+                                </div>
+                                
+                                <!-- Practice Plan Content (will be shown when highlights exist) -->
+                                <div data-role="practice-plan-content" style="display: none;">
+                                    <p class="text-muted-foreground mb-4">Practice plan functionality coming soon...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -180,6 +221,7 @@
     <script src="scripts/layout-commands.js"></script>
     <script src="scripts/focus-mode-handler.js"></script>
     <script src="scripts/focus-mode-commands.js"></script>
+    <script src="scripts/practice-planner.js"></script>
     <script src="scripts/main.js"></script>
 
     <!-- Initialize Lucide icons after DOM is loaded -->

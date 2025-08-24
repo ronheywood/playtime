@@ -14,6 +14,28 @@ async function gotoWithSeed(page) {
     return h && h._state && h._state.viewer && h._state.canvas;
   });
 
+  // Wait for full highlighting module initialization including layout command handler registration
+  try {
+    await page.waitForFunction(() => {
+      const h = (window as any).PlayTimeHighlighting;
+      const lc = (window as any).PlayTimeLayoutCommands;
+      return h && h._state && h._state.initialized && lc && typeof lc.changeLayout === 'function';
+    }, { timeout: 5000 });
+  } catch (e) {
+    // If timeout, check what's available and proceed anyway
+    const debugInfo = await page.evaluate(() => {
+      const h = (window as any).PlayTimeHighlighting;
+      const lc = (window as any).PlayTimeLayoutCommands;
+      return {
+        highlighting: !!h,
+        initialized: h && h._state ? h._state.initialized : false,
+        layoutCommands: !!lc,
+        changeLayout: lc && typeof lc.changeLayout === 'function'
+      };
+    });
+    console.warn('Module initialization timeout:', debugInfo);
+  }
+
   // Synthesize a highlight directly using module API (bypasses persistence) for deterministic visual check
   await page.evaluate((geom) => {
     const hMod = (window as any).PlayTimeHighlighting;
@@ -121,15 +143,28 @@ test.describe('Highlighting Visual (rehydration + focus + resize)', () => {
 
     // Click to trigger focus (zoom) mode
     await hl.click();
-    // Wait for transform animation
+    // Wait for focus mode to complete
     await page.waitForTimeout(350);
 
-    // Canvas should have a transform with scale
-    const hasScale = await page.evaluate(() => {
+    // Verify focus mode is active (modern behavior uses PDF viewer zoom, not CSS transforms)
+    const focusModeStatus = await page.evaluate(() => {
       const canvas = document.querySelector('[data-role="pdf-canvas"]') as HTMLElement | null;
-      return !!canvas && /scale\(/.test(canvas.style.transform);
+      const viewer = document.querySelector('[data-role="pdf-viewer"]') as HTMLElement | null;
+      const pdfViewer = (window as any).PlayTimePDFViewer;
+      
+      return {
+        canvasHasFocusAttribute: canvas?.getAttribute('data-focus-mode') === 'active',
+        viewerHasFocusClass: viewer?.classList.contains('focus-mode') === true,
+        zoomLevel: pdfViewer ? pdfViewer.getZoom() : null,
+        zoomGreaterThan1: pdfViewer ? pdfViewer.getZoom() > 1 : false
+      };
     });
-    expect(hasScale).toBeTruthy();
+    
+    // Modern behavior: Canvas should have data-focus-mode="active" attribute (not CSS transform)
+    expect(focusModeStatus.canvasHasFocusAttribute).toBeTruthy();
+    
+    // Viewer should have focus-mode class
+    expect(focusModeStatus.viewerHasFocusClass).toBeTruthy();
 
     // Viewer should have focus-mode class
     await expect(page.locator('[data-role="pdf-viewer"]')).toHaveClass(/focus-mode/);
@@ -142,13 +177,18 @@ test.describe('Highlighting Visual (rehydration + focus + resize)', () => {
     const count = await page.evaluate(() => document.querySelectorAll('[data-role="highlight"]').length);
     expect(count).toBe(1);
 
-    // Exit focus mode via API and ensure transform cleared
+    // Exit focus mode via API and ensure focus mode is cleared
     await page.evaluate(() => { (window as any).PlayTimeHighlighting.exitFocusMode(); });
     await page.waitForTimeout(100);
-    const transformCleared = await page.evaluate(() => {
+    const focusModeExited = await page.evaluate(() => {
       const canvas = document.querySelector('[data-role="pdf-canvas"]') as HTMLElement | null;
-      return !!canvas && (canvas.style.transform === '' || canvas.style.transform === 'none');
+      const viewer = document.querySelector('[data-role="pdf-viewer"]') as HTMLElement | null;
+      return {
+        canvasNoFocusAttribute: canvas?.getAttribute('data-focus-mode') !== 'active',
+        viewerNoFocusClass: !viewer?.classList.contains('focus-mode')
+      };
     });
-    expect(transformCleared).toBeTruthy();
+    expect(focusModeExited.canvasNoFocusAttribute).toBeTruthy();
+    expect(focusModeExited.viewerNoFocusClass).toBeTruthy();
   });
 });

@@ -261,6 +261,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (typeof window.createPlayTimeScoreList === 'function') {
             window.PlayTimeScoreList = window.createPlayTimeScoreList(null, appLogger); // Database will be set after initialization
         }
+        if (typeof window.createPlayTimePracticePlanner === 'function') {
+            window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, window.PlayTimeHighlighting);
+        }
         // PlayTimeHighlighting doesn't need refactoring yet - keeping as is
         
         // Initialize file upload handler first (driven by failing tests)
@@ -314,6 +317,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Initialize score list component after database, viewer & highlighting are ready
     if (window.PlayTimeScoreList) { window.PlayTimeScoreList.setDatabase(window.PlayTimeDB); await window.PlayTimeScoreList.init(); await window.PlayTimeScoreList.refresh(); }
+        
+        // Initialize practice planner component
+        if (window.PlayTimePracticePlanner) { 
+            await window.PlayTimePracticePlanner.init(); 
+        }
         // Reload scenario: current score id already set but no highlights rendered yet -> replay SCORE_SELECTED
         try {
             if (window.PlayTimeCurrentScoreId != null && !window.__playTimeReloadReplayed) {

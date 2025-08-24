@@ -142,12 +142,23 @@ beforeEach(() => {
                     <button data-role="zoom-in">+</button>
                     <button data-role="zoom-out">-</button>
                     <span data-role="zoom-display"></span>
+                    <button data-role="setup-practice-plan">Setup practice plan</button>
                     <button data-role="toggle-focus-mode" aria-pressed="false"></button>
                     <div data-role="current-score-title" class="current-score-title"></div>
                 </div>
                 <div class="pdf-viewer-container" data-role="pdf-viewer">
                     <canvas id="pdf-canvas" data-role="pdf-canvas"></canvas>
                     <div class="selection-overlay" data-role="selection-overlay" style="display: none;"></div>
+                </div>
+                <div data-role="practice-planner" style="display: none;">
+                    <button data-role="exit-practice-planning">Exit practice planning</button>
+                    <div data-role="no-highlights-message">
+                        <p>No highlighted sections yet</p>
+                        <button data-role="return-to-highlighting">Return to highlighting</button>
+                    </div>
+                    <div data-role="practice-plan-content" style="display: none;">
+                        <p>Practice plan content...</p>
+                    </div>
                 </div>
                 <div class="highlight-controls">
                     <button id="color-green" data-role="color-green" data-color="green">●</button>

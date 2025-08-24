@@ -58,6 +58,41 @@
         // Public configuration (legacy compatibility)
         CONFIG: DEFAULT_CONFIG,
 
+        /**
+         * Handler for focus-mode layout commands
+         */
+        handleFocusModeLayoutCommand: function(type, options) {
+            if (type !== 'focus-mode') return;
+            const { action, highlight, padding = 20, mode = 'zoom' } = options;
+            
+            PlayTimeHighlighting._state.logger.info?.('Focus mode layout command received', { action, mode, highlight });
+            
+            if (action === 'enter' && highlight) {
+                // Calculate pixel rect from percentages
+                const canvasRect = PlayTimeHighlighting._components.CoordinateMapperClass.safeBoundingRect(PlayTimeHighlighting._state.canvas);
+                const containerRect = PlayTimeHighlighting._components.CoordinateMapperClass.safeBoundingRect(PlayTimeHighlighting._state.viewer);
+                
+                if (canvasRect && containerRect) {
+                    const highlightRect = PlayTimeHighlighting._components.CoordinateMapperClass.fromPercentages(highlight, canvasRect, { left:0, top:0 });
+                    if (mode === 'zoom') {
+                        PlayTimeHighlighting._applyZoomFocus(highlightRect, containerRect, padding);
+                    } else if (mode === 'crop') {
+                        PlayTimeHighlighting._applyCropFocus(highlight, padding);
+                    }
+                }
+            } else if (action === 'exit') {
+                // Clear transform and remove focus-mode class
+                if (PlayTimeHighlighting._state.canvas) {
+                    PlayTimeHighlighting._state.canvas.style.transform = '';
+                    PlayTimeHighlighting._state.canvas.style.transition = '';
+                }
+
+                if (PlayTimeHighlighting._state.viewer) {
+                    PlayTimeHighlighting._state.viewer.classList.remove('focus-mode');
+                }
+            }
+        },
+
         // Internal components
         _components: {
             ConfidenceMapperClass: null,
@@ -194,6 +229,7 @@
             // NEW: Dispatch layout command instead of directly applying CSS transform.
             try {
                 if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.changeLayout === 'function') {
+                    this._state.logger.info?.('Dispatching focus-mode layout command', { xPct, yPct, wPct, hPct, mode, padding });
                     window.PlayTimeLayoutCommands.changeLayout('focus-mode', {
                         action: 'enter',
                         highlight: { xPct, yPct, wPct, hPct },
@@ -210,6 +246,7 @@
                     
                     // NOTE: Removed legacy CSS transform duplication when command path active to prevent double scaling/UI mismatch
                 } else {
+                    this._state.logger.warn?.('PlayTimeLayoutCommands not available, using fallback transform approach');
                     // Fallback to legacy transform approach (deprecated) to maintain backward compatibility
                     const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
                     const containerRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.viewer);
@@ -355,6 +392,14 @@
                 .onScoreSelected(({ pdfId }) => this._handleScoreSelected(pdfId))
                 .onPageChanged(({ page }) => this._handlePageChanged(page))
                 .onLayoutChanged(() => this.repositionAll());
+
+            // Register focus-mode layout command handler
+            if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.registerHandler === 'function') {
+                window.PlayTimeLayoutCommands.registerHandler('focus-mode', this.handleFocusModeLayoutCommand);
+                this._state.logger.info?.('Focus mode layout command handler registered');
+            } else {
+                this._state.logger.warn?.('PlayTimeLayoutCommands not available for handler registration');
+            }
 
             // Initialize active confidence from DOM
             this._ensureActiveConfidenceFromDOM();

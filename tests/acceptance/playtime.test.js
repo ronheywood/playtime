@@ -76,6 +76,10 @@ describe('PlayTime Music Practice App', () => {
     // Setup focus mode handler
     const FocusModeHandler = require('../../scripts/focus-mode-handler');
     global.window.PlayTimeFocusModeHandler = FocusModeHandler;
+    
+    // Setup practice planner
+    const { createPlayTimePracticePlanner } = require('../../scripts/practice-planner');
+    global.window.createPlayTimePracticePlanner = createPlayTimePracticePlanner;
         
         // Setup logger for main.js
         const logger = require('../../scripts/logger');
@@ -748,6 +752,165 @@ describe('PlayTime Music Practice App', () => {
                 }
 
                 // 4. (Conceptual) Centering: we can't measure scroll in JSDOM reliably yet; will assert in GREEN phase via returned zoom & future API
+            });
+        });
+    });
+
+    describe('Activity 5: Practice Session Planning & Progress Tracking', () => {
+        beforeEach(async () => {
+            // Load a PDF and create some highlights for practice planning tests
+            const fileInput = document.querySelector('input[type="file"]');
+            const mockFile = new File(['mock pdf content'], 'practice-score.pdf', { type: 'application/pdf' });
+            Object.defineProperty(fileInput, 'files', { value: [mockFile], writable: false });
+            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Wait for PDF to load
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Manually initialize practice planner if not already done
+            if (!global.window.PlayTimePracticePlanner && global.window.createPlayTimePracticePlanner) {
+                const logger = global.window.logger || global.logger || console;
+                global.window.PlayTimePracticePlanner = global.window.createPlayTimePracticePlanner(
+                    logger, 
+                    global.window.PlayTimeDB, 
+                    global.window.PlayTimeHighlighting
+                );
+                await global.window.PlayTimePracticePlanner.init();
+            } else if (global.window.PlayTimePracticePlanner) {
+                await global.window.PlayTimePracticePlanner.init();
+            }
+        });
+
+        describe('User Story 5.1: Configure Practice Session', () => {
+            test('As a musician, I want to access practice planning from the main view', async () => {
+                // GIVEN: I have a score loaded with some highlights
+                const canvas = document.querySelector(SELECTORS.CANVAS);
+                expect(canvas).toBeTruthy();
+                
+                // WHEN: I look for the practice planning call to action
+                const practicePlanButton = document.querySelector('[data-role="setup-practice-plan"]');
+                
+                // THEN: I should see a "Setup practice plan" button above the focus mode toggle
+                expect(practicePlanButton).toBeTruthy();
+                expect(practicePlanButton.textContent).toContain('Setup practice plan');
+                
+                // AND: The button should be positioned above the focus mode toggle
+                const focusToggle = document.querySelector('[data-role="toggle-focus-mode"]');
+                expect(focusToggle).toBeTruthy();
+                
+                // In test environment, check DOM order instead of visual positioning
+                const parent = practicePlanButton.parentElement;
+                const children = Array.from(parent.children);
+                const practicePlanIndex = children.indexOf(practicePlanButton);
+                const focusToggleIndex = children.indexOf(focusToggle);
+                expect(practicePlanIndex).toBeLessThan(focusToggleIndex);
+            });
+
+            test('As a musician, I want to enter practice planning mode by clicking the setup button', async () => {
+                // GIVEN: I have the practice plan button available
+                const practicePlanButton = document.querySelector('[data-role="setup-practice-plan"]');
+                expect(practicePlanButton).toBeTruthy();
+                
+                // WHEN: I click the setup practice plan button
+                let practiceSessionEvent = null;
+                window.addEventListener('playtime:practice-session-start', (e) => {
+                    practiceSessionEvent = e.detail;
+                });
+                
+                practicePlanButton.click();
+                
+                // Wait a bit for async operations
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // THEN: A practice session start event should be dispatched with score context
+                expect(practiceSessionEvent).toBeTruthy();
+                expect(practiceSessionEvent.scoreId).toBeTruthy();
+                expect(practiceSessionEvent.highlights).toBeDefined(); // array, may be empty initially
+                expect(Array.isArray(practiceSessionEvent.highlights)).toBe(true);
+            });
+
+            test('As a musician, I want the PDF canvas to be replaced with practice planning interface', async () => {
+                // GIVEN: I can see the PDF canvas initially
+                const canvas = document.querySelector(SELECTORS.CANVAS);
+                const pdfViewer = document.querySelector(SELECTORS.VIEWER);
+                expect(canvas).toBeTruthy();
+                expect(pdfViewer).toBeTruthy();
+                expect(canvas.style.display).not.toBe('none');
+                
+                // WHEN: I click setup practice plan
+                const practicePlanButton = document.querySelector('[data-role="setup-practice-plan"]');
+                practicePlanButton.click();
+                
+                // Wait for async operations
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // THEN: The PDF canvas should be hidden
+                expect(canvas.style.display).toBe('none');
+                
+                // AND: A practice planning interface should be visible
+                const practiceInterface = document.querySelector('[data-role="practice-planner"]');
+                expect(practiceInterface).toBeTruthy();
+                expect(practiceInterface.style.display).not.toBe('none');
+            });
+
+            test('As a musician, I want to exit practice planning mode and return to the canvas view', async () => {
+                // GIVEN: I am in practice planning mode
+                const practicePlanButton = document.querySelector('[data-role="setup-practice-plan"]');
+                practicePlanButton.click();
+                
+                // Wait for async operations
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const canvas = document.querySelector(SELECTORS.CANVAS);
+                const practiceInterface = document.querySelector('[data-role="practice-planner"]');
+                expect(canvas.style.display).toBe('none');
+                expect(practiceInterface.style.display).not.toBe('none');
+                
+                // WHEN: I click the exit practice planning button
+                let practiceSessionExitEvent = null;
+                window.addEventListener('playtime:practice-session-exit', (e) => {
+                    practiceSessionExitEvent = e.detail;
+                });
+                
+                const exitButton = document.querySelector('[data-role="exit-practice-planning"]');
+                expect(exitButton).toBeTruthy();
+                exitButton.click();
+                
+                // Wait for async operations
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // THEN: A practice session exit event should be dispatched
+                expect(practiceSessionExitEvent).toBeTruthy();
+                
+                // AND: The PDF canvas should be visible again
+                expect(canvas.style.display).not.toBe('none');
+                
+                // AND: The practice planning interface should be hidden
+                expect(practiceInterface.style.display).toBe('none');
+            });
+
+            test('As a musician, I want to see a message when no highlights exist for practice planning', async () => {
+                // GIVEN: I have a score with no highlights
+                // (beforeEach loads a clean score)
+                
+                // WHEN: I enter practice planning mode
+                const practicePlanButton = document.querySelector('[data-role="setup-practice-plan"]');
+                practicePlanButton.click();
+                
+                // Wait for async operations
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // THEN: I should see a message about creating highlights
+                const practiceInterface = document.querySelector('[data-role="practice-planner"]');
+                expect(practiceInterface).toBeTruthy();
+                
+                const noHighlightsMessage = practiceInterface.querySelector('[data-role="no-highlights-message"]');
+                expect(noHighlightsMessage).toBeTruthy();
+                expect(noHighlightsMessage.textContent).toContain('No highlighted sections yet');
+                
+                // AND: There should be a way to return to highlight creation
+                const returnToHighlightingButton = practiceInterface.querySelector('[data-role="return-to-highlighting"]');
+                expect(returnToHighlightingButton).toBeTruthy();
             });
         });
     });
