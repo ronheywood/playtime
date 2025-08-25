@@ -152,11 +152,30 @@ const PracticePlannerTemplates = {
                             <span class="confidence-indicator badge ${PracticePlannerTemplates.getConfidenceBadgeClass(highlight.confidence)}">
                                 ${PracticePlannerTemplates.getConfidenceLabel(highlight.confidence)}
                             </span>
+                            ${highlight.annotated ? '<span class="badge badge-outline" title="This section has annotation notes"><i data-lucide="sticky-note" class="w-3 h-3"></i></span>' : ''}
                         </div>
                         <button class="remove-section btn btn-outline btn-icon btn-sm" title="Remove section">
                             <i data-lucide="x" class="lucide lucide-x w-3 h-3"></i>
                         </button>
                     </div>
+
+                    <!-- Annotation Title and Notes (if available) -->
+                    ${highlight.title || highlight.notes ? `
+                    <div class="annotation-info bg-muted/50 border border-muted rounded-md p-3 space-y-2">
+                        ${highlight.title ? `
+                        <div>
+                            <h5 class="text-sm font-medium text-foreground mb-1">Annotation</h5>
+                            <p class="text-sm text-foreground font-medium">${PracticePlannerTemplates.escapeHtml(highlight.title)}</p>
+                        </div>
+                        ` : ''}
+                        ${highlight.notes ? `
+                        <div>
+                            ${!highlight.title ? '<h5 class="text-sm font-medium text-foreground mb-1">Notes</h5>' : ''}
+                            <p class="text-sm text-muted-foreground">${PracticePlannerTemplates.escapeHtml(highlight.notes)}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
 
                     <!-- Practice Method & Target Time -->
                     <div class="grid grid-cols-2 gap-3">
@@ -183,13 +202,13 @@ const PracticePlannerTemplates = {
                         </div>
                     </div>
 
-                    <!-- Notes -->
+                    <!-- Practice Session Notes -->
                     <div>
-                        <label class="block text-xs font-medium text-muted-foreground mb-1">Notes</label>
+                        <label class="block text-xs font-medium text-muted-foreground mb-1">Practice Session Notes</label>
                         <textarea 
                             class="section-notes w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                             rows="2"
-                            placeholder="Add practice notes for this section..."
+                            placeholder="Add practice notes for this session..."
                         ></textarea>
                     </div>
                 </div>
@@ -200,6 +219,13 @@ const PracticePlannerTemplates = {
     /**
      * Helper functions for template data
      */
+    escapeHtml: (text) => {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
     getConfidenceBadgeClass: (confidence) => {
         switch (confidence) {
             case 2: return 'badge-success';

@@ -31,23 +31,35 @@ describe('Practice Planner Integration Tests', () => {
 
         // Mock templates globally 
         global.window.PracticePlannerTemplates = {
-            practiceSection: jest.fn((highlight, index) => `
-                <div class="practice-section" data-highlight-id="${highlight.id}" data-section-index="${index}">
-                    <div class="practice-section-content">
-                        <h5>Section ${index + 1} - Page ${highlight.page}</h5>
-                        <div class="confidence-badge confidence-${highlight.confidence}">
-                            ${highlight.confidence.toUpperCase()}
-                        </div>
-                        <select class="practice-method">
-                            <option value="slow-practice">Slow Practice</option>
-                            <option value="hands-separate">Hands Separate</option>
-                            <option value="metronome">With Metronome</option>
-                        </select>
-                        <input type="number" class="target-time" value="5" min="1" max="30" />
-                        <button class="remove-section">Remove</button>
+            practiceSection: jest.fn((highlight, index) => {
+                const hasAnnotation = highlight.title || highlight.notes;
+                const annotationSection = hasAnnotation ? `
+                    <div class="annotation-info">
+                        <i data-lucide="sticky-note" class="annotation-icon"></i>
+                        ${highlight.title ? `<div class="annotation-title">${highlight.title}</div>` : ''}
+                        ${highlight.notes ? `<div class="annotation-notes">${highlight.notes}</div>` : ''}
                     </div>
-                </div>
-            `)
+                ` : '';
+                
+                return `
+                    <div class="practice-section" data-highlight-id="${highlight.id}" data-section-index="${index}">
+                        <div class="practice-section-content">
+                            <h5>Section ${index + 1} - Page ${highlight.page}</h5>
+                            <div class="confidence-badge confidence-${highlight.confidence}">
+                                ${highlight.confidence.toUpperCase()}
+                            </div>
+                            ${annotationSection}
+                            <select class="practice-method">
+                                <option value="slow-practice">Slow Practice</option>
+                                <option value="hands-separate">Hands Separate</option>
+                                <option value="metronome">With Metronome</option>
+                            </select>
+                            <input type="number" class="target-time" value="5" min="1" max="30" />
+                            <button class="remove-section">Remove</button>
+                        </div>
+                    </div>
+                `;
+            })
         };
 
         // Load the practice planner module
@@ -242,6 +254,66 @@ describe('Practice Planner Integration Tests', () => {
             
             // Verify template was called for each highlight
             expect(global.window.PracticePlannerTemplates.practiceSection).toHaveBeenCalledTimes(3);
+        });
+
+        test('should display annotation data when available', () => {
+            const highlights = [
+                { 
+                    id: 'h1', 
+                    page: 1, 
+                    confidence: 'red', 
+                    xPct: 0.1, 
+                    yPct: 0.3,
+                    title: 'Focus Point',
+                    notes: 'Work on finger positioning'
+                },
+                { 
+                    id: 'h2', 
+                    page: 1, 
+                    confidence: 'green', 
+                    xPct: 0.2, 
+                    yPct: 0.1,
+                    notes: 'Good technique here' // Only notes, no title
+                },
+                { 
+                    id: 'h3', 
+                    page: 2, 
+                    confidence: 'amber', 
+                    xPct: 0.1, 
+                    yPct: 0.5
+                    // No annotation data
+                }
+            ];
+            
+            practicePlanner.populatePracticeSections(highlights);
+            
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            
+            // Check that annotations are displayed when present
+            expect(sectionsList.innerHTML).toContain('Focus Point');
+            expect(sectionsList.innerHTML).toContain('Work on finger positioning');
+            expect(sectionsList.innerHTML).toContain('Good technique here');
+            expect(sectionsList.innerHTML).toContain('annotation-info');
+            
+            // Verify template was called with all highlights (they get sorted by page/position)
+            expect(global.window.PracticePlannerTemplates.practiceSection).toHaveBeenCalledTimes(3);
+            
+            // Check that h2 was called first (page 1, yPct 0.1)
+            expect(global.window.PracticePlannerTemplates.practiceSection).toHaveBeenNthCalledWith(1,
+                expect.objectContaining({ 
+                    id: 'h2',
+                    notes: 'Good technique here'
+                }), 0
+            );
+            
+            // Check that h1 was called second (page 1, yPct 0.3)
+            expect(global.window.PracticePlannerTemplates.practiceSection).toHaveBeenNthCalledWith(2,
+                expect.objectContaining({ 
+                    id: 'h1',
+                    title: 'Focus Point',
+                    notes: 'Work on finger positioning'
+                }), 1
+            );
         });
 
         test('should handle empty highlights array', () => {
