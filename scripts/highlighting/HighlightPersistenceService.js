@@ -70,6 +70,43 @@ class HighlightPersistenceService {
     }
 
     /**
+     * Get a single highlight by ID
+     * @param {number} id - The highlight ID
+     * @returns {Promise<Object|null>} The highlight record or null if not found
+     */
+    async getHighlight(id) {
+        if (!this.database || typeof this.database.getHighlight !== 'function') {
+            throw new Error('Database not available or does not support getHighlight');
+        }
+
+        try {
+            return await this.database.getHighlight(id);
+        } catch (error) {
+            console.error('Failed to get highlight:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Update an existing highlight with new data
+     * @param {number} id - The highlight ID to update
+     * @param {Object} updates - The data to update (e.g., title, notes, annotatedAt)
+     * @returns {Promise<Object>} The updated highlight record
+     */
+    async updateHighlight(id, updates) {
+        if (!this.database || typeof this.database.updateHighlight !== 'function') {
+            throw new Error('Database not available or does not support updateHighlight');
+        }
+
+        try {
+            return await this.database.updateHighlight(id, updates);
+        } catch (error) {
+            console.error('Failed to update highlight:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Check if database is available and ready
      */
     isAvailable() {

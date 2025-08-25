@@ -985,7 +985,7 @@
          * Handle annotation saved from the form
          * @param {Object} annotationData - The saved annotation data
          */
-        _handleAnnotationSaved(annotationData) {
+        async _handleAnnotationSaved(annotationData) {
             try {
                 const { title, notes, timestamp, highlightData } = annotationData;
                 
@@ -1015,7 +1015,7 @@
 
                 // Update persistence if available
                 if (this._components.persistenceService) {
-                    this._updateHighlightInPersistence(highlightData.highlightId, {
+                    await this._updateHighlightInPersistence(highlightData.highlightId, {
                         title,
                         notes,
                         annotated: true,
@@ -1079,16 +1079,19 @@
          * @param {string} highlightId - The highlight ID
          * @param {Object} annotationData - The annotation data to store
          */
-        _updateHighlightInPersistence(highlightId, annotationData) {
+        async _updateHighlightInPersistence(highlightId, annotationData) {
             try {
                 if (!this._components.persistenceService) return;
 
                 // Get existing highlight data
-                const existingData = this._components.persistenceService.getHighlight?.(highlightId);
+                const existingData = await this._components.persistenceService.getHighlight(highlightId);
                 if (existingData) {
                     // Update with annotation data
                     const updatedData = { ...existingData, ...annotationData };
-                    this._components.persistenceService.updateHighlight?.(highlightId, updatedData);
+                    await this._components.persistenceService.updateHighlight(highlightId, updatedData);
+                    this._state.logger.info?.('Highlight annotation data updated in database', highlightId);
+                } else {
+                    this._state.logger.warn?.('Highlight not found in database for update', highlightId);
                 }
             } catch (e) {
                 this._state.logger.warn?.('Failed to update highlight in persistence', e);

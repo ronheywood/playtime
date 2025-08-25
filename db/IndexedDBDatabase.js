@@ -172,6 +172,60 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
             } catch(e) { reject(e); }
         });
     }
+    
+    async getHighlight(id) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { return reject(new Error('Database not initialized')); }
+            try {
+                const tx = this._db.transaction([SECTIONS_STORE], 'readonly');
+                const store = tx.objectStore(SECTIONS_STORE);
+                // Ensure ID is a number for IndexedDB auto-increment keys
+                const numericId = Number(id);
+                const req = store.get(numericId);
+                req.onsuccess = () => {
+                    resolve(req.result || null);
+                };
+                req.onerror = () => reject(req.error);
+            } catch(e) { reject(e); }
+        });
+    }
+    
+    async updateHighlight(id, updates) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { return reject(new Error('Database not initialized')); }
+            try {
+                const tx = this._db.transaction([SECTIONS_STORE], 'readwrite');
+                const store = tx.objectStore(SECTIONS_STORE);
+                
+                // Ensure ID is a number for IndexedDB auto-increment keys
+                const numericId = Number(id);
+                
+                // First get the existing record
+                const getReq = store.get(numericId);
+                getReq.onsuccess = () => {
+                    const existingRecord = getReq.result;
+                    if (!existingRecord) {
+                        reject(new Error(`Highlight with id ${id} not found`));
+                        return;
+                    }
+                    
+                    // Merge the updates with existing data
+                    const updatedRecord = { 
+                        ...existingRecord, 
+                        ...updates, 
+                        id: numericId, // Ensure ID doesn't change and remains numeric
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    // Update the record
+                    const putReq = store.put(updatedRecord);
+                    putReq.onsuccess = () => resolve(updatedRecord);
+                    putReq.onerror = () => reject(putReq.error);
+                };
+                getReq.onerror = () => reject(getReq.error);
+            } catch(e) { reject(e); }
+        });
+    }
     constructor(logger = console) {
         super();
         this._db = null;
