@@ -10,7 +10,7 @@ declare global {
 test.describe('HighlightActionButton Visual Tests', () => {
     test.beforeEach(async ({ page }) => {
         // Navigate to the application
-        await page.goto('http://localhost:8080');
+        await page.goto('/');
         
         // Wait for the page to load
         await page.waitForLoadState('networkidle');

@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Highlight Annotation Form', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:8080');
+        await page.goto('/');
         
         // Wait for page to load
         await page.waitForSelector('#pdf-canvas');
