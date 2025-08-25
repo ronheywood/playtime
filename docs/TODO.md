@@ -68,7 +68,7 @@
  - [ ] **Practice Session Planning & Progress Tracking**
    - [x] Practice session configuration UI (replacing score canvas)
    - [x] Floating action button for highlight annotation (notebook icon)
-   - [ ] Annotation dialog/modal for adding titles and notes to highlights
+   - [x] Annotation dialog/modal for adding titles and notes to highlights
    - [ ] Select sections, reorder, remove, set method, duration, notes
   - [ ] Save/load/delete practice plans (IndexedDB)
   - [ ] Start session: timer, section navigation, progress indicator
@@ -80,11 +80,8 @@
 
 ---
 **Practice Plan Thoughts (for future work):**
-
-- Sections in the list only show page number and confidence, so it's not easy to prioritise the order.
-  - Need to be able to add descriptions to the highlights (e.g., measure numbers, section name).
-  - Consider showing a preview image from the canvas for each section.
-
+- The cards on the practice planner are too large for drag and drop sorting - need an "expand" behavior?
+- Consider showing a preview image from the canvas for each section.
 - Target duration in the practice session config is probably the sum of the target time for all sections.
   - Instead of a manual entry, just label it "Duration" and have it be calculated automatically.
 
