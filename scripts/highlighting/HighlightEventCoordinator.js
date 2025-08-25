@@ -12,6 +12,9 @@ class HighlightEventCoordinator {
                 LAYOUT_CHANGED: 'playtime:layout-changed',
                 HIGHLIGHT_FOCUS_REQUESTED: 'playtime:highlight-focus-requested',
                 HIGHLIGHT_FOCUS_EXITED: 'playtime:highlight-focus-exited',
+                HIGHLIGHT_ANNOTATION_REQUESTED: 'playtime:highlight-annotation-requested',
+                HIGHLIGHT_ANNOTATION_SAVED: 'playtime:highlight-annotation-saved',
+                HIGHLIGHT_ANNOTATION_CANCELLED: 'playtime:highlight-annotation-cancelled',
                 ...config.events
             },
             rehydrationDelay: 10,
@@ -34,7 +37,10 @@ class HighlightEventCoordinator {
             onPageChanged: null,
             onLayoutChanged: null,
             onHighlightFocusRequested: null,
-            onHighlightFocusExited: null
+            onHighlightFocusExited: null,
+            onHighlightAnnotationRequested: null,
+            onHighlightAnnotationSaved: null,
+            onHighlightAnnotationCancelled: null
         };
     }
 
@@ -93,6 +99,30 @@ class HighlightEventCoordinator {
      */
     onHighlightFocusExited(callback) {
         this.callbacks.onHighlightFocusExited = callback;
+        return this;
+    }
+
+    /**
+     * Set callback for highlight annotation requests
+     */
+    onHighlightAnnotationRequested(callback) {
+        this.callbacks.onHighlightAnnotationRequested = callback;
+        return this;
+    }
+
+    /**
+     * Set callback for highlight annotation saved events
+     */
+    onHighlightAnnotationSaved(callback) {
+        this.callbacks.onHighlightAnnotationSaved = callback;
+        return this;
+    }
+
+    /**
+     * Set callback for highlight annotation cancelled events
+     */
+    onHighlightAnnotationCancelled(callback) {
+        this.callbacks.onHighlightAnnotationCancelled = callback;
         return this;
     }
 
@@ -197,6 +227,21 @@ class HighlightEventCoordinator {
             (e) => this.handleLayoutChanged(e)
         );
 
+        this.addEventListenerTracked(
+            this.config.events.HIGHLIGHT_ANNOTATION_REQUESTED,
+            (e) => this.handleHighlightAnnotationRequested(e)
+        );
+
+        this.addEventListenerTracked(
+            this.config.events.HIGHLIGHT_ANNOTATION_SAVED,
+            (e) => this.handleHighlightAnnotationSaved(e)
+        );
+
+        this.addEventListenerTracked(
+            this.config.events.HIGHLIGHT_ANNOTATION_CANCELLED,
+            (e) => this.handleHighlightAnnotationCancelled(e)
+        );
+
         // Add window resize listener to trigger layout updates
         this.addEventListenerTracked(
             'resize',
@@ -255,6 +300,24 @@ class HighlightEventCoordinator {
     handleLayoutChanged(event) {
         if (this.callbacks.onLayoutChanged) {
             this.callbacks.onLayoutChanged(event.detail || {});
+        }
+    }
+
+    handleHighlightAnnotationRequested(event) {
+        if (this.callbacks.onHighlightAnnotationRequested) {
+            this.callbacks.onHighlightAnnotationRequested(event.detail || {});
+        }
+    }
+
+    handleHighlightAnnotationSaved(event) {
+        if (this.callbacks.onHighlightAnnotationSaved) {
+            this.callbacks.onHighlightAnnotationSaved(event.detail || {});
+        }
+    }
+
+    handleHighlightAnnotationCancelled(event) {
+        if (this.callbacks.onHighlightAnnotationCancelled) {
+            this.callbacks.onHighlightAnnotationCancelled(event.detail || {});
         }
     }
 

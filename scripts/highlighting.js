@@ -21,6 +21,8 @@
         require('./highlighting/HighlightEventCoordinator') : global.HighlightEventCoordinator;
     const HighlightActionButtonClass = (typeof require !== 'undefined') ? 
         require('./highlighting/HighlightActionButton').HighlightActionButton : window.HighlightActionButton;
+    const HighlightAnnotationFormClass = (typeof require !== 'undefined') ? 
+        require('./highlighting/HighlightAnnotationForm') : window.HighlightAnnotationForm;
     
     // Dependencies will be injected via init() method
     let CONST = null;
@@ -361,6 +363,13 @@
                 position: 'bottom-right'
             });
 
+            // Initialize annotation form
+            this._components.annotationForm = new HighlightAnnotationFormClass({
+                containerId: 'pdf-canvas',
+                maxTitleLength: 100,
+                maxNotesLength: 1000
+            });
+
             // Setup scheduler
             this._state.scheduler = this._state.scheduler || this._createDefaultScheduler();
         },
@@ -403,12 +412,21 @@
                 .onConfidenceChanged(({ color }) => this.setActiveConfidenceFromColor(color))
                 .onScoreSelected(({ pdfId }) => this._handleScoreSelected(pdfId))
                 .onPageChanged(({ page }) => this._handlePageChanged(page))
-                .onLayoutChanged(() => this.repositionAll());
+                .onLayoutChanged(() => this.repositionAll())
+                .onHighlightAnnotationRequested((data) => this._handleAnnotationRequested(data))
+                .onHighlightAnnotationSaved((data) => this._handleAnnotationSavedEvent(data))
+                .onHighlightAnnotationCancelled((data) => this._handleAnnotationCancelledEvent(data));
 
             // Initialize action button
             this._components.actionButton
                 .init()
                 .onClick((highlightElement) => this._handleActionButtonClick(highlightElement));
+
+            // Initialize annotation form
+            this._components.annotationForm
+                .init()
+                .onSave((annotationData) => this._handleAnnotationSaved(annotationData))
+                .onCancel((highlightData) => this._handleAnnotationCancelled(highlightData));
 
             // Register focus-mode layout command handler
             if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.registerHandler === 'function') {
@@ -903,48 +921,152 @@
             // Hide the action button
             this._components.actionButton.hide();
 
-            // TODO: Open annotation dialog/modal here
-            // For now, we'll dispatch an event that other modules can listen to
-            this._dispatchAnnotationRequestEvent(highlightElement);
+            // Prepare highlight data for the annotation form
+            const highlightData = {
+                highlightId: highlightElement.dataset.hlId,
+                color: highlightElement.dataset.hlColor,
+                confidence: parseInt(highlightElement.dataset.hlConfidence),
+                page: highlightElement.dataset.page ? parseInt(highlightElement.dataset.page) : null,
+                coordinates: {
+                    xPct: parseFloat(highlightElement.dataset.hlXPct),
+                    yPct: parseFloat(highlightElement.dataset.hlYPct),
+                    wPct: parseFloat(highlightElement.dataset.hlWPct),
+                    hPct: parseFloat(highlightElement.dataset.hlHPct)
+                },
+                element: highlightElement
+            };
+
+            // Show the annotation form
+            this._components.annotationForm.showForHighlight(highlightData);
         },
 
         /**
-         * Dispatch annotation request event for other modules to handle
-         * @param {HTMLElement} highlightElement - The highlight element to annotate
+         * Handle annotation request event from event coordinator
+         * @param {Object} data - Annotation request data
          */
-        _dispatchAnnotationRequestEvent(highlightElement) {
-            try {
-                const event = new CustomEvent('playtime:highlight-annotation-requested', {
-                    detail: {
-                        highlightId: highlightElement.dataset.hlId,
-                        color: highlightElement.dataset.hlColor,
-                        confidence: parseInt(highlightElement.dataset.hlConfidence),
-                        page: highlightElement.dataset.page ? parseInt(highlightElement.dataset.page) : null,
-                        coordinates: {
-                            xPct: parseFloat(highlightElement.dataset.hlXPct),
-                            yPct: parseFloat(highlightElement.dataset.hlYPct),
-                            wPct: parseFloat(highlightElement.dataset.hlWPct),
-                            hPct: parseFloat(highlightElement.dataset.hlHPct)
-                        },
-                        element: highlightElement
-                    }
-                });
-                
-                (this._state.viewer || document).dispatchEvent(event);
-                this._state.logger.info?.('Annotation request event dispatched', { 
-                    highlightId: highlightElement.dataset.hlId 
-                });
-            } catch (e) {
-                this._state.logger.warn?.('Failed to dispatch annotation request event', e);
+        _handleAnnotationRequested(data) {
+            if (this._components.annotationForm) {
+                this._components.annotationForm.showForHighlight(data);
             }
         },
 
         /**
-         * Hide the action button (called when focus changes)
+         * Handle annotation saved from the form
+         * @param {Object} annotationData - The saved annotation data
+         */
+        _handleAnnotationSaved(annotationData) {
+            try {
+                const { title, notes, timestamp, highlightData } = annotationData;
+                
+                // Store annotation data on the highlight element
+                if (highlightData && highlightData.element) {
+                    const element = highlightData.element;
+                    element.dataset.hlTitle = title || '';
+                    element.dataset.hlNotes = notes || '';
+                    element.dataset.hlAnnotated = 'true';
+                    element.dataset.hlAnnotationTimestamp = timestamp.toString();
+                }
+
+                // Dispatch saved event for other modules
+                const event = new CustomEvent('playtime:highlight-annotation-saved', {
+                    detail: {
+                        ...highlightData,
+                        annotation: { title, notes, timestamp }
+                    }
+                });
+                
+                (this._state.viewer || document).dispatchEvent(event);
+                
+                this._state.logger.info?.('Annotation saved', { 
+                    highlightId: highlightData.highlightId,
+                    title: title ? title.substring(0, 50) + '...' : '(no title)'
+                });
+
+                // Update persistence if available
+                if (this._components.persistenceService) {
+                    this._updateHighlightInPersistence(highlightData.highlightId, {
+                        title,
+                        notes,
+                        annotated: true,
+                        annotationTimestamp: timestamp
+                    });
+                }
+
+            } catch (e) {
+                this._state.logger.warn?.('Failed to handle annotation save', e);
+            }
+        },
+
+        /**
+         * Handle annotation cancelled from the form
+         * @param {Object} highlightData - The highlight data for the cancelled annotation
+         */
+        _handleAnnotationCancelled(highlightData) {
+            try {
+                // Dispatch cancelled event for other modules
+                const event = new CustomEvent('playtime:highlight-annotation-cancelled', {
+                    detail: highlightData
+                });
+                
+                (this._state.viewer || document).dispatchEvent(event);
+                
+                this._state.logger.info?.('Annotation cancelled', { 
+                    highlightId: highlightData?.highlightId 
+                });
+
+            } catch (e) {
+                this._state.logger.warn?.('Failed to handle annotation cancel', e);
+            }
+        },
+
+        /**
+         * Handle annotation saved event from event coordinator
+         * @param {Object} data - Annotation saved event data
+         */
+        _handleAnnotationSavedEvent(data) {
+            // This can be used by other parts of the system
+            this._state.logger.info?.('Annotation saved event received', data);
+        },
+
+        /**
+         * Handle annotation cancelled event from event coordinator
+         * @param {Object} data - Annotation cancelled event data
+         */
+        _handleAnnotationCancelledEvent(data) {
+            // This can be used by other parts of the system
+            this._state.logger.info?.('Annotation cancelled event received', data);
+        },
+
+        /**
+         * Update highlight data in persistence layer
+         * @param {string} highlightId - The highlight ID
+         * @param {Object} annotationData - The annotation data to store
+         */
+        _updateHighlightInPersistence(highlightId, annotationData) {
+            try {
+                if (!this._components.persistenceService) return;
+
+                // Get existing highlight data
+                const existingData = this._components.persistenceService.getHighlight?.(highlightId);
+                if (existingData) {
+                    // Update with annotation data
+                    const updatedData = { ...existingData, ...annotationData };
+                    this._components.persistenceService.updateHighlight?.(highlightId, updatedData);
+                }
+            } catch (e) {
+                this._state.logger.warn?.('Failed to update highlight in persistence', e);
+            }
+        },
+
+        /**
+         * Hide the action button and annotation form (called when focus changes)
          */
         hideActionButton() {
             if (this._components.actionButton) {
                 this._components.actionButton.hide();
+            }
+            if (this._components.annotationForm) {
+                this._components.annotationForm.hide();
             }
         }
     };

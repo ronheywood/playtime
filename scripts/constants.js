@@ -7,6 +7,9 @@ const EVENTS = {
   SCORE_SELECTED: 'playtime:score-selected', // unified selection event (detail: { pdfId, name, pages })
   SCORE_CREATED: 'playtime:score-created', // emitted after a PDF is saved (detail: { pdf })
   SCORE_SELECT_COMMAND: 'playtime:score-select-command', // command to select a score (detail: { pdfId })
+  HIGHLIGHT_ANNOTATION_REQUESTED: 'playtime:highlight-annotation-requested', // fired when annotation is requested
+  HIGHLIGHT_ANNOTATION_SAVED: 'playtime:highlight-annotation-saved', // fired when annotation is saved
+  HIGHLIGHT_ANNOTATION_CANCELLED: 'playtime:highlight-annotation-cancelled', // fired when annotation is cancelled
 };
 
 // Use data-role selectors for behavior wiring
