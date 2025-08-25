@@ -306,8 +306,20 @@ class HighlightAnnotationForm {
             
             if (highlightData.isNewHighlight) {
                 infoElement.textContent = `Add a title and notes to your new ${color} highlight${page}`;
+            } else if (highlightData.annotation) {
+                infoElement.textContent = `Editing annotation for ${color} highlight${page}`;
             } else {
                 infoElement.textContent = `Adding annotation to ${color} highlight${page}`;
+            }
+        }
+
+        // Update form header title
+        const headerElement = this.form.querySelector('.annotation-form-header h3');
+        if (headerElement) {
+            if (highlightData.annotation) {
+                headerElement.textContent = 'Edit Annotation';
+            } else {
+                headerElement.textContent = 'Add Annotation';
             }
         }
 

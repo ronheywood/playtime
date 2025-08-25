@@ -241,4 +241,83 @@ test.describe('Highlight Annotation Form', () => {
         // Verify form is hidden
         await expect(page.locator('.highlight-annotation-overlay')).toBeHidden();
     });
+
+    test('annotation form loads existing annotation data for editing', async ({ page }) => {
+        // Create mock highlight with existing annotation data
+        await page.evaluate(() => {
+            const canvas = document.getElementById('pdf-canvas');
+            const container = canvas.parentElement;
+            
+            const highlight = document.createElement('div');
+            highlight.setAttribute('data-test-highlight', 'true');
+            highlight.setAttribute('data-hl-id', 'test-highlight-existing');
+            highlight.setAttribute('data-color', 'amber');
+            highlight.setAttribute('data-confidence', '1');
+            highlight.setAttribute('data-page', '2');
+            // Add existing annotation data
+            highlight.setAttribute('data-hl-title', 'Existing Title');
+            highlight.setAttribute('data-hl-notes', 'These are existing notes that should be loaded for editing.');
+            highlight.setAttribute('data-hl-annotated', 'true');
+            highlight.setAttribute('data-hl-annotation-timestamp', '1640995200000');
+            
+            highlight.style.cssText = `
+                position: absolute;
+                left: 30%;
+                top: 40%;
+                width: 35%;
+                height: 5%;
+                background: rgba(255, 191, 0, 0.3);
+                border: 2px solid orange;
+                z-index: 100;
+            `;
+            container.appendChild(highlight);
+            
+            // Show annotation form (this should load existing data)
+            if (window.PlayTimeHighlighting && window.PlayTimeHighlighting._components.annotationForm) {
+                const highlightData = window.PlayTimeHighlighting._prepareHighlightDataForAnnotation(highlight);
+                window.PlayTimeHighlighting._components.annotationForm.showForHighlight(highlightData);
+            }
+        });
+
+        // Wait for form to appear
+        await page.waitForSelector('.highlight-annotation-overlay', { state: 'visible' });
+
+        // Verify the form title shows "Edit Annotation"
+        await expect(page.locator('.annotation-form-header h3')).toContainText('Edit Annotation');
+
+        // Verify the info text shows "Editing annotation"
+        await expect(page.locator('[data-highlight-info]')).toContainText('Editing annotation for amber highlight on page 2');
+
+        // Verify existing data is loaded in the form fields
+        await expect(page.locator('[data-field="title"]')).toHaveValue('Existing Title');
+        await expect(page.locator('[data-field="notes"]')).toHaveValue('These are existing notes that should be loaded for editing.');
+
+        // Verify character counts are updated
+        await expect(page.locator('[data-title-count]')).toContainText('14'); // Length of "Existing Title"
+        await expect(page.locator('[data-notes-count]')).toContainText('59'); // Length of the notes
+
+        // Edit the annotation
+        await page.fill('[data-field="title"]', 'Updated Title');
+        await page.fill('[data-field="notes"]', 'Updated notes after editing.');
+
+        // Save the updated annotation
+        await page.click('[data-action="save"]');
+
+        // Wait for form to close
+        await page.waitForSelector('.highlight-annotation-overlay', { state: 'hidden' });
+
+        // Verify the highlight now has updated annotation data
+        const updatedData = await page.evaluate(() => {
+            const highlight = document.querySelector('[data-test-highlight][data-hl-id="test-highlight-existing"]');
+            return {
+                title: highlight.getAttribute('data-hl-title'),
+                notes: highlight.getAttribute('data-hl-notes'),
+                annotated: highlight.getAttribute('data-hl-annotated')
+            };
+        });
+
+        expect(updatedData.title).toBe('Updated Title');
+        expect(updatedData.notes).toBe('Updated notes after editing.');
+        expect(updatedData.annotated).toBe('true');
+    });
 });

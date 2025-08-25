@@ -196,7 +196,23 @@
             sections.forEach(section => {
                 if (this._isValidSection(section)) {
                     const highlightElement = HighlightElementClass.fromDatabaseRecord(section);
-                    this._createHighlightFromElement(highlightElement, currentPage);
+                    const domElement = this._createHighlightFromElement(highlightElement, currentPage);
+                    
+                    // Apply annotation data from database record to DOM element
+                    if (domElement && section) {
+                        if (section.title) {
+                            domElement.dataset.hlTitle = section.title;
+                        }
+                        if (section.notes) {
+                            domElement.dataset.hlNotes = section.notes;
+                        }
+                        if (section.annotated) {
+                            domElement.dataset.hlAnnotated = 'true';
+                        }
+                        if (section.annotationTimestamp) {
+                            domElement.dataset.hlAnnotationTimestamp = section.annotationTimestamp.toString();
+                        }
+                    }
                 }
             });
         },
@@ -938,6 +954,20 @@
         _prepareHighlightDataForAnnotation(highlightElement, options = {}) {
             if (!highlightElement) return null;
 
+            // Extract existing annotation data if present
+            const existingAnnotation = {};
+            const title = highlightElement.dataset.hlTitle;
+            const notes = highlightElement.dataset.hlNotes;
+            const isAnnotated = highlightElement.dataset.hlAnnotated === 'true';
+            
+            if (isAnnotated && (title || notes)) {
+                existingAnnotation.title = title || '';
+                existingAnnotation.notes = notes || '';
+                if (highlightElement.dataset.hlAnnotationTimestamp) {
+                    existingAnnotation.timestamp = parseInt(highlightElement.dataset.hlAnnotationTimestamp);
+                }
+            }
+
             return {
                 highlightId: highlightElement.dataset.hlId,
                 color: highlightElement.dataset.color,
@@ -949,6 +979,7 @@
                     wPct: parseFloat(highlightElement.dataset.hlWPct),
                     hPct: parseFloat(highlightElement.dataset.hlHPct)
                 },
+                annotation: Object.keys(existingAnnotation).length > 0 ? existingAnnotation : null,
                 element: highlightElement,
                 ...options
             };
