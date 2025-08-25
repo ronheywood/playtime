@@ -120,6 +120,13 @@ describe('Highlight Creation with Immediate Annotation', () => {
     });
 
     test('creates highlight and immediately shows annotation form', async () => {
+        // Mock persistence service for this test
+        const mockPersistenceService = {
+            isAvailable: jest.fn().mockReturnValue(true),
+            saveHighlight: jest.fn().mockResolvedValue(123)
+        };
+        highlighting._components.persistenceService = mockPersistenceService;
+
         // Mock the annotation form component
         const mockAnnotationForm = {
             showForHighlight: jest.fn(),
@@ -133,7 +140,7 @@ describe('Highlight Creation with Immediate Annotation', () => {
         };
         
         // Simulate highlight creation via selection completion
-        highlighting._handleSelectionComplete(mockSelection);
+        await highlighting._handleSelectionComplete(mockSelection);
 
         // Verify annotation form was shown
         expect(mockAnnotationForm.showForHighlight).toHaveBeenCalledWith(

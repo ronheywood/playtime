@@ -456,7 +456,7 @@
             this._ensureActiveConfidenceFromDOM();
         },
 
-        _handleSelectionComplete(selection) {
+        async _handleSelectionComplete(selection) {
             if (this._state.activeConfidence == null) {
                 this._state.logger.warn && this._state.logger.warn('No active confidence set for highlighting');
                 return;
@@ -494,8 +494,8 @@
             // Create DOM element
             const domElement = this._createHighlightFromElement(highlightElement);
 
-            // Persist to database
-            this._persistHighlight(highlightElement);
+            // Persist to database and get the ID
+            await this._persistHighlight(highlightElement, domElement);
 
             // Automatically show annotation form for newly created highlight
             this._showAnnotationFormForNewHighlight(domElement);
@@ -604,11 +604,19 @@
             return domElement;
         },
 
-        async _persistHighlight(HighlightElementClass) {
+        async _persistHighlight(HighlightElementClass, domElement) {
             try {
                 const pdfId = this._getCurrentPdfId();
                 if (pdfId != null && this._components.persistenceService.isAvailable()) {
-                    await this._components.persistenceService.saveHighlight(HighlightElementClass, pdfId);
+                    const highlightId = await this._components.persistenceService.saveHighlight(HighlightElementClass, pdfId);
+                    
+                    // Update DOM element with the database-generated ID
+                    if (domElement && highlightId) {
+                        domElement.dataset.hlId = highlightId.toString();
+                        this._state.logger.info?.('Highlight saved to database with ID:', highlightId);
+                    }
+                    
+                    return highlightId;
                 }
             } catch (error) {
                 this._state.logger.warn && this._state.logger.warn('Failed to persist highlight:', error);
@@ -1046,12 +1054,22 @@
 
                 // Update persistence if available
                 if (this._components.persistenceService) {
-                    await this._updateHighlightInPersistence(highlightData.highlightId, {
-                        title,
-                        notes,
-                        annotated: true,
-                        annotationTimestamp: timestamp
-                    });
+                    // If highlightId exists, update the existing record
+                    if (highlightData.highlightId) {
+                        await this._updateHighlightInPersistence(highlightData.highlightId, {
+                            title,
+                            notes,
+                            annotated: true,
+                            annotationTimestamp: timestamp
+                        });
+                    } else {
+                        // This should not happen - highlights should have an ID after being saved to database
+                        this._state.logger.error?.('Cannot save annotation: highlight has no database ID', {
+                            highlightElement: highlightData.element?.dataset,
+                            annotation: { title, notes }
+                        });
+                        throw new Error('Cannot save annotation: highlight must be saved to database first');
+                    }
                 }
 
             } catch (e) {
