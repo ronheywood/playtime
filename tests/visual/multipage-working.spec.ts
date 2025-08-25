@@ -106,8 +106,14 @@ test.describe('Working Multipage PDF Visual Tests', () => {
     await page.mouse.move(300, 300);
     await page.mouse.up();
     
-    // Wait for highlight to be created
+    // Wait for highlight to be created and annotation dialog to appear
     await page.waitForTimeout(1000);
+    
+    // Cancel the annotation dialog to proceed with the test
+    const cancelButton = page.locator('[data-action="cancel"]');
+    if (await cancelButton.isVisible()) {
+      await cancelButton.click();
+    }
     
     // Verify highlight was created (check for highlight elements)
     const highlights = page.locator('[data-role="highlight"]');
@@ -154,6 +160,13 @@ test.describe('Working Multipage PDF Visual Tests', () => {
     await page.mouse.up();
     await page.waitForTimeout(500);
     
+    // Cancel the annotation dialog for the green highlight
+    const cancelButton1 = page.locator('[data-action="cancel"]');
+    if (await cancelButton1.isVisible()) {
+      await cancelButton1.click();
+      await page.waitForTimeout(300);
+    }
+    
     // Create amber highlight
     await page.click('[data-role="color-amber"]');
     await canvas.hover({ position: { x: 250, y: 250 } });
@@ -162,6 +175,13 @@ test.describe('Working Multipage PDF Visual Tests', () => {
     await page.mouse.up();
     await page.waitForTimeout(500);
     
+    // Cancel the annotation dialog for the amber highlight
+    const cancelButton2 = page.locator('[data-action="cancel"]');
+    if (await cancelButton2.isVisible()) {
+      await cancelButton2.click();
+      await page.waitForTimeout(300);
+    }
+    
     // Create red highlight
     await page.click('[data-role="color-red"]');
     await canvas.hover({ position: { x: 350, y: 350 } });
@@ -169,6 +189,13 @@ test.describe('Working Multipage PDF Visual Tests', () => {
     await page.mouse.move(400, 400);
     await page.mouse.up();
     await page.waitForTimeout(500);
+    
+    // Cancel the annotation dialog for the red highlight
+    const cancelButton3 = page.locator('[data-action="cancel"]');
+    if (await cancelButton3.isVisible()) {
+      await cancelButton3.click();
+      await page.waitForTimeout(300);
+    }
     
     // Verify multiple highlights were created
     const highlights = page.locator('[data-role="highlight"]');

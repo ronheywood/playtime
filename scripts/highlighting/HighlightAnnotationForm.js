@@ -303,7 +303,12 @@ class HighlightAnnotationForm {
         if (infoElement) {
             const color = highlightData.color || 'unknown';
             const page = highlightData.page ? ` on page ${highlightData.page}` : '';
-            infoElement.textContent = `Adding annotation to ${color} highlight${page}`;
+            
+            if (highlightData.isNewHighlight) {
+                infoElement.textContent = `Add a title and notes to your new ${color} highlight${page}`;
+            } else {
+                infoElement.textContent = `Adding annotation to ${color} highlight${page}`;
+            }
         }
 
         // Clear any existing values

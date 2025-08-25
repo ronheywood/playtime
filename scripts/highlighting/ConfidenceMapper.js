@@ -75,20 +75,29 @@ class ConfidenceMapper {
 
     // Private methods
 
-    _isValidColorMapping(level, mapped) {
-        // Check if the mapping actually distinguishes between levels
-        if (level === 0 && mapped === 'red') return true;
-        if (level === 1 && mapped && mapped !== 'red') return true;
-        if (level === 2 && mapped && mapped !== 'red') return true;
+        _isValidColorMapping(level, color) {
+        // Level 0 should be red
+        if (level === 0) {
+            return color === 'red';
+        }
+        // Level 1 should not be red (can be amber/yellow)
+        if (level === 1) {
+            return color !== 'red';
+        }
+        // Level 2 should be green
+        if (level === 2) {
+            return color === 'green';
+        }
         return false;
     }
 
-    _numericLevelToColor(level) {
-        const levels = this.getConfidenceLevels();
-        
-        if (level === levels.GREEN || level === 2) return 'green';
-        if (level === levels.AMBER || level === 1) return 'amber';
-        return 'red'; // Default to red for level 0 or invalid levels
+        _numericLevelToColor(level) {
+        switch (level) {
+            case 0: return 'red';
+            case 1: return 'amber';
+            case 2: return 'green';
+            default: return 'red';
+        }
     }
 
     _colorStringToLevel(color) {

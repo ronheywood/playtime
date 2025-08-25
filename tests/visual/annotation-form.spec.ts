@@ -29,8 +29,8 @@ test.describe('Highlight Annotation Form', () => {
             const highlight = document.createElement('div');
             highlight.setAttribute('data-test-highlight', 'true');
             highlight.setAttribute('data-hl-id', 'test-highlight-1');
-            highlight.setAttribute('data-hl-color', 'green');
-            highlight.setAttribute('data-hl-confidence', '3');
+            highlight.setAttribute('data-color', 'green');
+            highlight.setAttribute('data-confidence', '2');  // Green is confidence level 2 (zero-indexed)
             highlight.setAttribute('data-page', '1');
             highlight.setAttribute('data-hl-x-pct', '20');
             highlight.setAttribute('data-hl-y-pct', '30');
@@ -85,8 +85,8 @@ test.describe('Highlight Annotation Form', () => {
             const highlight = document.createElement('div');
             highlight.setAttribute('data-test-highlight', 'true');
             highlight.setAttribute('data-hl-id', 'test-highlight-2');
-            highlight.setAttribute('data-hl-color', 'amber');
-            highlight.setAttribute('data-hl-confidence', '2');
+            highlight.setAttribute('data-color', 'amber');
+            highlight.setAttribute('data-confidence', '1');  // Amber is confidence level 1 (zero-indexed)
             highlight.setAttribute('data-page', '2');
             highlight.style.cssText = `
                 position: absolute;
@@ -148,7 +148,9 @@ test.describe('Highlight Annotation Form', () => {
             const highlight = document.createElement('div');
             highlight.setAttribute('data-test-highlight', 'true');
             highlight.setAttribute('data-hl-id', 'test-highlight-3');
-            highlight.setAttribute('data-hl-color', 'red');
+            highlight.setAttribute('data-color', 'red');
+            highlight.setAttribute('data-confidence', '0');  // Red is confidence level 0 (zero-indexed)
+            highlight.setAttribute('data-page', '1');
             highlight.style.cssText = `
                 position: absolute;
                 left: 40%;
@@ -166,6 +168,8 @@ test.describe('Highlight Annotation Form', () => {
                 window.PlayTimeHighlighting._components.annotationForm.showForHighlight({
                     highlightId: 'test-highlight-3',
                     color: 'red',
+                    confidence: 0,
+                    page: 1,
                     element: highlight
                 });
             }

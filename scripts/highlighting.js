@@ -478,11 +478,11 @@
             // Create DOM element
             const domElement = this._createHighlightFromElement(highlightElement);
 
-            // Show action button for newly created highlight
-            this._showActionButtonForHighlight(domElement);
-
             // Persist to database
             this._persistHighlight(highlightElement);
+
+            // Automatically show annotation form for newly created highlight
+            this._showAnnotationFormForNewHighlight(domElement);
         },
 
         async _handleScoreSelected(pdfId) {
@@ -912,6 +912,49 @@
         },
 
         /**
+         * Show annotation form immediately for newly created highlight
+         * @param {HTMLElement} highlightElement - The newly created highlight element
+         */
+        _showAnnotationFormForNewHighlight(highlightElement) {
+            if (!highlightElement || !this._components.annotationForm) return;
+
+            // Prepare highlight data with isNewHighlight flag
+            const highlightData = this._prepareHighlightDataForAnnotation(highlightElement, { isNewHighlight: true });
+
+            // Show the annotation form immediately
+            this._components.annotationForm.showForHighlight(highlightData);
+            
+            this._state.logger.info?.('Annotation form shown for new highlight', { 
+                highlightId: highlightElement.dataset.hlId 
+            });
+        },
+
+        /**
+         * Prepare highlight data object for annotation forms
+         * @param {HTMLElement} highlightElement - The highlight DOM element
+         * @param {Object} options - Additional options to include in the data
+         * @returns {Object} Formatted highlight data object
+         */
+        _prepareHighlightDataForAnnotation(highlightElement, options = {}) {
+            if (!highlightElement) return null;
+
+            return {
+                highlightId: highlightElement.dataset.hlId,
+                color: highlightElement.dataset.color,
+                confidence: parseInt(highlightElement.dataset.confidence),
+                page: highlightElement.dataset.page ? parseInt(highlightElement.dataset.page) : null,
+                coordinates: {
+                    xPct: parseFloat(highlightElement.dataset.hlXPct),
+                    yPct: parseFloat(highlightElement.dataset.hlYPct),
+                    wPct: parseFloat(highlightElement.dataset.hlWPct),
+                    hPct: parseFloat(highlightElement.dataset.hlHPct)
+                },
+                element: highlightElement,
+                ...options
+            };
+        },
+
+        /**
          * Handle action button click - opens annotation dialog for the highlight
          * @param {HTMLElement} highlightElement - The highlight element to annotate
          */
@@ -922,19 +965,7 @@
             this._components.actionButton.hide();
 
             // Prepare highlight data for the annotation form
-            const highlightData = {
-                highlightId: highlightElement.dataset.hlId,
-                color: highlightElement.dataset.hlColor,
-                confidence: parseInt(highlightElement.dataset.hlConfidence),
-                page: highlightElement.dataset.page ? parseInt(highlightElement.dataset.page) : null,
-                coordinates: {
-                    xPct: parseFloat(highlightElement.dataset.hlXPct),
-                    yPct: parseFloat(highlightElement.dataset.hlYPct),
-                    wPct: parseFloat(highlightElement.dataset.hlWPct),
-                    hPct: parseFloat(highlightElement.dataset.hlHPct)
-                },
-                element: highlightElement
-            };
+            const highlightData = this._prepareHighlightDataForAnnotation(highlightElement);
 
             // Show the annotation form
             this._components.annotationForm.showForHighlight(highlightData);
@@ -1003,6 +1034,11 @@
          */
         _handleAnnotationCancelled(highlightData) {
             try {
+                // If this was a newly created highlight, show the action button instead
+                if (highlightData && highlightData.isNewHighlight && highlightData.element) {
+                    this._showActionButtonForHighlight(highlightData.element);
+                }
+
                 // Dispatch cancelled event for other modules
                 const event = new CustomEvent('playtime:highlight-annotation-cancelled', {
                     detail: highlightData
@@ -1011,7 +1047,8 @@
                 (this._state.viewer || document).dispatchEvent(event);
                 
                 this._state.logger.info?.('Annotation cancelled', { 
-                    highlightId: highlightData?.highlightId 
+                    highlightId: highlightData?.highlightId,
+                    wasNewHighlight: highlightData?.isNewHighlight || false
                 });
 
             } catch (e) {
