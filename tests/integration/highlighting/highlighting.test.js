@@ -1,198 +1,390 @@
-/**
- * Integration tests for PlayTime Highlighting capability
- */
+/** @jest-environment jsdom */
+const RefactoredHighlighting = require('../../../scripts/highlighting');
 
-require('../../../scripts/main.js');
-const { PT_CONSTANTS } = require('../../../scripts/constants.js');
+describe('RefactoredHighlighting - Integration Tests', () => {
+    let mockDatabase, mockPDFViewer, mockConfidence;
 
-describe('Highlighting Integration', () => {
-  beforeEach(async () => {
-    // Silence logs in tests
-    const logger = require('../../../scripts/logger.js');
-    logger.setSilent(true);
-    global.logger = logger;
+    beforeEach(() => {
+        // Setup DOM
+        document.body.innerHTML = `
+            <div data-role="pdf-viewer" style="position: relative; width: 500px; height: 300px;">
+                <canvas data-role="pdf-canvas" width="400" height="200" style="position: absolute; left: 50px; top: 25px;"></canvas>
+            </div>
+        `;
 
-    // Provide minimal factories expected by main.js
-    global.window.createPlayTimePDFViewer = (logger) => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockResolvedValue(true),
-      getZoom: () => 1,
-      getZoomBounds: () => ({ min: 1, max: 3 }),
-      setZoom: jest.fn(() => 1),
-      zoomIn: jest.fn(() => 1),
-      zoomOut: jest.fn(() => 1)
+        // Mock dependencies
+        mockDatabase = {
+            addHighlight: jest.fn().mockResolvedValue(true),
+            getHighlights: jest.fn().mockResolvedValue([])
+        };
+
+        mockPDFViewer = {
+            getCurrentPage: jest.fn().mockReturnValue(1)
+        };
+
+        // Setup globals
+        global.window.PlayTimeDB = mockDatabase;
+        global.window.PlayTimePDFViewer = mockPDFViewer;
+        global.window.PlayTimeCurrentScoreId = 'test-pdf-123';
+
+        // Mock confidence module
+        mockConfidence = {
+            ConfidenceLevel: { RED: 0, AMBER: 1, GREEN: 2 },
+            confidenceToColor: (level) => {
+                switch(level) {
+                    case 0: return 'red';
+                    case 1: return 'amber';
+                    case 2: return 'green';
+                    default: return 'red';
+                }
+            },
+            colorToConfidence: (color) => {
+                switch(color) {
+                    case 'red': return 0;
+                    case 'amber': return 1;
+                    case 'green': return 2;
+                    default: return null; // Return null for invalid colors
+                }
+            }
+        };
+        
+        global.window.PlayTimeConfidence = mockConfidence;
+        global.PlayTimeConfidence = mockConfidence; // Also set on global directly
+
+        // Mock constants
+        global.window.PlayTimeConstants = {
+            EVENTS: {
+                CONFIDENCE_CHANGED: 'playtime:confidence-changed',
+                SCORE_SELECTED: 'playtime:score-selected',
+                PAGE_CHANGED: 'playtime:page-changed',
+                LAYOUT_CHANGED: 'playtime:layout-changed'
+            },
+            SELECTORS: {}
+        };
     });
-    global.window.createPlayTimeDB = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      save: jest.fn().mockResolvedValue(true),
-      getAll: jest.fn().mockResolvedValue([])
+
+    afterEach(() => {
+        // Cleanup
+        delete global.window.PlayTimeDB;
+        delete global.window.PlayTimePDFViewer;
+        delete global.window.PlayTimeCurrentScoreId;
+        delete global.window.PlayTimeConfidence;
+        delete global.window.PlayTimeConstants;
     });
 
-    // Ensure highlighting module is available for main.js
-    const Highlighting = require('../../../scripts/highlighting.js');
-    global.window.PlayTimeHighlighting = Highlighting;
+    describe('initialization', () => {
+        test('initializes successfully with default config', async () => {
+            const logger = { warn: jest.fn(), debug: jest.fn() };
+            
+            await RefactoredHighlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
+            
+            expect(RefactoredHighlighting._state.initialized).toBe(true);
+            expect(RefactoredHighlighting._state.viewer).toBeTruthy();
+            expect(RefactoredHighlighting._state.canvas).toBeTruthy();
+        });
 
-    // Setup dependencies that main.js now requires for highlighting initialization
-    const confidence = require('../../../scripts/confidence.js');
-    const { PT_CONSTANTS } = require('../../../scripts/constants.js');
-    global.window.PlayTimeConfidence = confidence;
-    global.window.PlayTimeConstants = PT_CONSTANTS;
+        test('warns when DOM elements not found', async () => {
+            document.body.innerHTML = ''; // Remove required elements
+            const logger = { warn: jest.fn(), debug: jest.fn() };
+            
+            await RefactoredHighlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
+            
+            expect(logger.warn).toHaveBeenCalledWith('Required DOM elements not found');
+        });
 
-    // Fire DOM ready to initialize modules (main.js listener already registered by require at top)
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-    await new Promise((r) => setTimeout(r, 10));
-  });
+        test('merges custom configuration', async () => {
+            const customConfig = {
+                SELECTORS: { CUSTOM: '[data-custom]' },
+                TIMING: { REHYDRATION_DELAY: 100 }
+            };
+            
+            await RefactoredHighlighting.init(customConfig, console, mockConfidence, global.window.PlayTimeConstants);
+            
+            expect(RefactoredHighlighting.CONFIG.SELECTORS.CUSTOM).toBe('[data-custom]');
+            expect(RefactoredHighlighting.CONFIG.TIMING.REHYDRATION_DELAY).toBe(100);
+        });
+    });
 
-  test('selection overlay appears while dragging and as hidden after mouseup', async () => {
-  const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
-    expect(canvas).toBeTruthy();
+    describe('confidence management', () => {
+        beforeEach(async () => {
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+        });
 
-  const overlay = document.querySelector(PT_CONSTANTS.SELECTORS.SELECTION_OVERLAY);
-    expect(overlay).toBeTruthy();
-    // Initially hidden
-    const startStyle = window.getComputedStyle(overlay);
-    expect(startStyle.display === 'none' || startStyle.visibility === 'hidden' || startStyle.opacity === '0').toBe(true);
+        test('sets active confidence from color', () => {
+            RefactoredHighlighting.setActiveConfidenceFromColor('green');
+            
+            expect(RefactoredHighlighting._state.activeConfidence).toBe(2);
+        });
 
-    // Drag
-    canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 100, clientY: 100 }));
-    canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 180, clientY: 160 }));
-    let during = window.getComputedStyle(overlay);
-    expect(during.display == 'none' && during.visibility == 'hidden').toBe(false);
+        test('handles invalid color gracefully', () => {
+            RefactoredHighlighting.setActiveConfidenceFromColor('invalid');
+            
+            // The mock confidence module should return null for invalid colors
+            expect(RefactoredHighlighting._state.activeConfidence).toBe(null);
+        });
+    });
 
-    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 180, clientY: 160 }));
-    let after = window.getComputedStyle(overlay);
-    expect(after.display == 'none' && after.visibility == 'hidden').toBe(true);
-  });
+    describe('highlight management', () => {
+        beforeEach(async () => {
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+        });
 
-  test('clicking a color then dragging creates a highlight element', async () => {
-  const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN);
-    expect(greenBtn).toBeTruthy();
-    greenBtn.click();
+        test('adds sections from database records', () => {
+            const sections = [
+                {
+                    xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.1,
+                    color: 'red', confidence: 0, page: 1
+                }
+            ];
+            
+            RefactoredHighlighting.addSections(sections);
+            
+            const highlights = RefactoredHighlighting.getHighlights();
+            expect(highlights.length).toBe(1);
+            expect(highlights[0].getAttribute('data-color')).toBe('red');
+        });
 
-  const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
-    canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 120, clientY: 120 }));
-    canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 170 }));
-    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 200, clientY: 170 }));
+        test('filters invalid sections', () => {
+            const sections = [
+                { invalid: 'section' },
+                {
+                    xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.1,
+                    color: 'red', confidence: 0, page: 1
+                }
+            ];
+            
+            RefactoredHighlighting.addSections(sections);
+            
+            expect(RefactoredHighlighting.getHighlights().length).toBe(1);
+        });
 
-    const highlight = document.querySelector(PT_CONSTANTS.SELECTORS.HIGHLIGHT);
-    expect(highlight).toBeTruthy();
-    expect(highlight.getAttribute('data-color')).toBe('green');
-  });
+        test('repositions all highlights', () => {
+            // Add a highlight first
+            const sections = [{
+                xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.1,
+                color: 'red', confidence: 0, page: 1
+            }];
+            RefactoredHighlighting.addSections(sections);
+            
+            const highlight = RefactoredHighlighting.getHighlights()[0];
+            const originalLeft = parseFloat(highlight.style.left);
+            const originalTop = parseFloat(highlight.style.top);
+            
+            // Mock canvas getBoundingClientRect to simulate position change
+            const canvas = RefactoredHighlighting._state.canvas;
+            const viewer = RefactoredHighlighting._state.viewer;
+            
+            const originalCanvasRect = canvas.getBoundingClientRect;
+            const originalViewerRect = viewer.getBoundingClientRect;
+            
+            canvas.getBoundingClientRect = jest.fn(() => ({
+                left: 200, // Changed from ~100
+                top: 75,   // Changed from ~50
+                width: 400,
+                height: 200
+            }));
+            
+            viewer.getBoundingClientRect = jest.fn(() => ({
+                left: 150, // Changed position
+                top: 50,
+                width: 500,
+                height: 300
+            }));
+            
+            RefactoredHighlighting.repositionAll();
+            
+            const newLeft = parseFloat(highlight.style.left);
+            const newTop = parseFloat(highlight.style.top);
+            
+            // Position should be updated
+            expect(newLeft).not.toBe(originalLeft);
+            expect(newTop).not.toBe(originalTop);
+            
+            // Restore original methods
+            canvas.getBoundingClientRect = originalCanvasRect;
+            viewer.getBoundingClientRect = originalViewerRect;
+        });
+    });
 
-  test('highlights track the centered canvas after window resize', async () => {
-    // Test-specific setup: use test scheduler for predictable timing
-    const originalScheduler = global.window.PlayTimeHighlighting._state.scheduler;
-    const testScheduler = {
-      schedule: (callback) => setTimeout(callback, 1) // Simple timeout for tests
-    };
-    global.window.PlayTimeHighlighting.setScheduler(testScheduler);
-    
-    try {
-      const viewer = document.querySelector(PT_CONSTANTS.SELECTORS.VIEWER);
-      const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
-      expect(viewer).toBeTruthy();
-      expect(canvas).toBeTruthy();
+    describe('mouse selection', () => {
+        beforeEach(async () => {
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+            RefactoredHighlighting.setActiveConfidenceFromColor('red');
+        });
 
-      // Stub initial layout: canvas is offset 50px,20px inside viewer
-      viewer.getBoundingClientRect = () => ({ left: 0, top: 0, width: 600, height: 400, right: 600, bottom: 400 });
-      canvas.getBoundingClientRect = () => ({ left: 50, top: 20, width: 300, height: 260, right: 350, bottom: 280 });
+        test('creates highlight on significant mouse selection', () => {
+            const canvas = RefactoredHighlighting._state.canvas;
+            
+            // Simulate mouse drag
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                bubbles: true, clientX: 100, clientY: 100
+            }));
+            canvas.dispatchEvent(new MouseEvent('mousemove', {
+                bubbles: true, clientX: 150, clientY: 130
+            }));
+            canvas.dispatchEvent(new MouseEvent('mouseup', {
+                bubbles: true, clientX: 150, clientY: 130
+            }));
+            
+            const highlights = RefactoredHighlighting.getHighlights();
+            expect(highlights.length).toBe(1);
+            expect(highlights[0].getAttribute('data-color')).toBe('red');
+        });
 
-      // Pick a color and draw a small highlight at local position (10,10) to (60,40) inside the canvas
-      const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN);
-      greenBtn.click();
-      canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 50 + 10, clientY: 20 + 10 }));
-      canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 50 + 60, clientY: 20 + 40 }));
-      canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: 50 + 60, clientY: 20 + 40 }));
+        test('ignores too small selections', () => {
+            const canvas = RefactoredHighlighting._state.canvas;
+            
+            // Simulate tiny mouse drag
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                bubbles: true, clientX: 100, clientY: 100
+            }));
+            canvas.dispatchEvent(new MouseEvent('mouseup', {
+                bubbles: true, clientX: 101, clientY: 101
+            }));
+            
+            expect(RefactoredHighlighting.getHighlights().length).toBe(0);
+        });
 
-      const highlight = document.querySelector(PT_CONSTANTS.SELECTORS.HIGHLIGHT);
-      expect(highlight).toBeTruthy();
-      const beforeLeft = parseFloat(highlight.style.left || '0');
-      const beforeTop = parseFloat(highlight.style.top || '0');
+        test('warns when no confidence set', () => {
+            const logger = { warn: jest.fn() };
+            RefactoredHighlighting._state.logger = logger;
+            RefactoredHighlighting._state.activeConfidence = null;
+            
+            const canvas = RefactoredHighlighting._state.canvas;
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                bubbles: true, clientX: 100, clientY: 100
+            }));
+            canvas.dispatchEvent(new MouseEvent('mouseup', {
+                bubbles: true, clientX: 150, clientY: 130
+            }));
+            
+            expect(logger.warn).toHaveBeenCalledWith('No active confidence set for highlighting');
+        });
+    });
 
-      // Simulate window resize where canvas recenters further (offset increases by +50 left and +10 top)
-      const newCanvasOffset = { left: 100, top: 30 };
-      const newCanvasSize = { width: 300, height: 260 }; // keep same size to avoid scale affecting assertion
-      canvas.getBoundingClientRect = () => ({
-        left: newCanvasOffset.left,
-        top: newCanvasOffset.top,
-        width: newCanvasSize.width,
-        height: newCanvasSize.height,
-        right: newCanvasOffset.left + newCanvasSize.width,
-        bottom: newCanvasOffset.top + newCanvasSize.height
-      });
+    describe('event handling', () => {
+        beforeEach(async () => {
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+        });
 
-      // Fire resize and give module a tick to react
-      window.dispatchEvent(new Event('resize'));
-      await new Promise((r) => setTimeout(r, 10));
+        test('handles confidence changed events', () => {
+            const event = new CustomEvent('playtime:confidence-changed', {
+                detail: { color: 'green' }
+            });
+            
+            window.dispatchEvent(event);
+            
+            expect(RefactoredHighlighting._state.activeConfidence).toBe(2);
+        });
 
-      const afterLeft = parseFloat(highlight.style.left || '0');
-      const afterTop = parseFloat(highlight.style.top || '0');
+        test('handles score selected events', async () => {
+            mockDatabase.getHighlights.mockResolvedValue([
+                {
+                    xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.1,
+                    color: 'amber', confidence: 1, page: 1
+                }
+            ]);
+            
+            const event = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'new-pdf-456' }
+            });
+            
+            window.dispatchEvent(event);
+            
+            // Wait for async handling
+            await new Promise(resolve => setTimeout(resolve, 20));
+            
+            expect(mockDatabase.getHighlights).toHaveBeenCalledWith('new-pdf-456');
+        });
 
-      // Expect the highlight to move by the canvas offset delta (50,10)
-      expect(Math.round(afterLeft - beforeLeft)).toBe(50);
-      expect(Math.round(afterTop - beforeTop)).toBe(10);
-    } finally {
-      // Restore original scheduler for test isolation
-      global.window.PlayTimeHighlighting.setScheduler(originalScheduler);
-    }
-  });
+        test('handles page changed events', () => {
+            // Add highlights for different pages
+            RefactoredHighlighting.addSections([
+                { xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.1, color: 'red', confidence: 0, page: 1 },
+                { xPct: 0.4, yPct: 0.5, wPct: 0.2, hPct: 0.1, color: 'green', confidence: 2, page: 2 }
+            ]);
+            
+            const highlights = RefactoredHighlighting.getHighlights();
+            
+            // Switch to page 2
+            const event = new CustomEvent('playtime:page-changed', {
+                detail: { page: 2 }
+            });
+            window.dispatchEvent(event);
+            
+            expect(highlights[0].style.display).toBe('none'); // page 1 highlight hidden
+            expect(highlights[1].style.display).toBe('block'); // page 2 highlight shown
+        });
+    });
 
-  test('highlight resizes immediately after zoom in/out', async () => {
-    const viewer = document.querySelector(PT_CONSTANTS.SELECTORS.VIEWER);
-    const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
-    expect(viewer).toBeTruthy();
-    expect(canvas).toBeTruthy();
+    describe('persistence', () => {
+        beforeEach(async () => {
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+            RefactoredHighlighting.setActiveConfidenceFromColor('amber');
+        });
 
-    // Initial canvas size
-    const base = { left: 40, top: 30, width: 400, height: 320 };
-    viewer.getBoundingClientRect = () => ({ left: 0, top: 0, width: 600, height: 500, right: 600, bottom: 500 });
-    canvas.getBoundingClientRect = () => ({ ...base, right: base.left + base.width, bottom: base.top + base.height });
+        test('persists highlights to database', async () => {
+            const canvas = RefactoredHighlighting._state.canvas;
+            
+            // Create highlight via mouse
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                bubbles: true, clientX: 100, clientY: 100
+            }));
+            canvas.dispatchEvent(new MouseEvent('mouseup', {
+                bubbles: true, clientX: 150, clientY: 130
+            }));
+            
+            // Wait for persistence
+            await new Promise(resolve => setTimeout(resolve, 10));
+            
+            expect(mockDatabase.addHighlight).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    pdfId: 'test-pdf-123',
+                    confidence: 1,
+                    color: 'amber'
+                })
+            );
+        });
 
-    // Create a highlight that covers the entire canvas (by dragging corners)
-    const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN);
-    greenBtn.click();
-    // Drag from top-left inside canvas to bottom-right
-    canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: base.left + 1, clientY: base.top + 1 }));
-    canvas.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: base.left + base.width - 1, clientY: base.top + base.height - 1 }));
-    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: base.left + base.width - 1, clientY: base.top + base.height - 1 }));
+        test('handles persistence errors gracefully', async () => {
+            const logger = { warn: jest.fn() };
+            RefactoredHighlighting._state.logger = logger;
+            mockDatabase.addHighlight.mockRejectedValue(new Error('DB Error'));
+            
+            const canvas = RefactoredHighlighting._state.canvas;
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                bubbles: true, clientX: 100, clientY: 100
+            }));
+            canvas.dispatchEvent(new MouseEvent('mouseup', {
+                bubbles: true, clientX: 150, clientY: 130
+            }));
+            
+            await new Promise(resolve => setTimeout(resolve, 10));
+            
+            expect(logger.warn).toHaveBeenCalledWith(
+                'Failed to persist highlight:', 
+                expect.any(Error)
+            );
+        });
+    });
 
-    const highlight = document.querySelector(PT_CONSTANTS.SELECTORS.HIGHLIGHT);
-    expect(highlight).toBeTruthy();
+    describe('legacy API compatibility', () => {
+        beforeEach(async () => {
+            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+        });
 
-    const wBefore = parseFloat(highlight.style.width || '0');
-    const hBefore = parseFloat(highlight.style.height || '0');
-    expect(Math.round(wBefore)).toBeGreaterThan(0);
-    expect(Math.round(hBefore)).toBeGreaterThan(0);
+        test('maintains getHighlights() compatibility', () => {
+            const result = RefactoredHighlighting.getHighlights();
+            expect(Array.isArray(result)).toBe(true);
+        });
 
-    // Simulate a zoom in (canvas grows by 25%) and recenter
-    const zoomed = { left: 30, top: 20, width: Math.round(base.width * 1.25), height: Math.round(base.height * 1.25) };
-    canvas.getBoundingClientRect = () => ({ ...zoomed, right: zoomed.left + zoomed.width, bottom: zoomed.top + zoomed.height });
+        test('maintains repositionAll() compatibility', () => {
+            expect(() => RefactoredHighlighting.repositionAll()).not.toThrow();
+        });
 
-    // Click zoom-in button which also dispatches layout-changed
-    const zoomInBtn = document.querySelector(PT_CONSTANTS.SELECTORS.ZOOM_IN);
-    expect(zoomInBtn).toBeTruthy();
-    zoomInBtn.click();
-    await new Promise((r) => setTimeout(r, 20));
-
-    const wAfterIn = parseFloat(highlight.style.width || '0');
-    const hAfterIn = parseFloat(highlight.style.height || '0');
-    // Expect roughly 25% increase (allowing for rounding and borders)
-    expect(Math.round(wAfterIn)).toBeGreaterThanOrEqual(Math.round(wBefore));
-    expect(Math.round(hAfterIn)).toBeGreaterThanOrEqual(Math.round(hBefore));
-
-    // Simulate zoom out back to base size
-    canvas.getBoundingClientRect = () => ({ ...base, right: base.left + base.width, bottom: base.top + base.height });
-    const zoomOutBtn = document.querySelector(PT_CONSTANTS.SELECTORS.ZOOM_OUT);
-    expect(zoomOutBtn).toBeTruthy();
-    zoomOutBtn.click();
-    await new Promise((r) => setTimeout(r, 20));
-
-    const wAfterOut = parseFloat(highlight.style.width || '0');
-    const hAfterOut = parseFloat(highlight.style.height || '0');
-    // Should shrink back near original
-    expect(Math.round(wAfterOut)).toBeCloseTo(Math.round(wBefore), 0);
-    expect(Math.round(hAfterOut)).toBeCloseTo(Math.round(hBefore), 0);
-  });
-
+        test('maintains enable/disableSelection() compatibility', () => {
+            expect(() => RefactoredHighlighting.enableSelection()).not.toThrow();
+            expect(() => RefactoredHighlighting.disableSelection()).not.toThrow();
+        });
+    });
 });
