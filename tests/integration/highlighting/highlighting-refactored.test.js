@@ -382,11 +382,6 @@ describe('RefactoredHighlighting - Integration Tests', () => {
             expect(() => RefactoredHighlighting.repositionAll()).not.toThrow();
         });
 
-        test('maintains focusOnSection() compatibility', async () => {
-            const result = await RefactoredHighlighting.focusOnSection();
-            expect(result).toBeUndefined();
-        });
-
         test('maintains enable/disableSelection() compatibility', () => {
             expect(() => RefactoredHighlighting.enableSelection()).not.toThrow();
             expect(() => RefactoredHighlighting.disableSelection()).not.toThrow();

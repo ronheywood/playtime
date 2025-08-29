@@ -72,31 +72,36 @@
             PlayTimeHighlighting._state.logger.info?.('Focus mode layout command received', { action, mode, highlight });
             
             if (action === 'enter' && highlight) {
-                // Calculate pixel rect from percentages
-                const canvasRect = PlayTimeHighlighting._components.CoordinateMapperClass.safeBoundingRect(PlayTimeHighlighting._state.canvas);
-                const containerRect = PlayTimeHighlighting._components.CoordinateMapperClass.safeBoundingRect(PlayTimeHighlighting._state.viewer);
-                
-                if (canvasRect && containerRect) {
-                    const highlightRect = PlayTimeHighlighting._components.CoordinateMapperClass.fromPercentages(highlight, canvasRect, { left:0, top:0 });
-                    if (mode === 'zoom') {
-                        PlayTimeHighlighting._applyZoomFocus(highlightRect, containerRect, padding);
-                    } else if (mode === 'crop') {
-                        PlayTimeHighlighting._applyCropFocus(highlight, padding);
-                    }
-                }
+                _enterFocusMode(mode, highlight, padding);
             } else if (action === 'exit') {
-                // Clear transform and remove focus-mode class
-                if (PlayTimeHighlighting._state.canvas) {
-                    PlayTimeHighlighting._state.canvas.style.transform = '';
-                    PlayTimeHighlighting._state.canvas.style.transition = '';
-                }
-
-                if (PlayTimeHighlighting._state.viewer) {
-                    PlayTimeHighlighting._state.viewer.classList.remove('focus-mode');
+                _exitFocusMode();
+            }
+        },
+        _enterFocusMode: function(mode, highlight, padding) {
+            // Calculate pixel rect from percentages
+            const canvasRect = PlayTimeHighlighting._components.CoordinateMapperClass.safeBoundingRect(PlayTimeHighlighting._state.canvas);
+            const containerRect = PlayTimeHighlighting._components.CoordinateMapperClass.safeBoundingRect(PlayTimeHighlighting._state.viewer);
+            
+            if (canvasRect && containerRect) {
+                const highlightRect = PlayTimeHighlighting._components.CoordinateMapperClass.fromPercentages(highlight, canvasRect, { left:0, top:0 });
+                if (mode === 'zoom') {
+                    PlayTimeHighlighting._applyZoomFocus(highlightRect, containerRect, padding);
+                } else if (mode === 'crop') {
+                    PlayTimeHighlighting._applyCropFocus(highlight, padding);
                 }
             }
         },
+        _exitFocusMode: function(){
+            // Clear transform and remove focus-mode class
+            if (PlayTimeHighlighting._state.canvas) {
+                PlayTimeHighlighting._state.canvas.style.transform = '';
+                PlayTimeHighlighting._state.canvas.style.transition = '';
+            }
 
+            if (PlayTimeHighlighting._state.viewer) {
+                PlayTimeHighlighting._state.viewer.classList.remove('focus-mode');
+            }
+        },
         // Internal components
         _components: {
             ConfidenceMapperClass: null,
@@ -217,37 +222,40 @@
             });
         },
 
-        focusOnSection() { 
-            return Promise.resolve(); 
-        },
+        _getHighlightDimensions: function(highlightEl){ 
+            let dimensions = { 
+                xPct: parseFloat(highlightEl.dataset.hlXPct),
+                yPct : parseFloat(highlightEl.dataset.hlYPct),
+                wPct : parseFloat(highlightEl.dataset.hlWPct),
+                hPct : parseFloat(highlightEl.dataset.hlHPct)
+            };
 
+            if (!Number.isFinite(dimensions.xPct) || !Number.isFinite(dimensions.yPct) || !Number.isFinite(dimensions.wPct) || !Number.isFinite(dimensions.hPct)) {
+                this._state.logger.warn?.('Invalid highlight coordinates for focus mode');
+                return false;
+            }
+
+            return dimensions;
+        },
         /**
          * Enter focus mode for a specific highlight (User Story 4.3)
-         * @param {string|HTMLElement} target - Highlight ID or DOM element
+         * @param {HTMLElement} target - Highlight ID or DOM element
          * @param {Object} options - Focus options (zoom, crop, etc.)
          */
-        focusOnHighlight(target, options = {}) {
+        focusOnHighlight(highlightEl, options = {}) {
             const { mode = 'zoom', padding = 20 } = options;
-            // Locate highlight element
-            let highlightEl = null;
-            if (typeof target === 'string') {
-                highlightEl = this._state.viewer.querySelector(`[data-hl-id="${target}"]`);
-            } else if (target && target.dataset && target.dataset.role === 'highlight') {
-                highlightEl = target;
-            }
-            if (!highlightEl) {
+            
+            if (!highlightEl || highlightEl.dataset?.role !== 'highlight') {
                 this._state.logger.warn?.('Highlight not found for focus mode');
                 return;
             }
-            const xPct = parseFloat(highlightEl.dataset.hlXPct);
-            const yPct = parseFloat(highlightEl.dataset.hlYPct);
-            const wPct = parseFloat(highlightEl.dataset.hlWPct);
-            const hPct = parseFloat(highlightEl.dataset.hlHPct);
-            if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || !Number.isFinite(wPct) || !Number.isFinite(hPct)) {
-                this._state.logger.warn?.('Invalid highlight coordinates for focus mode');
-                return;
-            }
-            // NEW: Dispatch layout command instead of directly applying CSS transform.
+            
+            let dimensions = this._getHighlightDimensions(highlightEl);
+            if(!dimensions) return;
+
+            const { xPct, yPct, wPct, hPct } = dimensions;
+
+            // Dispatch layout command
             try {
                 if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.changeLayout === 'function') {
                     this._state.logger.info?.('Dispatching focus-mode layout command', { xPct, yPct, wPct, hPct, mode, padding });
@@ -856,7 +864,7 @@
          * Scroll the highlight into view in the viewport
          */
         _scrollHighlightIntoView(highlightEl, coordinates, options = {}) {
-            const { padding = 50, behavior = 'smooth' } = options;
+            const { behavior = 'smooth' } = options;
             
             if (!highlightEl) {
                 this._state.logger?.warn?.('No highlight element provided for scrolling');
