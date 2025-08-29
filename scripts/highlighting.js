@@ -222,12 +222,12 @@
             });
         },
 
-        _getHighlightDimensions: function(highlightEl){ 
+        _getHighlightDimensions: function(highlightDataset){ 
             let dimensions = { 
-                xPct: parseFloat(highlightEl.dataset.hlXPct),
-                yPct : parseFloat(highlightEl.dataset.hlYPct),
-                wPct : parseFloat(highlightEl.dataset.hlWPct),
-                hPct : parseFloat(highlightEl.dataset.hlHPct)
+                xPct: parseFloat(highlightDataset.hlXPct),
+                yPct : parseFloat(highlightDataset.hlYPct),
+                wPct : parseFloat(highlightDataset.hlWPct),
+                hPct : parseFloat(highlightDataset.hlHPct)
             };
 
             if (!Number.isFinite(dimensions.xPct) || !Number.isFinite(dimensions.yPct) || !Number.isFinite(dimensions.wPct) || !Number.isFinite(dimensions.hPct)) {
@@ -250,7 +250,7 @@
                 return;
             }
             
-            let dimensions = this._getHighlightDimensions(highlightEl);
+            let dimensions = this._getHighlightDimensions(highlightEl.dataset);
             if(!dimensions) return;
 
             const { xPct, yPct, wPct, hPct } = dimensions;
