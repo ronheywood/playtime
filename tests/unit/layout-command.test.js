@@ -24,7 +24,7 @@ describe('Layout Command Interface', () => {
 
         // Import the module we'll create
         try {
-            LayoutCommands = require('../../scripts/layout-commands');
+            LayoutCommands = require('../../scripts/focus-mode/layout-commands');
         } catch (e) {
             // Module doesn't exist yet - that's expected for TDD
             LayoutCommands = null;

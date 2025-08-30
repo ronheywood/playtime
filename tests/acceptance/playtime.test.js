@@ -75,7 +75,7 @@ describe('PlayTime Music Practice App', () => {
     global.window.createPlayTimeFocusModeCommands = createPlayTimeFocusModeCommands;
     
     // Setup layout commands for focus mode
-    const layoutCommands = require('../../scripts/layout-commands');
+    const layoutCommands = require('../../scripts/focus-mode/layout-commands.js');
     global.window.PlayTimeLayoutCommands = layoutCommands;
     
     // Setup focus mode handler
