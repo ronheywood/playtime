@@ -362,7 +362,7 @@ const TestHelpers = {
      * @returns {Object} Database interface
      */
     createPlayTimeDB: (logger = console) => {
-        const createPlayTimeDB = require('../../scripts/db');
+        const createPlayTimeDB = require('../../scripts/db/db.js');
         return createPlayTimeDB(logger);
     },
 
