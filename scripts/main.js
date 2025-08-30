@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.PlayTimeDB = window.createPlayTimeDB(appLogger);
         } else {
             // Fallback: dynamically import IndexedDBDatabase (ES module) and use the factory
-            const module = await import('../db/IndexedDBDatabase.js');
+            const module = await import('./db/IndexedDBDatabase.js');
             if (typeof module.createIndexedDBDatabase === 'function') {
                 window.PlayTimeDB = module.createIndexedDBDatabase(appLogger);
             } else {

@@ -525,7 +525,7 @@ module.exports = TestHelpers;
  */
 TestHelpers.createIndexedDBDatabase = async (logger = console) => {
     // Use dynamic import to load the ES module
-    const module = await import('../../db/IndexedDBDatabase.js');
+    const module = await import('../../scripts/db/IndexedDBDatabase.js');
     if (typeof module.createIndexedDBDatabase === 'function') {
         return module.createIndexedDBDatabase(logger);
     } else if (typeof module.IndexedDBDatabase === 'function') {

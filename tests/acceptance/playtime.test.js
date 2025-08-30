@@ -28,7 +28,7 @@ describe('PlayTime Music Practice App', () => {
         }
         
         // Use the real in-memory database implementation for acceptance tests
-        const MemoryDatabase = require('../../db/MemoryDatabase');
+        const MemoryDatabase = require('../../scripts/db/MemoryDatabase');
         global.window.createPlayTimeDB = (logger) => new MemoryDatabase();
 
         // Mock PDF viewer with loadPDF and renderPage methods + zoom API for UI tests
