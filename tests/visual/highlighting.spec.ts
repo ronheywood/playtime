@@ -8,18 +8,44 @@ async function gotoWithSeed(page) {
   await page.goto('/?theme=light', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#app');
 
+  // First, wait for dependencies to be loaded
+  await page.waitForFunction(() => {
+    return (window as any).PlayTimeConfidence && 
+           (window as any).PlayTimeConstants && 
+           (window as any).HighlightElement;
+  }, { timeout: 5000 });
+
   // Wait until highlighting module initialized enough (viewer + canvas discovered)
   await page.waitForFunction(() => {
     const h = (window as any).PlayTimeHighlighting;
-    return h && h._state && h._state.viewer && h._state.canvas;
-  });
+    const isReady = h && h._state && h._state.viewer && h._state.canvas && h._state.initialized;
+    if (!isReady) {
+      console.log('Waiting for highlighting module:', {
+        hasModule: !!h,
+        hasState: h && !!h._state,
+        hasViewer: h && h._state && !!h._state.viewer,
+        hasCanvas: h && h._state && !!h._state.canvas,
+        isInitialized: h && h._state && !!h._state.initialized
+      });
+    }
+    return isReady;
+  }, { timeout: 10000 });
 
   // Wait for full highlighting module initialization including layout command handler registration
   try {
     await page.waitForFunction(() => {
       const h = (window as any).PlayTimeHighlighting;
       const lc = (window as any).PlayTimeLayoutCommands;
-      return h && h._state && h._state.initialized && lc && typeof lc.changeLayout === 'function';
+      const isReady = h && h._state && h._state.initialized && lc && typeof lc.changeLayout === 'function';
+      if (!isReady) {
+        console.log('Waiting for layout commands:', {
+          hasHighlighting: !!h,
+          highlightingInitialized: h && h._state && !!h._state.initialized,
+          hasLayoutCommands: !!lc,
+          hasChangeLayout: lc && typeof lc.changeLayout === 'function'
+        });
+      }
+      return isReady;
     }, { timeout: 5000 });
   } catch (e) {
     // If timeout, check what's available and proceed anyway
