@@ -3,7 +3,7 @@
  * Tests the extracted DOM manipulation logic
  */
 
-const FocusModeHandler = require('../../scripts/focus-mode/focus-mode-handler');
+const FocusModeHandler = require('../../scripts/layout/focus-mode-handler');
 
 describe('Focus Mode Handler', () => {
     let mockElements, focusHandler;

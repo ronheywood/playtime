@@ -4,8 +4,8 @@
  */
 
 const TestHelpers = require('../helpers/test-helpers');
-const { changeLayout, registerHandler, clearHandlers } = require('../../scripts/focus-mode/layout-commands');
-const createPlayTimeFocusModeCommands = require('../../scripts/focus-mode/focus-mode-commands');
+const { changeLayout, registerHandler, clearHandlers } = require('../../scripts/layout/layout-commands');
+const createPlayTimeFocusModeCommands = require('../../scripts/layout/focus-mode-commands');
 
 describe('Focus Mode Command Integration', () => {
     let mockElements, commandEvents, focusModeCommands;
