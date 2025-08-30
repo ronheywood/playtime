@@ -13,7 +13,7 @@
     "serve": "npx http-server . -p 3000",
     "start": "npm run serve",
     "playwright:install": "npx playwright install --with-deps",
-    "screenshots": "node scripts/capture-screenshots.mjs",
+    "screenshots": "node tests/capture-screenshots.mjs",
     "test:visual": "playwright test -c playwright.config.ts",
     "test:visual:update": "playwright test -c playwright.config.ts --update-snapshots",
     "build": "node build.js package",

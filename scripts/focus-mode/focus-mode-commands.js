@@ -8,10 +8,10 @@ function createPlayTimeFocusModeCommands() {
     // Get dependencies from global scope (browser) or require (Node.js/testing)
     const layoutCommands = (typeof window !== 'undefined' && window.PlayTimeLayoutCommands) 
         ? window.PlayTimeLayoutCommands 
-        : require('./layout-commands');
+        : require('../layout-commands');
     const FocusModeHandler = (typeof window !== 'undefined' && window.PlayTimeFocusModeHandler)
         ? window.PlayTimeFocusModeHandler
-        : require('./focus-mode-handler');
+        : require('../focus-mode/focus-mode-handler');
     
     const { changeLayout, registerHandler } = layoutCommands;
 
