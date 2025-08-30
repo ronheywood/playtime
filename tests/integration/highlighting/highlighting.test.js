@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-const Highlighting = require('../../../scripts/highlighting');
+const Highlighting = require('../../../scripts/highlighting/highlighting.js');
 
 describe('Highlighting - Integration Tests', () => {
     let mockDatabase, mockPDFViewer, mockConfidence;

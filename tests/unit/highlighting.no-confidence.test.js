@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 // Unit test: ensure no highlight created if confidence not chosen
-const Highlighting = require('../../scripts/highlighting.js');
+const Highlighting = require('../../scripts/highlighting/highlighting.js');
 const confidence = require('../../scripts/confidence');
 const { PT_CONSTANTS } = require('../../scripts/constants');
 

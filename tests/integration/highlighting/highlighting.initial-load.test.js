@@ -34,7 +34,7 @@ describe('Highlighting initial load rehydration', () => {
       getTotalPages: () => 2
     });
 
-    const Highlighting = require('../../../scripts/highlighting.js');
+    const Highlighting = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
 
     // Setup dependencies that main.js now requires for highlighting initialization
@@ -112,7 +112,7 @@ describe('Highlighting initial load rehydration', () => {
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
-    const Highlighting2 = require('../../../scripts/highlighting.js');
+    const Highlighting2 = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting2;
     require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));

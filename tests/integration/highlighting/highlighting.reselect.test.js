@@ -50,8 +50,8 @@ describe('Highlighting re-select score', () => {
     const { PT_CONSTANTS } = require('../../../scripts/constants.js');
     global.window.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
-    
-    require('../../../scripts/highlighting.js');
+
+    require('../../../scripts/highlighting/highlighting.js');
     require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,120)); // allow auto-select + rehydrate

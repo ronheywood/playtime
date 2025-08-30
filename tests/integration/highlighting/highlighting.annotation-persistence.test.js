@@ -1,4 +1,4 @@
-const PlayTimeHighlighting = require('../../../scripts/highlighting');
+const PlayTimeHighlighting = require('../../../scripts/highlighting/highlighting');
 const HighlightPersistenceService = require('../../../scripts/highlighting/HighlightPersistenceService');
 
 describe('Highlight Annotation Persistence', () => {

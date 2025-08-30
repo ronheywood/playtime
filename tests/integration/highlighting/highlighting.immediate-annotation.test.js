@@ -11,7 +11,7 @@ describe('Highlight Creation with Immediate Annotation', () => {
 
     beforeEach(() => {
         // Ensure highlighting module is available
-        const Highlighting = require('../../../scripts/highlighting.js');
+        const Highlighting = require('../../../scripts/highlighting/highlighting.js');
         global.PlayTimeHighlighting = Highlighting;
         
         // Setup DOM

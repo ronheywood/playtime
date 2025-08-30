@@ -59,7 +59,7 @@ describe('Second upload clears first score highlights', () => {
     global.window.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
     
-    require('../../../scripts/highlighting.js');
+    require('../../../scripts/highlighting/highlighting.js');
     require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,60));

@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const RefactoredHighlighting = require('../../../scripts/highlighting');
+const Highlighting = require('../../../scripts/highlighting/highlighting.js');
 
 describe('Highlighting: Canvas Size Monitoring System', () => {
     let mockConfidence, mockConstants, mockDB;
@@ -65,14 +65,14 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
         global.window.PlayTimeDB = mockDB;
         global.window.PlayTimePDFViewer = { getCurrentPage: jest.fn(() => 1) };
 
-        await RefactoredHighlighting.init({}, mockLogger, mockConfidence, mockConstants);
+        await Highlighting.init({}, mockLogger, mockConfidence, mockConstants);
     });
 
     afterEach(() => {
-        if (RefactoredHighlighting) {
-            RefactoredHighlighting._clearHighlights();
+        if (Highlighting) {
+            Highlighting._clearHighlights();
             // Stop any running monitors
-            RefactoredHighlighting._stopCanvasSizeMonitoring();
+            Highlighting._stopCanvasSizeMonitoring();
         }
         document.body.innerHTML = '';
         global.window.PlayTimeDB = undefined;
@@ -152,7 +152,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
             }));
 
             // Call repositionAll and verify logging
-            RefactoredHighlighting.repositionAll();
+            Highlighting.repositionAll();
 
             expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🔄 repositionAll called'),
@@ -175,7 +175,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
             mockLogger.info.mockClear();
 
             // Call repositionAll again
-            RefactoredHighlighting.repositionAll();
+            Highlighting.repositionAll();
 
             expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🔄 repositionAll called'),
@@ -186,7 +186,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
             );
 
             // Verify the last canvas size was tracked
-            expect(RefactoredHighlighting._state.lastCanvasSize).toBe('800x600');
+            expect(Highlighting._state.lastCanvasSize).toBe('800x600');
         });
 
         test('should handle successful highlight rehydration flow', async () => {
@@ -236,7 +236,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
             );
 
             // Verify highlights were created and repositioned
-            const highlights = RefactoredHighlighting.getHighlights();
+            const highlights = Highlighting.getHighlights();
             expect(highlights).toHaveLength(1);
         });
     });
@@ -261,7 +261,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
             }));
 
             // Act: Call repositionAll
-            RefactoredHighlighting.repositionAll();
+            Highlighting.repositionAll();
 
             // Assert: Should log canvas size and track it
             expect(mockLogger.info).toHaveBeenCalledWith(
@@ -272,7 +272,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
                 })
             );
 
-            expect(RefactoredHighlighting._state.lastCanvasSize).toBe('400x300');
+            expect(Highlighting._state.lastCanvasSize).toBe('400x300');
         });
 
         test('should handle null canvas rect gracefully', () => {
@@ -280,7 +280,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
             canvas.getBoundingClientRect = jest.fn(() => null);
 
             // Act: Call repositionAll
-            RefactoredHighlighting.repositionAll();
+            Highlighting.repositionAll();
 
             // Assert: Should handle gracefully with 0x0 size
             expect(mockLogger.info).toHaveBeenCalledWith(
@@ -291,7 +291,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
                 })
             );
 
-            expect(RefactoredHighlighting._state.lastCanvasSize).toBe('0x0');
+            expect(Highlighting._state.lastCanvasSize).toBe('0x0');
         });
     });
 });

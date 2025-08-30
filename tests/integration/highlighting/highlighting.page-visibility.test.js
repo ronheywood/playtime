@@ -42,7 +42,7 @@ describe('Highlighting Page Visibility Integration', () => {
     global.window.createPlayTimeDB = () => ({ init: jest.fn().mockResolvedValue(true), save: jest.fn().mockResolvedValue(true), getAll: jest.fn().mockResolvedValue([]) });
 
     // Real highlighting module
-    const Highlighting = require('../../../scripts/highlighting.js');
+    const Highlighting = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
 
     // Setup dependencies that main.js now requires for highlighting initialization

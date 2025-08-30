@@ -3,7 +3,7 @@
  */
 /** Unit test: Highlighting subscribes to confidence change event and updates active color */
 
-const Highlighting = require('../../scripts/highlighting');
+const Highlighting = require('../../scripts/highlighting/highlighting.js');
 const confidence = require('../../scripts/confidence');
 const { PT_CONSTANTS } = require('../../scripts/constants');
 

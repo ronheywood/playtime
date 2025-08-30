@@ -6,23 +6,23 @@
 (function init(global) {
     // Load dependencies using dual-mode pattern (Node.js vs Browser)
     const HighlightElementClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/HighlightElement') : global.HighlightElement;
+        require('./HighlightElement') : global.HighlightElement;
     const SelectionOverlayClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/SelectionOverlay') : global.SelectionOverlay;
+        require('./SelectionOverlay') : global.SelectionOverlay;
     const CoordinateMapperClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/CoordinateMapper') : global.CoordinateMapper;
+        require('./CoordinateMapper') : global.CoordinateMapper;
     const ConfidenceMapperClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/ConfidenceMapper') : global.ConfidenceMapper;
+        require('./ConfidenceMapper') : global.ConfidenceMapper;
     const MouseSelectionHandlerClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/MouseSelectionHandler') : global.MouseSelectionHandler;
+        require('./MouseSelectionHandler') : global.MouseSelectionHandler;
     const HighlightPersistenceServiceClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/HighlightPersistenceService') : global.HighlightPersistenceService;
+        require('./HighlightPersistenceService') : global.HighlightPersistenceService;
     const HighlightEventCoordinatorClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/HighlightEventCoordinator') : global.HighlightEventCoordinator;
+        require('./HighlightEventCoordinator') : global.HighlightEventCoordinator;
     const HighlightActionButtonClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/HighlightActionButton').HighlightActionButton : window.HighlightActionButton;
+        require('./HighlightActionButton').HighlightActionButton : window.HighlightActionButton;
     const HighlightAnnotationFormClass = (typeof require !== 'undefined') ? 
-        require('./highlighting/HighlightAnnotationForm') : window.HighlightAnnotationForm;
+        require('./HighlightAnnotationForm') : window.HighlightAnnotationForm;
     
     // Dependencies will be injected via init() method
     let CONST = null;
