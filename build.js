@@ -115,13 +115,6 @@ async function packageApp() {
         path.join(DIST_PATH, 'styles')
     );
     
-    // Copy database files
-    console.log('  🗄️  Copying database files...');
-    await copyRecursive(
-        path.join(PROJECT_ROOT, 'db'),
-        path.join(DIST_PATH, 'db')
-    );
-    
     // Create web.config for IIS
     console.log('  ⚙️  Creating web.config...');
     const webConfig = `<?xml version="1.0" encoding="UTF-8"?>
