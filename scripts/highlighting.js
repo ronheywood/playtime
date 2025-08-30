@@ -26,7 +26,6 @@
     
     // Dependencies will be injected via init() method
     let CONST = null;
-    let CONF = null;
 
     // Default configuration with better organization
     const DEFAULT_CONFIG = {
@@ -352,7 +351,6 @@
             }
             
             // Store dependencies for use by other methods
-            CONF = confidenceModule;
             CONST = constantsModule;
             
             this._components.ConfidenceMapperClass = new ConfidenceMapperClass(confidenceModule);
