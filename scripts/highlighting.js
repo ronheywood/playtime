@@ -652,16 +652,13 @@
         },
 
         _repositionHighlightElement(domElement) {
-            const xPct = parseFloat(domElement.dataset.hlXPct);
-            const yPct = parseFloat(domElement.dataset.hlYPct);
-            const wPct = parseFloat(domElement.dataset.hlWPct);
-            const hPct = parseFloat(domElement.dataset.hlHPct);
-
-            if (!Number.isFinite(xPct) || !Number.isFinite(yPct) || 
-                !Number.isFinite(wPct) || !Number.isFinite(hPct)) {
+            var dimensions = this._getHighlightDimensions(domElement.dataset);
+            if (!dimensions) {
+                this._state.logger.warn?.('Failed to get highlight dimensions');
                 return;
             }
 
+            const { xPct, yPct, wPct, hPct } = dimensions;
             const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
             const canvasOffset = this._components.CoordinateMapperClass.getCanvasOffset(this._state.viewer, this._state.canvas);
             
@@ -989,12 +986,7 @@
                 color: highlightElement.dataset.color,
                 confidence: parseInt(highlightElement.dataset.confidence),
                 page: highlightElement.dataset.page ? parseInt(highlightElement.dataset.page) : null,
-                coordinates: {
-                    xPct: parseFloat(highlightElement.dataset.hlXPct),
-                    yPct: parseFloat(highlightElement.dataset.hlYPct),
-                    wPct: parseFloat(highlightElement.dataset.hlWPct),
-                    hPct: parseFloat(highlightElement.dataset.hlHPct)
-                },
+                coordinates: this._getHighlightDimensions(highlightElement.dataset),
                 annotation: Object.keys(existingAnnotation).length > 0 ? existingAnnotation : null,
                 element: highlightElement,
                 ...options
