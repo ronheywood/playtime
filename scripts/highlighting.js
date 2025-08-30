@@ -322,19 +322,10 @@
             this._dispatchFocusExitEvent();
         },
 
-        enableSelection() { 
-            // Selection enabled by default after init
-        },
-
         disableSelection() { 
             if (this._components.mouseHandler) {
                 this._components.mouseHandler.destroy();
             }
-        },
-
-        // Legacy compatibility methods
-        highlightSection() { 
-            // Created automatically on mouse selection
         },
 
         // Private Implementation Methods
@@ -424,11 +415,9 @@
                 .onComplete((selection) => this._handleSelectionComplete(selection));
 
             // Setup persistence service
-            try {
-                if (window.PlayTimeDB) {
-                    this._components.persistenceService.setDatabase(window.PlayTimeDB);
-                }
-            } catch (_) {}
+            if (window.PlayTimeDB) {
+                this._components.persistenceService.setDatabase(window.PlayTimeDB);
+            }
 
             // Initialize event coordinator
             this._components.eventCoordinator
@@ -472,11 +461,9 @@
 
             // Get current page
             let pageNum = null;
-            try {
-                if (window.PlayTimePDFViewer && window.PlayTimePDFViewer.getCurrentPage) {
-                    pageNum = window.PlayTimePDFViewer.getCurrentPage();
-                }
-            } catch (_) {}
+            if (window.PlayTimePDFViewer && window.PlayTimePDFViewer.getCurrentPage) {
+                pageNum = window.PlayTimePDFViewer.getCurrentPage();
+            }
 
             // Create highlight element
             const canvasRect = this._components.CoordinateMapperClass.safeBoundingRect(this._state.canvas);
@@ -499,10 +486,8 @@
                 pageNum
             );
 
-            // Create DOM element
             const domElement = this._createHighlightFromElement(highlightElement);
 
-            // Persist to database and get the ID
             await this._persistHighlight(highlightElement, domElement);
 
             // Automatically show annotation form for newly created highlight
@@ -546,7 +531,6 @@
         _handlePageChanged(page) {
             if (!Number.isFinite(page)) return;
             
-            // Hide action button when page changes
             this.hideActionButton();
             
             // Update highlight visibility

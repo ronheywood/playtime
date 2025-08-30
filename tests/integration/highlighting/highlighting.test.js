@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
-const RefactoredHighlighting = require('../../../scripts/highlighting');
+const Highlighting = require('../../../scripts/highlighting');
 
-describe('RefactoredHighlighting - Integration Tests', () => {
+describe('Highlighting - Integration Tests', () => {
     let mockDatabase, mockPDFViewer, mockConfidence;
 
     beforeEach(() => {
@@ -76,18 +76,18 @@ describe('RefactoredHighlighting - Integration Tests', () => {
         test('initializes successfully with default config', async () => {
             const logger = { warn: jest.fn(), debug: jest.fn() };
             
-            await RefactoredHighlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
             
-            expect(RefactoredHighlighting._state.initialized).toBe(true);
-            expect(RefactoredHighlighting._state.viewer).toBeTruthy();
-            expect(RefactoredHighlighting._state.canvas).toBeTruthy();
+            expect(Highlighting._state.initialized).toBe(true);
+            expect(Highlighting._state.viewer).toBeTruthy();
+            expect(Highlighting._state.canvas).toBeTruthy();
         });
 
         test('warns when DOM elements not found', async () => {
             document.body.innerHTML = ''; // Remove required elements
             const logger = { warn: jest.fn(), debug: jest.fn() };
             
-            await RefactoredHighlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
             
             expect(logger.warn).toHaveBeenCalledWith('Required DOM elements not found');
         });
@@ -98,35 +98,35 @@ describe('RefactoredHighlighting - Integration Tests', () => {
                 TIMING: { REHYDRATION_DELAY: 100 }
             };
             
-            await RefactoredHighlighting.init(customConfig, console, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init(customConfig, console, mockConfidence, global.window.PlayTimeConstants);
             
-            expect(RefactoredHighlighting.CONFIG.SELECTORS.CUSTOM).toBe('[data-custom]');
-            expect(RefactoredHighlighting.CONFIG.TIMING.REHYDRATION_DELAY).toBe(100);
+            expect(Highlighting.CONFIG.SELECTORS.CUSTOM).toBe('[data-custom]');
+            expect(Highlighting.CONFIG.TIMING.REHYDRATION_DELAY).toBe(100);
         });
     });
 
     describe('confidence management', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
         });
 
         test('sets active confidence from color', () => {
-            RefactoredHighlighting.setActiveConfidenceFromColor('green');
+            Highlighting.setActiveConfidenceFromColor('green');
             
-            expect(RefactoredHighlighting._state.activeConfidence).toBe(2);
+            expect(Highlighting._state.activeConfidence).toBe(2);
         });
 
         test('handles invalid color gracefully', () => {
-            RefactoredHighlighting.setActiveConfidenceFromColor('invalid');
+            Highlighting.setActiveConfidenceFromColor('invalid');
             
             // The mock confidence module should return null for invalid colors
-            expect(RefactoredHighlighting._state.activeConfidence).toBe(null);
+            expect(Highlighting._state.activeConfidence).toBe(null);
         });
     });
 
     describe('highlight management', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
         });
 
         test('adds sections from database records', () => {
@@ -137,9 +137,9 @@ describe('RefactoredHighlighting - Integration Tests', () => {
                 }
             ];
             
-            RefactoredHighlighting.addSections(sections);
+            Highlighting.addSections(sections);
             
-            const highlights = RefactoredHighlighting.getHighlights();
+            const highlights = Highlighting.getHighlights();
             expect(highlights.length).toBe(1);
             expect(highlights[0].getAttribute('data-color')).toBe('red');
         });
@@ -153,9 +153,9 @@ describe('RefactoredHighlighting - Integration Tests', () => {
                 }
             ];
             
-            RefactoredHighlighting.addSections(sections);
+            Highlighting.addSections(sections);
             
-            expect(RefactoredHighlighting.getHighlights().length).toBe(1);
+            expect(Highlighting.getHighlights().length).toBe(1);
         });
 
         test('repositions all highlights', () => {
@@ -164,15 +164,15 @@ describe('RefactoredHighlighting - Integration Tests', () => {
                 xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.1,
                 color: 'red', confidence: 0, page: 1
             }];
-            RefactoredHighlighting.addSections(sections);
+            Highlighting.addSections(sections);
             
-            const highlight = RefactoredHighlighting.getHighlights()[0];
+            const highlight = Highlighting.getHighlights()[0];
             const originalLeft = parseFloat(highlight.style.left);
             const originalTop = parseFloat(highlight.style.top);
             
             // Mock canvas getBoundingClientRect to simulate position change
-            const canvas = RefactoredHighlighting._state.canvas;
-            const viewer = RefactoredHighlighting._state.viewer;
+            const canvas = Highlighting._state.canvas;
+            const viewer = Highlighting._state.viewer;
             
             const originalCanvasRect = canvas.getBoundingClientRect;
             const originalViewerRect = viewer.getBoundingClientRect;
@@ -191,7 +191,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
                 height: 300
             }));
             
-            RefactoredHighlighting.repositionAll();
+            Highlighting.repositionAll();
             
             const newLeft = parseFloat(highlight.style.left);
             const newTop = parseFloat(highlight.style.top);
@@ -208,12 +208,12 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('mouse selection', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
-            RefactoredHighlighting.setActiveConfidenceFromColor('red');
+            await Highlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+            Highlighting.setActiveConfidenceFromColor('red');
         });
 
         test('creates highlight on significant mouse selection', () => {
-            const canvas = RefactoredHighlighting._state.canvas;
+            const canvas = Highlighting._state.canvas;
             
             // Simulate mouse drag
             canvas.dispatchEvent(new MouseEvent('mousedown', {
@@ -226,13 +226,13 @@ describe('RefactoredHighlighting - Integration Tests', () => {
                 bubbles: true, clientX: 150, clientY: 130
             }));
             
-            const highlights = RefactoredHighlighting.getHighlights();
+            const highlights = Highlighting.getHighlights();
             expect(highlights.length).toBe(1);
             expect(highlights[0].getAttribute('data-color')).toBe('red');
         });
 
         test('ignores too small selections', () => {
-            const canvas = RefactoredHighlighting._state.canvas;
+            const canvas = Highlighting._state.canvas;
             
             // Simulate tiny mouse drag
             canvas.dispatchEvent(new MouseEvent('mousedown', {
@@ -242,15 +242,15 @@ describe('RefactoredHighlighting - Integration Tests', () => {
                 bubbles: true, clientX: 101, clientY: 101
             }));
             
-            expect(RefactoredHighlighting.getHighlights().length).toBe(0);
+            expect(Highlighting.getHighlights().length).toBe(0);
         });
 
         test('warns when no confidence set', () => {
             const logger = { warn: jest.fn() };
-            RefactoredHighlighting._state.logger = logger;
-            RefactoredHighlighting._state.activeConfidence = null;
+            Highlighting._state.logger = logger;
+            Highlighting._state.activeConfidence = null;
             
-            const canvas = RefactoredHighlighting._state.canvas;
+            const canvas = Highlighting._state.canvas;
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 bubbles: true, clientX: 100, clientY: 100
             }));
@@ -264,7 +264,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('event handling', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
         });
 
         test('handles confidence changed events', () => {
@@ -274,7 +274,7 @@ describe('RefactoredHighlighting - Integration Tests', () => {
             
             window.dispatchEvent(event);
             
-            expect(RefactoredHighlighting._state.activeConfidence).toBe(2);
+            expect(Highlighting._state.activeConfidence).toBe(2);
         });
 
         test('handles score selected events', async () => {
@@ -299,12 +299,12 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
         test('handles page changed events', () => {
             // Add highlights for different pages
-            RefactoredHighlighting.addSections([
+            Highlighting.addSections([
                 { xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.1, color: 'red', confidence: 0, page: 1 },
                 { xPct: 0.4, yPct: 0.5, wPct: 0.2, hPct: 0.1, color: 'green', confidence: 2, page: 2 }
             ]);
             
-            const highlights = RefactoredHighlighting.getHighlights();
+            const highlights = Highlighting.getHighlights();
             
             // Switch to page 2
             const event = new CustomEvent('playtime:page-changed', {
@@ -319,12 +319,12 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('persistence', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
-            RefactoredHighlighting.setActiveConfidenceFromColor('amber');
+            await Highlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+            Highlighting.setActiveConfidenceFromColor('amber');
         });
 
         test('persists highlights to database', async () => {
-            const canvas = RefactoredHighlighting._state.canvas;
+            const canvas = Highlighting._state.canvas;
             
             // Create highlight via mouse
             canvas.dispatchEvent(new MouseEvent('mousedown', {
@@ -348,10 +348,10 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
         test('handles persistence errors gracefully', async () => {
             const logger = { warn: jest.fn() };
-            RefactoredHighlighting._state.logger = logger;
+            Highlighting._state.logger = logger;
             mockDatabase.addHighlight.mockRejectedValue(new Error('DB Error'));
             
-            const canvas = RefactoredHighlighting._state.canvas;
+            const canvas = Highlighting._state.canvas;
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 bubbles: true, clientX: 100, clientY: 100
             }));
@@ -370,21 +370,16 @@ describe('RefactoredHighlighting - Integration Tests', () => {
 
     describe('legacy API compatibility', () => {
         beforeEach(async () => {
-            await RefactoredHighlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, console, mockConfidence, global.window.PlayTimeConstants);
         });
 
         test('maintains getHighlights() compatibility', () => {
-            const result = RefactoredHighlighting.getHighlights();
+            const result = Highlighting.getHighlights();
             expect(Array.isArray(result)).toBe(true);
         });
 
         test('maintains repositionAll() compatibility', () => {
-            expect(() => RefactoredHighlighting.repositionAll()).not.toThrow();
-        });
-
-        test('maintains enable/disableSelection() compatibility', () => {
-            expect(() => RefactoredHighlighting.enableSelection()).not.toThrow();
-            expect(() => RefactoredHighlighting.disableSelection()).not.toThrow();
+            expect(() => Highlighting.repositionAll()).not.toThrow();
         });
     });
 });
