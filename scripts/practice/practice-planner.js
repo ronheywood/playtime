@@ -35,6 +35,9 @@ class PracticePlanner {
         this.currentPracticePlan = null; // Store currently loaded practice plan
         this.isEditingExistingPlan = false; // Track if we're editing an existing plan
         
+        // Initialize practice session starter module
+        this.practiceSessionStarter = null;
+        
         // DOM elements - will be populated by init()
         this.setupButton = null;
         this.exitButton = null;
@@ -81,9 +84,17 @@ class PracticePlanner {
         // Attach global button event listeners (once during initialization)
         this.attachGlobalEventListeners();
 
-        // Initialize practice session state
-        this.practiceSession = null;
-        this.practiceSessionTimer = null;
+        // Initialize practice session starter module
+        if (typeof window.createPracticeSessionStarter === 'function') {
+            this.practiceSessionStarter = window.createPracticeSessionStarter(
+                this.logger,
+                this.database,
+                this.practicePlanPersistenceService
+            );
+            this.logger.info('Practice Planner: Practice session starter initialized');
+        } else {
+            this.logger.warn('Practice Planner: Practice session starter not available');
+        }
 
         this.logger.info('Practice Planner event handlers attached');
 
@@ -611,43 +622,75 @@ class PracticePlanner {
             alert('No practice sections available. Please add some highlighted sections first.');
             return;
         }
-        
-        // Initialize practice session state
-        this.practiceSession = {
-            config: sessionData,
-            currentSectionIndex: 0,
-            startTime: Date.now(),
-            sectionNotes: {}
-        };
-        
-        // Initialize timer component with event callbacks
-        this.practiceSessionTimer = new window.PracticeSessionTimer({
-            logger: this.logger,
-            onTimerComplete: () => this.handleTimerComplete(),
-            onTimerTick: (timeLeft) => this.handleTimerTick(timeLeft),
-            onPauseToggle: (isPaused) => this.handlePauseToggle(isPaused),
-            onManualNext: () => this.handleManualNext(),
-            onExit: () => this.handleTimerExit()
-        });
-        
-        // Dispatch practice session start event
-        const event = new CustomEvent('playtime:practice-session-configured', {
-            detail: {
-                scoreId: this.currentScoreId,
-                sessionConfig: sessionData
-            }
-        });
-        window.dispatchEvent(event);
 
-        // Hide the practice planner interface
-        this.hidePracticeInterface();
+        // Use the practice session starter module if available, otherwise fallback to original logic
+        if (this.practiceSessionStarter) {
+            // Hide the practice planner interface first
+            this.hidePracticeInterface();
+            
+            // Start the session using the dedicated module
+            this.practiceSessionStarter.startSession(sessionData, this.currentScoreId);
+        } else {
+            // Fallback to original logic for backward compatibility
+            this.logger.info('Practice Planner: Using fallback session management');
+            
+            // Initialize practice session state (fallback)
+            this._fallbackPracticeSession = {
+                config: sessionData,
+                currentSectionIndex: 0,
+                startTime: Date.now(),
+                sectionNotes: {}
+            };
+            
+            // Initialize timer component with event callbacks (fallback)
+            this._fallbackPracticeSessionTimer = new window.PracticeSessionTimer({
+                logger: this.logger,
+                onTimerComplete: () => this.handleTimerComplete(),
+                onTimerTick: (timeLeft) => this.handleTimerTick(timeLeft),
+                onPauseToggle: (isPaused) => this.handlePauseToggle(isPaused),
+                onManualNext: () => this.handleManualNext(),
+                onExit: () => this.handleTimerExit()
+            });
+            
+            // Dispatch practice session start event
+            const event = new CustomEvent('playtime:practice-session-configured', {
+                detail: {
+                    scoreId: this.currentScoreId,
+                    sessionConfig: sessionData
+                }
+            });
+            window.dispatchEvent(event);
 
-        // Start the timer for the first section
-        const firstSection = sessionData.sections[0];
-        this.practiceSessionTimer.startTimer(firstSection.targetTime);
-        
-        // Focus on the first section
-        this.focusOnPracticeSection(firstSection.highlightId);
+            // Hide the practice planner interface
+            this.hidePracticeInterface();
+
+            // Start the timer for the first section
+            const firstSection = sessionData.sections[0];
+            this._fallbackPracticeSessionTimer.startTimer(firstSection.targetTime);
+            
+            // Focus on the first section
+            this.focusOnPracticeSection(firstSection.highlightId);
+        }
+    }
+
+    /**
+     * Get the current practice session (delegated to practice session starter or fallback)
+     */
+    get practiceSession() {
+        if (this.practiceSessionStarter) {
+            return this.practiceSessionStarter.getCurrentSession();
+        }
+        return this._fallbackPracticeSession || null;
+    }
+
+    /**
+     * Get the practice session timer (delegated to practice session starter or fallback)
+     */
+    get practiceSessionTimer() {
+        if (this.practiceSessionStarter) {
+            return this.practiceSessionStarter.practiceSessionTimer;
+        }
+        return this._fallbackPracticeSessionTimer || null;
     }
     
     /**
@@ -791,8 +834,13 @@ class PracticePlanner {
         alert(message);
         
         // Clear session state
-        this.practiceSession = null;
-        this.practiceSessionTimer = null;
+        if (this.practiceSessionStarter) {
+            this.practiceSessionStarter.endSession();
+        } else {
+            // Fallback for when practiceSessionStarter is not available
+            this._fallbackPracticeSession = null;
+            this._fallbackPracticeSessionTimer = null;
+        }
     }
 
     /**
@@ -1029,7 +1077,12 @@ class PracticePlanner {
         alert(message);
         
         // Clear session state
-        this.practiceSession = null;
+        if (this.practiceSessionStarter) {
+            this.practiceSessionStarter.endSession();
+        } else {
+            // Fallback for when practiceSessionStarter is not available
+            this._fallbackPracticeSession = null;
+        }
     }
     
     /**
