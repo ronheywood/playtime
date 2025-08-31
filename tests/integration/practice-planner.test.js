@@ -1438,4 +1438,133 @@ describe('Practice Planner Integration Tests', () => {
             expect(practicePlanner.practiceSessionTimer.isPaused).toBe(false);
         });
     });
+
+    describe('Sidebar Start Practice Session Button', () => {
+        let mockPracticePlanPersistenceService;
+        let mockPracticeSessionStarter;
+
+        beforeEach(() => {
+            // Mock practice plan persistence service
+            mockPracticePlanPersistenceService = {
+                loadPracticePlansForScore: jest.fn(),
+                savePracticePlan: jest.fn(),
+                loadPracticePlan: jest.fn()
+            };
+
+            // Mock practice session starter
+            mockPracticeSessionStarter = {
+                startFromPlan: jest.fn()
+            };
+
+            // Add the sidebar button to DOM BEFORE setting up practice planner
+            document.body.innerHTML += `
+                <button data-role="start-practice-session-sidebar" id="start-practice-session-sidebar" 
+                        class="btn btn-primary w-full text-xs" style="display: none;">
+                    <i data-lucide="play" class="w-4 h-4 mr-1"></i>
+                    <span>Start Practice Session</span>
+                </button>
+            `;
+
+            // Set up practice planner with mocked services
+            practicePlanner.practicePlanPersistenceService = mockPracticePlanPersistenceService;
+            practicePlanner.practiceSessionStarter = mockPracticeSessionStarter;
+
+            // Reinitialize to pick up the new button
+            practicePlanner.startPracticeSessionButton = document.querySelector('[data-role="start-practice-session-sidebar"]');
+            if (practicePlanner.startPracticeSessionButton) {
+                practicePlanner.startPracticeSessionButton.addEventListener('click', practicePlanner.handleStartPracticeSessionFromSidebar.bind(practicePlanner));
+            }
+        });
+
+        test('should show start practice session button when existing plan is found', async () => {
+            // Ensure button exists and is accessible
+            expect(practicePlanner.startPracticeSessionButton).toBeTruthy();
+            
+            // Initial state should be hidden
+            expect(practicePlanner.startPracticeSessionButton.style.display).toBe('none');
+
+            // Test the updateSetupButtonText method directly
+            practicePlanner.updateSetupButtonText(true);
+            
+            // Button should be visible
+            expect(practicePlanner.startPracticeSessionButton.style.display).toBe('flex');
+
+            // Also test that it can be hidden again
+            practicePlanner.updateSetupButtonText(false);
+            expect(practicePlanner.startPracticeSessionButton.style.display).toBe('none');
+        });
+
+        test('should hide start practice session button when no existing plan is found', async () => {
+            mockPracticePlanPersistenceService.loadPracticePlansForScore.mockResolvedValue([]);
+            practicePlanner.currentScoreId = 'score-1';
+
+            // Simulate score selection which triggers plan loading
+            await practicePlanner.handleScoreSelected({ detail: { pdfId: 'score-1' } });
+
+            // Button should be hidden
+            expect(practicePlanner.startPracticeSessionButton.style.display).toBe('none');
+            expect(practicePlanner.currentPracticePlan).toBeNull();
+        });
+
+        test('should start practice session when sidebar button is clicked', async () => {
+            const mockPlan = {
+                id: 'plan-123',
+                name: 'Test Practice Plan',
+                scoreId: 'score-1',
+                sections: [
+                    { highlightId: 'highlight-1', targetTime: 300 }
+                ]
+            };
+
+            // Set up current practice plan
+            practicePlanner.currentPracticePlan = mockPlan;
+            practicePlanner.currentScoreId = 'score-1';
+            mockPracticeSessionStarter.startFromPlan.mockResolvedValue(true);
+
+            // Click the sidebar button
+            await practicePlanner.handleStartPracticeSessionFromSidebar();
+
+            // Should call startFromPlan with correct parameters
+            expect(mockPracticeSessionStarter.startFromPlan).toHaveBeenCalledWith('plan-123', 'score-1');
+        });
+
+        test('should show error when sidebar button is clicked but no plan is available', async () => {
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+            
+            // No current practice plan
+            practicePlanner.currentPracticePlan = null;
+
+            // Click the sidebar button
+            await practicePlanner.handleStartPracticeSessionFromSidebar();
+
+            // Should show error and not call startFromPlan
+            expect(alertSpy).toHaveBeenCalledWith('No practice plan available. Please create a practice plan first.');
+            expect(mockPracticeSessionStarter.startFromPlan).not.toHaveBeenCalled();
+
+            alertSpy.mockRestore();
+        });
+
+        test('should handle start from plan failure gracefully', async () => {
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+            const mockPlan = {
+                id: 'plan-123',
+                name: 'Test Practice Plan',
+                scoreId: 'score-1'
+            };
+
+            // Set up current practice plan
+            practicePlanner.currentPracticePlan = mockPlan;
+            practicePlanner.currentScoreId = 'score-1';
+            mockPracticeSessionStarter.startFromPlan.mockResolvedValue(false);
+
+            // Click the sidebar button
+            await practicePlanner.handleStartPracticeSessionFromSidebar();
+
+            // Should show error message
+            expect(alertSpy).toHaveBeenCalledWith('Failed to start practice session from saved plan');
+            expect(mockPracticeSessionStarter.startFromPlan).toHaveBeenCalledWith('plan-123', 'score-1');
+
+            alertSpy.mockRestore();
+        });
+    });
 });

@@ -40,6 +40,7 @@ class PracticePlanner {
         
         // DOM elements - will be populated by init()
         this.setupButton = null;
+        this.startPracticeSessionButton = null;
         this.exitButton = null;
         this.returnToHighlightingButton = null;
         this.practiceInterface = null;
@@ -52,6 +53,7 @@ class PracticePlanner {
         
         // Find DOM elements
         this.setupButton = document.querySelector('[data-role="setup-practice-plan"]');
+        this.startPracticeSessionButton = document.querySelector('[data-role="start-practice-session-sidebar"]');
         this.exitButton = document.querySelector('[data-role="exit-practice-planning"]');
         this.returnToHighlightingButton = document.querySelector('[data-role="return-to-highlighting"]');
         this.practiceInterface = document.querySelector('[data-role="practice-planner"]');
@@ -76,6 +78,10 @@ class PracticePlanner {
         // Bind event handlers
         this.setupButton.addEventListener('click', this.handleSetupPractice.bind(this));
         this.exitButton.addEventListener('click', this.handleExitPractice.bind(this));
+        
+        if (this.startPracticeSessionButton) {
+            this.startPracticeSessionButton.addEventListener('click', this.handleStartPracticeSessionFromSidebar.bind(this));
+        }
         
         if (this.returnToHighlightingButton) {
             this.returnToHighlightingButton.addEventListener('click', this.handleExitPractice.bind(this));
@@ -182,17 +188,27 @@ class PracticePlanner {
     }
 
     /**
-     * Update the setup button text based on whether an existing plan exists
+     * Update the setup button text and start session button visibility based on whether an existing plan exists
      */
     updateSetupButtonText(hasExistingPlan) {
-        if (!this.setupButton) return;
+        // Update setup button text if it exists
+        if (this.setupButton) {
+            if (hasExistingPlan) {
+                this.setupButton.textContent = 'Edit practice plan';
+                this.setupButton.title = 'Edit existing practice plan for this score';
+            } else {
+                this.setupButton.textContent = 'Setup practice plan';
+                this.setupButton.title = 'Create a new practice plan for this score';
+            }
+        }
 
-        if (hasExistingPlan) {
-            this.setupButton.textContent = 'Edit practice plan';
-            this.setupButton.title = 'Edit existing practice plan for this score';
-        } else {
-            this.setupButton.textContent = 'Setup practice plan';
-            this.setupButton.title = 'Create a new practice plan for this score';
+        // Update start practice session button visibility
+        if (this.startPracticeSessionButton) {
+            if (hasExistingPlan) {
+                this.startPracticeSessionButton.style.display = 'flex';
+            } else {
+                this.startPracticeSessionButton.style.display = 'none';
+            }
         }
     }
 
@@ -719,6 +735,41 @@ class PracticePlanner {
             alert('Error starting practice session');
             // Show interface again on failure
             this.showPracticeInterface();
+        }
+    }
+
+    /**
+     * Handle starting a practice session from the sidebar button (for saved plans)
+     */
+    async handleStartPracticeSessionFromSidebar() {
+        if (!this.currentPracticePlan) {
+            this.logger.warn('Practice Planner: No current practice plan available to start');
+            alert('No practice plan available. Please create a practice plan first.');
+            return;
+        }
+
+        if (!this.practiceSessionStarter) {
+            this.logger.error('Practice Planner: Practice session starter not available');
+            alert('Practice session starter not available');
+            return;
+        }
+
+        this.logger.info('Practice Planner: Starting practice session from sidebar', {
+            planId: this.currentPracticePlan.id,
+            planName: this.currentPracticePlan.name,
+            scoreId: this.currentScoreId
+        });
+
+        try {
+            const success = await this.practiceSessionStarter.startFromPlan(this.currentPracticePlan.id, this.currentScoreId);
+            
+            if (!success) {
+                this.logger.error('Practice Planner: Failed to start session from saved plan');
+                alert('Failed to start practice session from saved plan');
+            }
+        } catch (error) {
+            this.logger.error('Practice Planner: Error starting session from sidebar', error);
+            alert('Error starting practice session');
         }
     }
 

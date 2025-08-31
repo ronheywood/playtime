@@ -258,27 +258,27 @@ describe('PracticeSessionStarter', () => {
     describe('focusOnPracticeSection', () => {
         const highlightId = 'test-highlight-id';
 
-        test('should focus on highlight using PlayTimeHighlighting when available', () => {
+        test('should focus on highlight using PlayTimeHighlighting when available', async () => {
             const mockElement = { scrollIntoView: jest.fn() };
             document.querySelector = jest.fn().mockReturnValue(mockElement);
 
-            practiceSessionStarter.focusOnPracticeSection(highlightId);
+            await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
             expect(document.querySelector).toHaveBeenCalledWith(`[data-highlight-id="${highlightId}"]`);
             expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
             expect(mockLogger.info).toHaveBeenCalledWith(
-                'Practice Session Starter: Focusing on section',
+                'Practice Session Starter: Triggering focus action on highlight',
                 { highlightId }
             );
         });
 
-        test('should fallback to scrollIntoView when PlayTimeHighlighting is not available', () => {
+        test('should fallback to scrollIntoView when PlayTimeHighlighting is not available', async () => {
             const originalHighlighting = global.window.PlayTimeHighlighting;
             global.window.PlayTimeHighlighting = undefined;
             const mockElement = { scrollIntoView: jest.fn() };
             document.querySelector = jest.fn().mockReturnValue(mockElement);
 
-            practiceSessionStarter.focusOnPracticeSection(highlightId);
+            await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
             expect(mockElement.scrollIntoView).toHaveBeenCalledWith({
                 behavior: 'smooth',
@@ -289,27 +289,131 @@ describe('PracticeSessionStarter', () => {
             global.window.PlayTimeHighlighting = originalHighlighting;
         });
 
-        test('should warn when highlight element is not found', () => {
+        test('should warn when highlight element is not found', async () => {
             document.querySelector = jest.fn().mockReturnValue(null);
 
-            practiceSessionStarter.focusOnPracticeSection(highlightId);
+            await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
             expect(mockLogger.warn).toHaveBeenCalledWith(
-                'Practice Session Starter: Highlight element not found',
-                { highlightId }
+                'Practice Session Starter: Could not determine highlight page or PDF viewer not available',
+                { 
+                    highlightId,
+                    hasHighlightData: false,
+                    hasPageInfo: false,
+                    hasPDFViewer: false
+                }
             );
         });
 
-        test('should handle errors gracefully', () => {
+        test('should handle errors gracefully', async () => {
             document.querySelector = jest.fn().mockImplementation(() => {
                 throw new Error('Query failed');
             });
 
-            practiceSessionStarter.focusOnPracticeSection(highlightId);
+            await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
             expect(mockLogger.error).toHaveBeenCalledWith(
                 'Practice Session Starter: Error focusing on section',
                 { highlightId, error: expect.any(Error) }
+            );
+        });
+
+        test('should navigate to correct page when highlight is on different page', async () => {
+            // Mock the highlight data with page information
+            const mockHighlightData = { id: highlightId, page: 2, xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.4 };
+            const mockPersistenceService = {
+                getHighlight: jest.fn().mockResolvedValue(mockHighlightData)
+            };
+            const mockPDFViewer = {
+                getCurrentPage: jest.fn().mockReturnValue(1),
+                renderPage: jest.fn().mockResolvedValue()
+            };
+
+            // Set up mocks
+            global.window.PlayTimeHighlighting = {
+                _components: {
+                    persistenceService: mockPersistenceService
+                },
+                focusOnHighlight: jest.fn()
+            };
+            global.window.PlayTimePDFViewer = mockPDFViewer;
+
+            // Mock querySelector to return null first (not found), then return element after "page navigation"
+            let callCount = 0;
+            const mockElement = { scrollIntoView: jest.fn() };
+            document.querySelector = jest.fn().mockImplementation(() => {
+                callCount++;
+                return callCount > 1 ? mockElement : null; // Return null first time, element after navigation
+            });
+
+            await practiceSessionStarter.focusOnPracticeSection(highlightId);
+
+            // Verify navigation was attempted
+            expect(mockPersistenceService.getHighlight).toHaveBeenCalledWith(highlightId);
+            expect(mockPDFViewer.getCurrentPage).toHaveBeenCalled();
+            expect(mockPDFViewer.renderPage).toHaveBeenCalledWith(2);
+            expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
+
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                'Practice Session Starter: Navigating to highlight page',
+                { highlightId, currentPage: 1, targetPage: 2 }
+            );
+        });
+
+        test('should not navigate when highlight is already visible on current page', async () => {
+            // Mock element as immediately found (no need for page navigation)
+            const mockElement = { scrollIntoView: jest.fn() };
+            document.querySelector = jest.fn().mockReturnValue(mockElement);
+
+            await practiceSessionStarter.focusOnPracticeSection(highlightId);
+
+            // Since element was found immediately, no navigation should occur
+            expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
+
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                'Practice Session Starter: Triggering focus action on highlight',
+                { highlightId }
+            );
+        });
+
+        test('should skip navigation when highlight is already on current page', async () => {
+            // Mock the highlight data with same page as current
+            const mockHighlightData = { id: highlightId, page: 1, xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.4 };
+            const mockPersistenceService = {
+                getHighlight: jest.fn().mockResolvedValue(mockHighlightData)
+            };
+            const mockPDFViewer = {
+                getCurrentPage: jest.fn().mockReturnValue(1),
+                renderPage: jest.fn().mockResolvedValue()
+            };
+
+            // Set up mocks
+            global.window.PlayTimeHighlighting = {
+                _components: {
+                    persistenceService: mockPersistenceService
+                },
+                focusOnHighlight: jest.fn()
+            };
+            global.window.PlayTimePDFViewer = mockPDFViewer;
+
+            // Mock querySelector to return null first (not found), then element after waiting
+            let callCount = 0;
+            const mockElement = { scrollIntoView: jest.fn() };
+            document.querySelector = jest.fn().mockImplementation(() => {
+                callCount++;
+                return callCount > 1 ? mockElement : null;
+            });
+
+            await practiceSessionStarter.focusOnPracticeSection(highlightId);
+
+            // Verify navigation was considered but not needed
+            expect(mockPersistenceService.getHighlight).toHaveBeenCalledWith(highlightId);
+            expect(mockPDFViewer.getCurrentPage).toHaveBeenCalled();
+            expect(mockPDFViewer.renderPage).not.toHaveBeenCalled(); // Should not navigate
+
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                'Practice Session Starter: Highlight already on current page',
+                { highlightId, currentPage: 1 }
             );
         });
     });
