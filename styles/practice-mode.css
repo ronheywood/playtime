@@ -394,3 +394,111 @@ body {
     height: 1.5rem;
     padding: 0;
 }
+
+/* Practice session timer overlay styles */
+.practice-session-timer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    min-width: 320px;
+    max-width: 400px;
+}
+
+.timer-content {
+    padding: 16px;
+}
+
+.timer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.section-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.section-counter {
+    font-size: 14px;
+    font-weight: 600;
+    color: hsl(var(--primary));
+}
+
+.session-name {
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+}
+
+.timer-display {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.time-remaining {
+    font-size: 32px;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin-bottom: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.time-remaining.warning {
+    color: hsl(var(--practice-unsure));
+}
+
+.time-remaining.critical {
+    color: hsl(var(--practice-needs-work));
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.timer-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.section-notes {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid hsl(var(--border));
+}
+
+.notes-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+    font-size: 14px;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    transition: border-color 0.2s ease;
+}
+
+.notes-input:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.notes-input::placeholder {
+    color: hsl(var(--muted-foreground));
+}
+
+/* Hide timer when practice session is not active */
+.practice-session-timer[style*="display: none"] {
+    display: none !important;
+}

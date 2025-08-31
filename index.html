@@ -274,6 +274,41 @@
         </div>
     </div>
 
+    <!-- Practice Session Timer (initially hidden) -->
+    <div id="practice-session-timer" class="practice-session-timer" style="display: none;">
+        <div class="timer-content">
+            <div class="timer-header">
+                <div class="section-info">
+                    <span class="section-counter" data-role="section-counter">Section 1 of 5</span>
+                    <span class="session-name" data-role="active-session-name">Practice Session</span>
+                </div>
+                <button data-role="exit-practice-session" class="btn btn-outline btn-icon" title="Exit practice session">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="timer-display">
+                <div class="time-remaining" data-role="time-remaining">05:00</div>
+                <div class="timer-controls">
+                    <button data-role="pause-timer" class="btn btn-outline btn-icon" title="Pause timer">
+                        <i data-lucide="pause" class="w-4 h-4"></i>
+                    </button>
+                    <button data-role="next-section" class="btn btn-default" title="Skip to next section">
+                        <i data-lucide="skip-forward" class="w-4 h-4 mr-2"></i>
+                        Next Section
+                    </button>
+                </div>
+            </div>
+            <div class="section-notes">
+                <input 
+                    type="text" 
+                    data-role="section-notes-input"
+                    placeholder="Add notes for this section..."
+                    class="notes-input"
+                />
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="scripts/logger.js"></script>

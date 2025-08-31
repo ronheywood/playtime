@@ -136,7 +136,7 @@ const PracticePlannerTemplates = {
      * Individual practice section template
      */
     practiceSection: (highlight, index) => `
-        <div class="practice-section border border-border rounded-lg p-4 bg-card" data-highlight-id="${highlight.id}" data-section-index="${index}">
+        <div class="practice-section border border-border rounded-lg p-4 bg-card" data-role="practice-section" data-highlight-id="${highlight.id}" data-section-index="${index}">
             <div class="flex items-start gap-3">
                 <!-- Drag Handle -->
                 <div class="drag-handle cursor-move mt-1 text-muted-foreground hover:text-foreground" title="Drag to reorder">
@@ -154,7 +154,7 @@ const PracticePlannerTemplates = {
                             </span>
                             ${highlight.annotated ? '<span class="badge badge-outline" title="This section has annotation notes"><i data-lucide="sticky-note" class="w-3 h-3"></i></span>' : ''}
                         </div>
-                        <button class="remove-section btn btn-outline btn-icon btn-sm" title="Remove section">
+                        <button class="btn btn-outline btn-icon btn-sm" data-role="remove-section" title="Remove section">
                             <i data-lucide="x" class="lucide lucide-x w-3 h-3"></i>
                         </button>
                     </div>
@@ -181,7 +181,7 @@ const PracticePlannerTemplates = {
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-medium text-muted-foreground mb-1">Practice Method</label>
-                            <select class="practice-method w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary">
+                            <select class="w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary" data-role="practice-method">
                                 <option value="slow-practice">Slow Practice</option>
                                 <option value="chunking">Chunking</option>
                                 <option value="repetition">Repetition</option>
@@ -193,7 +193,8 @@ const PracticePlannerTemplates = {
                             <label class="block text-xs font-medium text-muted-foreground mb-1">Target Time (min)</label>
                             <input 
                                 type="number" 
-                                class="target-time w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                                class="w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                                data-role="target-time"
                                 placeholder="5"
                                 min="1"
                                 max="60"
@@ -206,7 +207,8 @@ const PracticePlannerTemplates = {
                     <div>
                         <label class="block text-xs font-medium text-muted-foreground mb-1">Practice Session Notes</label>
                         <textarea 
-                            class="section-notes w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                            class="w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                            data-role="section-notes"
                             rows="2"
                             placeholder="Add practice notes for this session..."
                         ></textarea>

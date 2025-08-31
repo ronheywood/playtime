@@ -42,19 +42,19 @@ describe('Practice Planner Integration Tests', () => {
                 ` : '';
                 
                 return `
-                    <div class="practice-section" data-highlight-id="${highlight.id}" data-section-index="${index}">
-                        <div class="practice-section-content">
+                    <div data-role="practice-section" data-highlight-id="${highlight.id}" data-section-index="${index}">
+                        <div data-role="practice-section-content">
                             <h5>Section ${index + 1} - Page ${highlight.page}</h5>
                             <div class="confidence-badge confidence-${highlight.confidence}">
                                 ${highlight.confidence.toUpperCase()}
                             </div>
                             ${annotationSection}
-                            <select class="practice-method">
+                            <select data-role="practice-method">
                                 <option value="slow-practice">Slow Practice</option>
                                 <option value="hands-separate">Hands Separate</option>
                                 <option value="metronome">With Metronome</option>
                             </select>
-                            <input type="number" class="target-time" value="5" min="1" max="30" />
+                            <input type="number" data-role="target-time" value="5" min="1" max="30" />
                             <button class="remove-section">Remove</button>
                         </div>
                     </div>
@@ -351,19 +351,19 @@ describe('Practice Planner Integration Tests', () => {
             // Add mock practice sections
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
-                <div class="practice-section" data-highlight-id="h1">
-                    <select class="practice-method">
+                <div data-role="practice-section" data-highlight-id="h1">
+                    <select data-role="practice-method">
                         <option value="slow-practice" selected>Slow Practice</option>
                     </select>
-                    <input type="number" class="target-time" value="10" />
-                    <textarea class="section-notes">Focus on rhythm</textarea>
+                    <input type="number" data-role="target-time" value="10" />
+                    <textarea data-role="section-notes">Focus on rhythm</textarea>
                 </div>
-                <div class="practice-section" data-highlight-id="h2">
-                    <select class="practice-method">
+                <div data-role="practice-section" data-highlight-id="h2">
+                    <select data-role="practice-method">
                         <option value="metronome" selected>With Metronome</option>
                     </select>
-                    <input type="number" class="target-time" value="8" />
-                    <textarea class="section-notes">Increase tempo gradually</textarea>
+                    <input type="number" data-role="target-time" value="8" />
+                    <textarea data-role="section-notes">Increase tempo gradually</textarea>
                 </div>
             `;
         });
@@ -488,27 +488,81 @@ describe('Practice Planner Integration Tests', () => {
         test('should dispatch practice session configured event', () => {
             practicePlanner.currentScoreId = 'test-score-123';
             
-            // Set up mock session data
-            document.querySelector('[data-role="session-name"]').value = 'Test Session';
-            document.querySelector('[data-role="session-duration"]').value = '30';
+            // Set up mock session data - Make sure input exists and is properly set
+            let sessionNameInput = document.querySelector('[data-role="session-name"]');
+            if (!sessionNameInput) {
+                sessionNameInput = document.createElement('input');
+                sessionNameInput.setAttribute('data-role', 'session-name');
+                document.body.appendChild(sessionNameInput);
+            }
+            sessionNameInput.value = 'Test Session';
+            
+            let sessionDurationInput = document.querySelector('[data-role="session-duration"]');
+            if (!sessionDurationInput) {
+                sessionDurationInput = document.createElement('input');
+                sessionDurationInput.setAttribute('data-role', 'session-duration');
+                document.body.appendChild(sessionDurationInput);
+            }
+            sessionDurationInput.value = '30';
+            
+            // Add practice sections to allow session to start
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div data-role="practice-section" data-highlight-id="highlight-1">
+                    <select data-role="practice-method">
+                        <option value="slow-practice" selected>Slow Practice</option>
+                    </select>
+                    <input type="number" data-role="target-time" value="5" />
+                </div>
+            `;
+            
+            // Mock timer element and highlights - use createElement to avoid clobbering existing DOM
+            const highlight = document.createElement('div');
+            highlight.setAttribute('data-role', 'highlight');
+            highlight.setAttribute('data-highlight-id', 'highlight-1');
+            document.body.appendChild(highlight);
+            
+            const timerDiv = document.createElement('div');
+            timerDiv.id = 'practice-session-timer';
+            timerDiv.style.display = 'none';
+            timerDiv.innerHTML = `
+                <div data-role="time-remaining"></div>
+                <div data-role="section-counter"></div>
+                <div data-role="active-session-name"></div>
+                <button data-role="pause-timer"><i data-lucide="pause"></i></button>
+                <button data-role="next-section"></button>
+                <button data-role="exit-practice-session"></button>
+                <input data-role="section-notes-input" />
+            `;
+            document.body.appendChild(timerDiv);
             
             const eventSpy = jest.spyOn(window, 'dispatchEvent');
             const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
             
             practicePlanner.handleStartPracticeSession();
             
-            expect(eventSpy).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'playtime:practice-session-configured',
-                detail: expect.objectContaining({
-                    scoreId: 'test-score-123',
-                    sessionConfig: expect.objectContaining({
-                        name: 'Test Session',
-                        duration: 30
-                    })
-                })
-            }));
+            // Get the actual dispatched event - should be the configured event, not start
+            expect(eventSpy).toHaveBeenCalled();
+            
+            // Find the practice-session-configured event
+            const configuredEventCall = eventSpy.mock.calls.find(call => 
+                call[0].type === 'playtime:practice-session-configured'
+            );
+            expect(configuredEventCall).toBeTruthy();
+            
+            const dispatchedEvent = configuredEventCall[0];
+            expect(dispatchedEvent.type).toBe('playtime:practice-session-configured');
+            expect(dispatchedEvent.detail.scoreId).toBe('test-score-123');
+            expect(dispatchedEvent.detail.sessionConfig.name).toBe('Test Session');
+            expect(dispatchedEvent.detail.sessionConfig.duration).toBe(30);
             
             alertSpy.mockRestore();
+            
+            // Clean up practice session
+            if (practicePlanner.practiceSession?.timer) {
+                clearInterval(practicePlanner.practiceSession.timer);
+            }
+            practicePlanner.practiceSession = null;
         });
     });
 
@@ -521,8 +575,8 @@ describe('Practice Planner Integration Tests', () => {
             // Add mock sections
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
-                <div class="practice-section">Section 1</div>
-                <div class="practice-section">Section 2</div>
+                <div data-role="practice-section">Section 1</div>
+                <div data-role="practice-section">Section 2</div>
             `;
             
             practicePlanner.updateSectionCount();
@@ -539,7 +593,7 @@ describe('Practice Planner Integration Tests', () => {
 
         test('should handle singular section count', () => {
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
-            sectionsList.innerHTML = '<div class="practice-section">Section 1</div>';
+            sectionsList.innerHTML = '<div data-role="practice-section">Section 1</div>';
             
             practicePlanner.updateSectionCount();
             
@@ -601,19 +655,19 @@ describe('Practice Planner Integration Tests', () => {
             // Add practice sections
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
-                <div class="practice-section" data-highlight-id="highlight-1">
-                    <select class="practice-method">
+                <div data-role="practice-section" data-highlight-id="highlight-1">
+                    <select data-role="practice-method">
                         <option value="slow-practice" selected>Slow Practice</option>
                     </select>
-                    <input type="number" class="target-time" value="8" />
-                    <textarea class="section-notes">Focus on dynamics</textarea>
+                    <input type="number" data-role="target-time" value="8" />
+                    <textarea data-role="section-notes">Focus on dynamics</textarea>
                 </div>
-                <div class="practice-section" data-highlight-id="highlight-2">
-                    <select class="practice-method">
+                <div data-role="practice-section" data-highlight-id="highlight-2">
+                    <select data-role="practice-method">
                         <option value="metronome" selected>With Metronome</option>
                     </select>
-                    <input type="number" class="target-time" value="12" />
-                    <textarea class="section-notes">Work on timing</textarea>
+                    <input type="number" data-role="target-time" value="12" />
+                    <textarea data-role="section-notes">Work on timing</textarea>
                 </div>
             `;
 
@@ -679,11 +733,11 @@ describe('Practice Planner Integration Tests', () => {
             // Add at least one section
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
-                <div class="practice-section" data-highlight-id="highlight-1">
-                    <select class="practice-method">
+                <div data-role="practice-section" data-highlight-id="highlight-1">
+                    <select data-role="practice-method">
                         <option value="slow-practice" selected>Slow Practice</option>
                     </select>
-                    <input type="number" class="target-time" value="5" />
+                    <input type="number" data-role="target-time" value="5" />
                 </div>
             `;
 
@@ -747,11 +801,11 @@ describe('Practice Planner Integration Tests', () => {
             // Add a section so validation passes
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
-                <div class="practice-section" data-highlight-id="highlight-1">
-                    <select class="practice-method">
+                <div data-role="practice-section" data-highlight-id="highlight-1">
+                    <select data-role="practice-method">
                         <option value="slow-practice" selected>Slow Practice</option>
                     </select>
-                    <input type="number" class="target-time" value="5" />
+                    <input type="number" data-role="target-time" value="5" />
                 </div>
             `;
             
@@ -792,12 +846,12 @@ describe('Practice Planner Integration Tests', () => {
             // Add practice sections
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
-                <div class="practice-section" data-highlight-id="highlight-3">
-                    <select class="practice-method">
+                <div data-role="practice-section" data-highlight-id="highlight-3">
+                    <select data-role="practice-method">
                         <option value="hands-separate" selected>Hands Separate</option>
                     </select>
-                    <input type="number" class="target-time" value="15" />
-                    <textarea class="section-notes">Updated notes</textarea>
+                    <input type="number" data-role="target-time" value="15" />
+                    <textarea data-role="section-notes">Updated notes</textarea>
                 </div>
             `;
 
@@ -949,11 +1003,11 @@ describe('Practice Planner Integration Tests', () => {
             
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
-                <div class="practice-section" data-highlight-id="highlight-1">
-                    <select class="practice-method">
+                <div data-role="practice-section" data-highlight-id="highlight-1">
+                    <select data-role="practice-method">
                         <option value="slow-practice" selected>Slow Practice</option>
                     </select>
-                    <input type="number" class="target-time" value="5" />
+                    <input type="number" data-role="target-time" value="5" />
                 </div>
             `;
 
@@ -1137,6 +1191,220 @@ describe('Practice Planner Integration Tests', () => {
 
             // Clean up
             isInPracticeModeSpy.mockRestore();
+        });
+    });
+
+    describe('Practice Session Management', () => {
+        beforeEach(() => {
+            // Mock PlayTimeHighlighting for focus functionality
+            window.PlayTimeHighlighting = {
+                focusOnHighlight: jest.fn(),
+                exitFocusMode: jest.fn()
+            };
+
+            // Mock lucide icons
+            window.lucide = {
+                createIcons: jest.fn()
+            };
+        });
+
+        afterEach(() => {
+            // Clean up any running timers
+            if (practicePlanner.practiceSession?.timer) {
+                clearInterval(practicePlanner.practiceSession.timer);
+            }
+            practicePlanner.practiceSession = null;
+            
+            // Clean up mocks
+            delete window.PlayTimeHighlighting;
+            delete window.lucide;
+        });
+
+        test('should start practice session with first section', async () => {
+            // Set up session data
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            sessionNameInput.value = 'Test Session';
+            
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div class="practice-section border border-border rounded-lg p-4 bg-card" data-role="practice-section" data-highlight-id="highlight-1">
+                    <select data-role="practice-method">
+                        <option value="slow-practice" selected>Slow Practice</option>
+                    </select>
+                    <input type="number" data-role="target-time" value="3" />
+                </div>
+                <div class="practice-section border border-border rounded-lg p-4 bg-card" data-role="practice-section" data-highlight-id="highlight-2">
+                    <select data-role="practice-method">
+                        <option value="tempo-practice" selected>Tempo Practice</option>
+                    </select>
+                    <input type="number" data-role="target-time" value="5" />
+                </div>
+            `;
+
+            // Mock highlight elements - use createElement to avoid clobbering existing DOM
+            const highlight1 = document.createElement('div');
+            highlight1.setAttribute('data-role', 'highlight');
+            highlight1.setAttribute('data-highlight-id', 'highlight-1');
+            document.body.appendChild(highlight1);
+            
+            const highlight2 = document.createElement('div');
+            highlight2.setAttribute('data-role', 'highlight');
+            highlight2.setAttribute('data-highlight-id', 'highlight-2');
+            document.body.appendChild(highlight2);
+
+            // Mock timer element
+            const timerDiv = document.createElement('div');
+            timerDiv.id = 'practice-session-timer';
+            timerDiv.style.display = 'none';
+            timerDiv.innerHTML = `
+                <div data-role="time-remaining"></div>
+                <div data-role="section-counter"></div>
+                <div data-role="active-session-name"></div>
+                <button data-role="pause-timer"><i data-lucide="pause"></i></button>
+                <button data-role="next-section"></button>
+                <button data-role="exit-practice-session"></button>
+                <input data-role="section-notes-input" />
+            `;
+            document.body.appendChild(timerDiv);
+
+            const hidePracticeInterfaceSpy = jest.spyOn(practicePlanner, 'hidePracticeInterface');
+
+            // Start practice session
+            practicePlanner.handleStartPracticeSession();
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            // Verify session was initialized
+            expect(practicePlanner.practiceSession).toBeTruthy();
+            expect(practicePlanner.practiceSession.config.name).toBe('Test Session');
+            expect(practicePlanner.practiceSession.config.sections).toHaveLength(2);
+            expect(practicePlanner.practiceSession.currentSectionIndex).toBe(0);
+
+            // Verify interface was hidden
+            expect(hidePracticeInterfaceSpy).toHaveBeenCalled();
+
+            // Verify highlight was focused
+            expect(window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(
+                expect.any(Element),
+                { padding: 20 }
+            );
+
+            // Verify timer UI is shown
+            const timerElement = document.getElementById('practice-session-timer');
+            expect(timerElement.style.display).toBe('block');
+        });
+
+        test('should advance to next section when timer expires', async () => {
+            // Set up a session with very short timer
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            sessionNameInput.value = 'Quick Test';
+            
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div data-role="practice-section" data-highlight-id="highlight-1">
+                    <input type="number" data-role="target-time" value="0.01" />
+                </div>
+                <div data-role="practice-section" data-highlight-id="highlight-2">
+                    <input type="number" data-role="target-time" value="0.01" />
+                </div>
+            `;
+
+            // Mock elements
+            document.body.innerHTML += `
+                <div data-role="highlight" data-highlight-id="highlight-1"></div>
+                <div data-role="highlight" data-highlight-id="highlight-2"></div>
+                <div id="practice-session-timer" style="display: none;">
+                    <div data-role="time-remaining"></div>
+                    <div data-role="section-counter"></div>
+                    <div data-role="active-session-name"></div>
+                    <button data-role="pause-timer"><i data-lucide="pause"></i></button>
+                    <button data-role="next-section"></button>
+                    <button data-role="exit-practice-session"></button>
+                    <input data-role="section-notes-input" />
+                </div>
+            `;
+
+            // Start session
+            practicePlanner.handleStartPracticeSession();
+
+            // Wait for timer to expire and advance
+            await new Promise(resolve => setTimeout(resolve, 1100));
+
+            // Should have advanced to second section
+            expect(practicePlanner.practiceSession.currentSectionIndex).toBe(1);
+        });
+
+        test('should end session when all sections complete', async () => {
+            // Set up session with one very short section
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            sessionNameInput.value = 'Single Section Test';
+            
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div data-role="practice-section" data-highlight-id="highlight-1">
+                    <input type="number" data-role="target-time" value="0.01" />
+                </div>
+            `;
+
+            // Mock elements
+            document.body.innerHTML += `
+                <div data-role="highlight" data-highlight-id="highlight-1"></div>
+                <div id="practice-session-timer" style="display: none;"></div>
+            `;
+
+            // Mock alert
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+            // Start session
+            practicePlanner.handleStartPracticeSession();
+
+            // Wait for session to complete
+            await new Promise(resolve => setTimeout(resolve, 1100));
+
+            // Session should be ended
+            expect(practicePlanner.practiceSession).toBeNull();
+            expect(alertSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Practice session ended.')
+            );
+            expect(window.PlayTimeHighlighting.exitFocusMode).toHaveBeenCalled();
+
+            alertSpy.mockRestore();
+        });
+
+        test('should pause and resume timer', () => {
+            // Set up session
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            sessionNameInput.value = 'Pause Test';
+            
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div data-role="practice-section" data-highlight-id="highlight-1">
+                    <input type="number" data-role="target-time" value="5" />
+                </div>
+            `;
+
+            // Mock elements
+            document.body.innerHTML += `
+                <div data-role="highlight" data-highlight-id="highlight-1"></div>
+                <div id="practice-session-timer" style="display: none;">
+                    <button data-role="pause-timer"><i data-lucide="pause"></i></button>
+                </div>
+            `;
+
+            // Start session
+            practicePlanner.handleStartPracticeSession();
+
+            // Should not be paused initially
+            expect(practicePlanner.practiceSession.isPaused).toBe(false);
+
+            // Pause timer
+            practicePlanner.togglePauseTimer();
+            expect(practicePlanner.practiceSession.isPaused).toBe(true);
+
+            // Resume timer
+            practicePlanner.togglePauseTimer();
+            expect(practicePlanner.practiceSession.isPaused).toBe(false);
         });
     });
 });

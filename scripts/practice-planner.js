@@ -81,6 +81,10 @@ class PracticePlanner {
         // Attach global button event listeners (once during initialization)
         this.attachGlobalEventListeners();
 
+        // Initialize practice session state
+        this.practiceSession = null;
+        this.timerListenersAttached = false;
+
         this.logger.info('Practice Planner event handlers attached');
 
         // Listen for score changes to update current score context
@@ -337,26 +341,26 @@ class PracticePlanner {
             });
 
             // Apply settings to current practice sections
-            const currentSections = document.querySelectorAll('.practice-section');
+            const currentSections = document.querySelectorAll('[data-role="practice-section"]');
             currentSections.forEach(sectionElement => {
                 const highlightId = sectionElement.dataset.highlightId;
                 const savedSettings = settingsMap.get(highlightId);
 
                 if (savedSettings) {
                     // Apply practice method
-                    const methodSelect = sectionElement.querySelector('.practice-method');
+                    const methodSelect = sectionElement.querySelector('[data-role="practice-method"]');
                     if (methodSelect && savedSettings.practiceMethod) {
                         methodSelect.value = savedSettings.practiceMethod;
                     }
 
                     // Apply target time
-                    const targetTimeInput = sectionElement.querySelector('.target-time');
+                    const targetTimeInput = sectionElement.querySelector('[data-role="target-time"]');
                     if (targetTimeInput && savedSettings.targetTime) {
                         targetTimeInput.value = savedSettings.targetTime;
                     }
 
                     // Apply notes
-                    const notesTextarea = sectionElement.querySelector('.section-notes');
+                    const notesTextarea = sectionElement.querySelector('[data-role="section-notes"]');
                     if (notesTextarea && savedSettings.notes) {
                         notesTextarea.value = savedSettings.notes;
                     }
@@ -548,9 +552,9 @@ class PracticePlanner {
         if (!sectionsList) return;
 
         // Remove section buttons
-        sectionsList.querySelectorAll('.remove-section').forEach(button => {
+        sectionsList.querySelectorAll('[data-role="remove-section"]').forEach(button => {
             button.addEventListener('click', (e) => {
-                const section = e.target.closest('.practice-section');
+                const section = e.target.closest('[data-role="practice-section"]');
                 if (section && confirm('Remove this section from the practice plan?')) {
                     section.remove();
                     this.updateSectionCount();
@@ -559,20 +563,20 @@ class PracticePlanner {
         });
 
         // Practice method changes
-        sectionsList.querySelectorAll('.practice-method').forEach(select => {
+        sectionsList.querySelectorAll('[data-role="practice-method"]').forEach(select => {
             select.addEventListener('change', (e) => {
                 this.logger.debug?.('Practice method changed', {
-                    sectionId: e.target.closest('.practice-section')?.dataset.highlightId,
+                    sectionId: e.target.closest('[data-role="practice-section"]')?.dataset.highlightId,
                     method: e.target.value
                 });
             });
         });
 
         // Target time changes
-        sectionsList.querySelectorAll('.target-time').forEach(input => {
+        sectionsList.querySelectorAll('[data-role="target-time"]').forEach(input => {
             input.addEventListener('change', (e) => {
                 this.logger.debug?.('Target time changed', {
-                    sectionId: e.target.closest('.practice-section')?.dataset.highlightId,
+                    sectionId: e.target.closest('[data-role="practice-section"]')?.dataset.highlightId,
                     time: e.target.value
                 });
             });
@@ -586,7 +590,7 @@ class PracticePlanner {
      */
     updateSectionCount() {
         const sectionCount = document.querySelector('[data-role="section-count"]');
-        const sections = document.querySelectorAll('.practice-section');
+        const sections = document.querySelectorAll('[data-role="practice-section"]');
         
         if (sectionCount) {
             const count = sections.length;
@@ -602,7 +606,23 @@ class PracticePlanner {
         
         this.logger.info('Practice Planner: Starting practice session', sessionData);
         
-        // Dispatch practice session start event with full configuration
+        // Validate we have sections to practice
+        if (!sessionData.sections || sessionData.sections.length === 0) {
+            alert('No practice sections available. Please add some highlighted sections first.');
+            return;
+        }
+        
+        // Initialize practice session state
+        this.practiceSession = {
+            config: sessionData,
+            currentSectionIndex: 0,
+            startTime: Date.now(),
+            isPaused: false,
+            sectionNotes: {},
+            timer: null
+        };
+        
+        // Dispatch practice session start event
         const event = new CustomEvent('playtime:practice-session-configured', {
             detail: {
                 scoreId: this.currentScoreId,
@@ -611,8 +631,314 @@ class PracticePlanner {
         });
         window.dispatchEvent(event);
         
-        // For now, just show an alert - in the future this could launch a practice timer
-        alert(`Starting practice session: "${sessionData.name}" (${sessionData.duration} minutes)`);
+        // Hide the practice planner interface
+        this.hidePracticeInterface();
+        
+        // Start the first section
+        this.startPracticeSection(0);
+    }
+
+    /**
+     * Start practicing a specific section
+     */
+    async startPracticeSection(sectionIndex) {
+        if (!this.practiceSession || !this.practiceSession.config.sections) {
+            this.logger.error?.('Practice Planner: No active practice session');
+            return;
+        }
+        
+        const sections = this.practiceSession.config.sections;
+        if (sectionIndex >= sections.length) {
+            // End of practice session
+            this.endPracticeSession();
+            return;
+        }
+        
+        const section = sections[sectionIndex];
+        this.practiceSession.currentSectionIndex = sectionIndex;
+        
+        // Show practice timer UI
+        this.showPracticeTimer();
+        
+        // Update timer UI
+        this.updateTimerDisplay();
+        
+        // Focus on the highlight for this section
+        await this.focusOnPracticeSection(section.highlightId);
+        
+        // Start countdown timer
+        this.startSectionTimer(section.targetTime);
+        
+        this.logger.info('Practice Planner: Started section', {
+            sectionIndex,
+            highlightId: section.highlightId,
+            targetTime: section.targetTime
+        });
+    }
+    
+    /**
+     * Focus on a specific highlight using the highlighting module
+     */
+    async focusOnPracticeSection(highlightId) {
+        try {
+            // Find the highlight element
+            const highlightElement = document.querySelector(`[data-role="highlight"][data-highlight-id="${highlightId}"]`);
+            
+            if (!highlightElement) {
+                this.logger.warn?.('Practice Planner: Highlight element not found', { highlightId });
+                return;
+            }
+            
+            // Use the highlighting module to focus on this highlight
+            if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.focusOnHighlight === 'function') {
+                window.PlayTimeHighlighting.focusOnHighlight(highlightElement, { padding: 20 });
+                this.logger.debug?.('Practice Planner: Focused on highlight', { highlightId });
+            } else {
+                this.logger.warn?.('Practice Planner: PlayTimeHighlighting not available');
+            }
+        } catch (error) {
+            this.logger.error?.('Practice Planner: Error focusing on highlight', error);
+        }
+    }
+    
+    /**
+     * Show the practice timer UI
+     */
+    showPracticeTimer() {
+        const timerElement = document.getElementById('practice-session-timer');
+        if (timerElement) {
+            timerElement.style.display = 'block';
+            
+            // Attach event listeners if not already attached
+            if (!this.timerListenersAttached) {
+                this.attachTimerEventListeners();
+                this.timerListenersAttached = true;
+            }
+        }
+    }
+    
+    /**
+     * Hide the practice timer UI
+     */
+    hidePracticeTimer() {
+        const timerElement = document.getElementById('practice-session-timer');
+        if (timerElement) {
+            timerElement.style.display = 'none';
+        }
+    }
+    
+    /**
+     * Attach event listeners to timer controls
+     */
+    attachTimerEventListeners() {
+        const pauseButton = document.querySelector('[data-role="pause-timer"]');
+        const nextButton = document.querySelector('[data-role="next-section"]');
+        const exitButton = document.querySelector('[data-role="exit-practice-session"]');
+        const notesInput = document.querySelector('[data-role="section-notes-input"]');
+        
+        if (pauseButton) {
+            pauseButton.addEventListener('click', () => this.togglePauseTimer());
+        }
+        
+        if (nextButton) {
+            nextButton.addEventListener('click', () => this.nextSection());
+        }
+        
+        if (exitButton) {
+            exitButton.addEventListener('click', () => this.endPracticeSession());
+        }
+        
+        if (notesInput) {
+            notesInput.addEventListener('input', (e) => this.updateSectionNotes(e.target.value));
+        }
+    }
+    
+    /**
+     * Start the countdown timer for current section
+     */
+    startSectionTimer(targetTimeMinutes) {
+        // Guard clause - ensure we have an active practice session
+        if (!this.practiceSession) {
+            this.logger.warn?.('Practice Planner: Cannot start timer - no active practice session');
+            return;
+        }
+        
+        // Clear any existing timer
+        if (this.practiceSession.timer) {
+            clearInterval(this.practiceSession.timer);
+        }
+        
+        // Convert minutes to seconds
+        let timeLeftSeconds = targetTimeMinutes * 60;
+        this.practiceSession.sectionTimeLeft = timeLeftSeconds;
+        
+        // Update display immediately
+        this.updateTimerDisplay();
+        
+        // Start countdown
+        this.practiceSession.timer = setInterval(() => {
+            if (!this.practiceSession.isPaused) {
+                this.practiceSession.sectionTimeLeft--;
+                this.updateTimerDisplay();
+                
+                if (this.practiceSession.sectionTimeLeft <= 0) {
+                    // Time's up, move to next section
+                    this.nextSection();
+                }
+            }
+        }, 1000);
+    }
+    
+    /**
+     * Update the timer display
+     */
+    updateTimerDisplay() {
+        if (!this.practiceSession) return;
+        
+        const timeRemainingElement = document.querySelector('[data-role="time-remaining"]');
+        const sectionCounterElement = document.querySelector('[data-role="section-counter"]');
+        const sessionNameElement = document.querySelector('[data-role="active-session-name"]');
+        const pauseButton = document.querySelector('[data-role="pause-timer"]');
+        
+        // Update time display
+        if (timeRemainingElement) {
+            const minutes = Math.floor(this.practiceSession.sectionTimeLeft / 60);
+            const seconds = this.practiceSession.sectionTimeLeft % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timeRemainingElement.textContent = timeString;
+            
+            // Add warning/critical classes
+            timeRemainingElement.classList.remove('warning', 'critical');
+            if (this.practiceSession.sectionTimeLeft <= 30) {
+                timeRemainingElement.classList.add('critical');
+            } else if (this.practiceSession.sectionTimeLeft <= 60) {
+                timeRemainingElement.classList.add('warning');
+            }
+        }
+        
+        // Update section counter
+        if (sectionCounterElement) {
+            const current = this.practiceSession.currentSectionIndex + 1;
+            const total = this.practiceSession.config.sections.length;
+            sectionCounterElement.textContent = `Section ${current} of ${total}`;
+        }
+        
+        // Update session name
+        if (sessionNameElement) {
+            sessionNameElement.textContent = this.practiceSession.config.name || 'Practice Session';
+        }
+        
+        // Update pause button icon
+        if (pauseButton) {
+            const icon = pauseButton.querySelector('i');
+            if (icon) {
+                if (this.practiceSession.isPaused) {
+                    icon.setAttribute('data-lucide', 'play');
+                    pauseButton.title = 'Resume timer';
+                } else {
+                    icon.setAttribute('data-lucide', 'pause');
+                    pauseButton.title = 'Pause timer';
+                }
+                // Refresh lucide icons
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }
+        }
+    }
+    
+    /**
+     * Toggle pause/resume timer
+     */
+    togglePauseTimer() {
+        if (!this.practiceSession) return;
+        
+        this.practiceSession.isPaused = !this.practiceSession.isPaused;
+        this.updateTimerDisplay();
+        
+        this.logger.debug?.('Practice Planner: Timer toggled', { 
+            isPaused: this.practiceSession.isPaused 
+        });
+    }
+    
+    /**
+     * Move to next section
+     */
+    nextSection() {
+        if (!this.practiceSession) return;
+        
+        // Save notes for current section
+        const notesInput = document.querySelector('[data-role="section-notes-input"]');
+        if (notesInput && notesInput.value.trim()) {
+            const currentSection = this.practiceSession.config.sections[this.practiceSession.currentSectionIndex];
+            this.practiceSession.sectionNotes[currentSection.highlightId] = notesInput.value.trim();
+            notesInput.value = ''; // Clear for next section
+        }
+        
+        // Clear current timer
+        if (this.practiceSession.timer) {
+            clearInterval(this.practiceSession.timer);
+        }
+        
+        // Start next section
+        const nextIndex = this.practiceSession.currentSectionIndex + 1;
+        this.startPracticeSection(nextIndex);
+    }
+    
+    /**
+     * End the practice session
+     */
+    endPracticeSession() {
+        if (!this.practiceSession) return;
+        
+        // Clear timer
+        if (this.practiceSession.timer) {
+            clearInterval(this.practiceSession.timer);
+        }
+        
+        // Hide timer UI
+        this.hidePracticeTimer();
+        
+        // Exit focus mode
+        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.exitFocusMode === 'function') {
+            window.PlayTimeHighlighting.exitFocusMode();
+        }
+        
+        // Calculate session statistics
+        const endTime = Date.now();
+        const totalTime = Math.round((endTime - this.practiceSession.startTime) / 1000 / 60); // minutes
+        const completedSections = this.practiceSession.currentSectionIndex;
+        const totalSections = this.practiceSession.config.sections.length;
+        
+        this.logger.info('Practice Planner: Session ended', {
+            totalTime,
+            completedSections,
+            totalSections,
+            notes: this.practiceSession.sectionNotes
+        });
+        
+        // Show completion message
+        const isComplete = completedSections >= totalSections;
+        const message = isComplete 
+            ? `Practice session completed!\n\nCompleted all ${totalSections} sections in ${totalTime} minutes.`
+            : `Practice session ended.\n\nCompleted ${completedSections} of ${totalSections} sections in ${totalTime} minutes.`;
+        
+        alert(message);
+        
+        // Clear session state
+        this.practiceSession = null;
+    }
+    
+    /**
+     * Update notes for current section
+     */
+    updateSectionNotes(notes) {
+        if (!this.practiceSession) return;
+        
+        const currentSection = this.practiceSession.config.sections[this.practiceSession.currentSectionIndex];
+        if (currentSection) {
+            this.practiceSession.sectionNotes[currentSection.highlightId] = notes;
+        }
     }
 
     /**
@@ -708,12 +1034,12 @@ class PracticePlanner {
         const sessionDuration = parseInt(document.querySelector('[data-role="session-duration"]')?.value || '30');
         const sessionFocus = document.querySelector('[data-role="session-focus"]')?.value || 'accuracy';
         
-        const sections = Array.from(document.querySelectorAll('.practice-section')).map(section => {
+        const sections = Array.from(document.querySelectorAll('[data-role="practice-section"]')).map(section => {
             return {
                 highlightId: section.dataset.highlightId,
-                practiceMethod: section.querySelector('.practice-method')?.value || 'slow-practice',
-                targetTime: parseInt(section.querySelector('.target-time')?.value || '5'),
-                notes: section.querySelector('.section-notes')?.value || ''
+                practiceMethod: section.querySelector('[data-role="practice-method"]')?.value || 'slow-practice',
+                targetTime: parseInt(section.querySelector('[data-role="target-time"]')?.value || '5'),
+                notes: section.querySelector('[data-role="section-notes"]')?.value || ''
             };
         });
 
