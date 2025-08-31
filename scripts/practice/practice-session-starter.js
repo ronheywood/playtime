@@ -37,7 +37,7 @@ class PracticeSessionStarter {
             }
 
             // Start the session with the plan configuration
-            return await this.startSession(practicePlan, scoreId);
+            return await this._startSession(practicePlan, scoreId);
 
         } catch (error) {
             this.logger.error('Practice Session Starter: Error starting from plan', { planId, scoreId, error });
@@ -46,12 +46,13 @@ class PracticeSessionStarter {
     }
 
     /**
-     * Start a practice session from session configuration
+     * Start a practice session from session configuration (internal method)
+     * @private
      * @param {Object} sessionConfig - The practice session configuration
      * @param {string} scoreId - The ID of the score
      * @returns {Promise<boolean>} - Success/failure status
      */
-    async startSession(sessionConfig, scoreId) {
+    async _startSession(sessionConfig, scoreId) {
         try {
             this.logger.info('Practice Session Starter: Starting practice session', { 
                 sessionName: sessionConfig.name,

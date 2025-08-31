@@ -628,8 +628,8 @@ class PracticePlanner {
             // Hide the practice planner interface first
             this.hidePracticeInterface();
             
-            // Start the session using the dedicated module
-            this.practiceSessionStarter.startSession(sessionData, this.currentScoreId);
+            // Save as temporary practice plan first, then start session
+            this.saveAndStartSession(sessionData);
         } else {
             // Fallback to original logic for backward compatibility
             this.logger.info('Practice Planner: Using fallback session management');
@@ -670,6 +670,55 @@ class PracticePlanner {
             
             // Focus on the first section
             this.focusOnPracticeSection(firstSection.highlightId);
+        }
+    }
+
+    /**
+     * Save session data as temporary practice plan and start session
+     * @param {Object} sessionData - The session configuration data
+     */
+    async saveAndStartSession(sessionData) {
+        try {
+            // Create a temporary practice plan name
+            const tempPlanName = `Temp Session - ${new Date().toLocaleTimeString()}`;
+            
+            // Prepare practice plan data
+            const practicePlanData = {
+                ...sessionData,
+                name: tempPlanName,
+                scoreId: this.currentScoreId,
+                isTemporary: true
+            };
+
+            // Save as temporary practice plan
+            if (!this.practicePlanPersistenceService) {
+                this.logger.error('Practice Planner: Practice plan persistence service not available');
+                alert('Cannot start session: persistence service not available');
+                return;
+            }
+
+            const tempPlanId = await this.practicePlanPersistenceService.savePracticePlan(practicePlanData);
+            
+            this.logger.info('Practice Planner: Temporary practice plan created', { 
+                id: tempPlanId,
+                name: tempPlanName
+            });
+
+            // Start session from the saved plan
+            const success = await this.practiceSessionStarter.startFromPlan(tempPlanId, this.currentScoreId);
+            
+            if (!success) {
+                this.logger.error('Practice Planner: Failed to start session from temporary plan');
+                alert('Failed to start practice session');
+                // Show interface again on failure
+                this.showPracticeInterface();
+            }
+
+        } catch (error) {
+            this.logger.error('Practice Planner: Error saving temporary plan and starting session', error);
+            alert('Error starting practice session');
+            // Show interface again on failure
+            this.showPracticeInterface();
         }
     }
 

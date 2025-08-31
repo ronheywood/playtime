@@ -152,7 +152,7 @@ describe('PracticeSessionStarter', () => {
         });
     });
 
-    describe('startSession', () => {
+    describe('startSession (internal method)', () => {
         const scoreId = 'test-score-id';
         const sessionConfig = {
             name: 'Test Session',
@@ -174,7 +174,7 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should successfully start a valid session', async () => {
-            const result = await practiceSessionStarter.startSession(sessionConfig, scoreId);
+            const result = await practiceSessionStarter._startSession(sessionConfig, scoreId);
 
             expect(result).toBe(true);
             expect(practiceSessionStarter.practiceSession).toEqual({
@@ -187,9 +187,9 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should initialize timer when PracticeSessionTimer is available', async () => {
-            await practiceSessionStarter.startSession(sessionConfig, scoreId);
+            await practiceSessionStarter._startSession(sessionConfig, scoreId);
 
-            expect(global.window.PracticeSessionTimer).toHaveBeenCalledWith({
+            expect(mockTimerConstructor).toHaveBeenCalledWith({
                 logger: mockLogger,
                 onTimerComplete: expect.any(Function),
                 onTimerTick: expect.any(Function),
@@ -204,7 +204,7 @@ describe('PracticeSessionStarter', () => {
             const originalTimer = global.window.PracticeSessionTimer;
             global.window.PracticeSessionTimer = undefined;
 
-            await practiceSessionStarter.startSession(sessionConfig, scoreId);
+            await practiceSessionStarter._startSession(sessionConfig, scoreId);
 
             expect(mockLogger.warn).toHaveBeenCalledWith(
                 'Practice Session Starter: Timer component not available'
@@ -215,7 +215,7 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should dispatch practice session configured event', async () => {
-            await practiceSessionStarter.startSession(sessionConfig, scoreId);
+            await practiceSessionStarter._startSession(sessionConfig, scoreId);
 
             expect(global.window.dispatchEvent).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -231,7 +231,7 @@ describe('PracticeSessionStarter', () => {
         test('should fail when session has no sections', async () => {
             const emptyConfig = { name: 'Empty Session', sections: [] };
 
-            const result = await practiceSessionStarter.startSession(emptyConfig, scoreId);
+            const result = await practiceSessionStarter._startSession(emptyConfig, scoreId);
 
             expect(result).toBe(false);
             expect(mockLogger.error).toHaveBeenCalledWith(
@@ -245,7 +245,7 @@ describe('PracticeSessionStarter', () => {
                 throw new Error('Event dispatch failed');
             });
 
-            const result = await practiceSessionStarter.startSession(sessionConfig, scoreId);
+            const result = await practiceSessionStarter._startSession(sessionConfig, scoreId);
 
             expect(result).toBe(false);
             expect(mockLogger.error).toHaveBeenCalledWith(
