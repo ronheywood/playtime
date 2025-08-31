@@ -83,7 +83,7 @@ class PracticePlanner {
 
         // Initialize practice session state
         this.practiceSession = null;
-        this.timerListenersAttached = false;
+        this.practiceSessionTimer = null;
 
         this.logger.info('Practice Planner event handlers attached');
 
@@ -617,10 +617,18 @@ class PracticePlanner {
             config: sessionData,
             currentSectionIndex: 0,
             startTime: Date.now(),
-            isPaused: false,
-            sectionNotes: {},
-            timer: null
+            sectionNotes: {}
         };
+        
+        // Initialize timer component with event callbacks
+        this.practiceSessionTimer = new window.PracticeSessionTimer({
+            logger: this.logger,
+            onTimerComplete: () => this.handleTimerComplete(),
+            onTimerTick: (timeLeft) => this.handleTimerTick(timeLeft),
+            onPauseToggle: (isPaused) => this.handlePauseToggle(isPaused),
+            onManualNext: () => this.handleManualNext(),
+            onExit: () => this.handleTimerExit()
+        });
         
         // Dispatch practice session start event
         const event = new CustomEvent('playtime:practice-session-configured', {
@@ -630,52 +638,163 @@ class PracticePlanner {
             }
         });
         window.dispatchEvent(event);
-        
+
         // Hide the practice planner interface
         this.hidePracticeInterface();
-        
-        // Start the first section
-        this.startPracticeSection(0);
-    }
 
-    /**
-     * Start practicing a specific section
-     */
-    async startPracticeSection(sectionIndex) {
-        if (!this.practiceSession || !this.practiceSession.config.sections) {
-            this.logger.error?.('Practice Planner: No active practice session');
-            return;
-        }
+        // Start the timer for the first section
+        const firstSection = sessionData.sections[0];
+        this.practiceSessionTimer.startTimer(firstSection.targetTime);
         
-        const sections = this.practiceSession.config.sections;
-        if (sectionIndex >= sections.length) {
-            // End of practice session
-            this.endPracticeSession();
-            return;
-        }
-        
-        const section = sections[sectionIndex];
-        this.practiceSession.currentSectionIndex = sectionIndex;
-        
-        // Show practice timer UI
-        this.showPracticeTimer();
-        
-        // Update timer UI
-        this.updateTimerDisplay();
-        
-        // Focus on the highlight for this section
-        await this.focusOnPracticeSection(section.highlightId);
-        
-        // Start countdown timer
-        this.startSectionTimer(section.targetTime);
-        
-        this.logger.info('Practice Planner: Started section', {
-            sectionIndex,
-            highlightId: section.highlightId,
-            targetTime: section.targetTime
-        });
+        // Focus on the first section
+        this.focusOnPracticeSection(firstSection.highlightId);
     }
     
+    /**
+     * Handle timer completion - move to next section or end session
+     */
+    handleTimerComplete() {
+        if (!this.practiceSession) return;
+        
+        // Get notes from the UI for current section
+        const notes = this.getCurrentSectionNotes();
+        
+        // Save notes for current section
+        const currentSection = this.practiceSession.config.sections[this.practiceSession.currentSectionIndex];
+        if (currentSection && notes) {
+            this.practiceSession.sectionNotes[currentSection.highlightId] = notes;
+        }
+        
+        // Move to next section
+        this.practiceSession.currentSectionIndex++;
+        
+        if (this.practiceSession.currentSectionIndex < this.practiceSession.config.sections.length) {
+            // Start next section
+            const nextSection = this.practiceSession.config.sections[this.practiceSession.currentSectionIndex];
+            this.practiceSessionTimer.startTimer(nextSection.targetTime);
+            this.focusOnPracticeSection(nextSection.highlightId);
+            
+            this.logger.info('Practice Planner: Moving to next section', {
+                sectionIndex: this.practiceSession.currentSectionIndex,
+                highlightId: nextSection.highlightId
+            });
+        } else {
+            // Session complete
+            this.endPracticeSession(true);
+        }
+    }
+    
+    /**
+     * Handle timer tick for any real-time updates
+     */
+    handleTimerTick(timeLeft) {
+        // Could be used for progress indicators or other real-time updates
+        this.logger.debug?.('Practice Planner: Timer tick', { timeLeft });
+    }
+    
+    /**
+     * Handle pause/resume toggle
+     */
+    handlePauseToggle(isPaused) {
+        this.logger.info('Practice Planner: Timer pause toggled', { isPaused });
+    }
+    
+    /**
+     * Handle manual advance to next section
+     */
+    handleManualNext() {
+        if (!this.practiceSession) return;
+        
+        // Get notes from the UI for current section
+        const notes = this.getCurrentSectionNotes();
+        
+        // Save notes for current section
+        const currentSection = this.practiceSession.config.sections[this.practiceSession.currentSectionIndex];
+        if (currentSection && notes) {
+            this.practiceSession.sectionNotes[currentSection.highlightId] = notes;
+        }
+        
+        // Move to next section
+        this.practiceSession.currentSectionIndex++;
+        
+        if (this.practiceSession.currentSectionIndex < this.practiceSession.config.sections.length) {
+            // Start next section
+            const nextSection = this.practiceSession.config.sections[this.practiceSession.currentSectionIndex];
+            this.practiceSessionTimer.startTimer(nextSection.targetTime);
+            this.focusOnPracticeSection(nextSection.highlightId);
+            
+            this.logger.info('Practice Planner: Manual advance to next section', {
+                sectionIndex: this.practiceSession.currentSectionIndex,
+                highlightId: nextSection.highlightId
+            });
+        } else {
+            // Session complete
+            this.endPracticeSession(true);
+        }
+    }
+    
+    /**
+     * Handle timer exit
+     */
+    handleTimerExit() {
+        if (!this.practiceSession) return;
+        
+        // Get notes from the UI for current section
+        const notes = this.getCurrentSectionNotes();
+        
+        // Save notes for current section
+        const currentSection = this.practiceSession.config.sections[this.practiceSession.currentSectionIndex];
+        if (currentSection && notes) {
+            this.practiceSession.sectionNotes[currentSection.highlightId] = notes;
+        }
+        
+        // End session early
+        this.endPracticeSession(false);
+    }
+    
+    /**
+     * Get current section notes from the UI
+     */
+    getCurrentSectionNotes() {
+        const notesInput = document.querySelector('[data-role="section-notes-input"]');
+        return notesInput ? notesInput.value : '';
+    }
+    
+    /**
+     * End the practice session
+     */
+    endPracticeSession(completed) {
+        // Exit focus mode
+        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.exitFocusMode === 'function') {
+            window.PlayTimeHighlighting.exitFocusMode();
+        }
+        
+        // Calculate session statistics
+        const endTime = Date.now();
+        const totalTime = this.practiceSession ? Math.round((endTime - this.practiceSession.startTime) / 1000 / 60) : 0; // minutes
+        
+        const sessionStats = {
+            completed,
+            completedSections: completed ? this.practiceSession.config.sections.length : this.practiceSession.currentSectionIndex,
+            totalSections: this.practiceSession.config.sections.length,
+            totalTime,
+            notes: this.practiceSession.sectionNotes
+        };
+        
+        this.logger.info('Practice Planner: Session ended', sessionStats);
+        
+        // Show completion message
+        const message = completed 
+            ? `Practice session completed!\n\nCompleted all ${sessionStats.totalSections} sections in ${totalTime} minutes.`
+            : `Practice session ended.\n\nCompleted ${sessionStats.completedSections} of ${sessionStats.totalSections} sections in ${totalTime} minutes.`;
+        
+        alert(message);
+        
+        // Clear session state
+        this.practiceSession = null;
+        this.practiceSessionTimer = null;
+    }
+
     /**
      * Focus on a specific highlight using the highlighting module
      */
@@ -698,22 +817,6 @@ class PracticePlanner {
             }
         } catch (error) {
             this.logger.error?.('Practice Planner: Error focusing on highlight', error);
-        }
-    }
-    
-    /**
-     * Show the practice timer UI
-     */
-    showPracticeTimer() {
-        const timerElement = document.getElementById('practice-session-timer');
-        if (timerElement) {
-            timerElement.style.display = 'block';
-            
-            // Attach event listeners if not already attached
-            if (!this.timerListenersAttached) {
-                this.attachTimerEventListeners();
-                this.timerListenersAttached = true;
-            }
         }
     }
     

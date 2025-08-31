@@ -62,6 +62,15 @@ describe('Practice Planner Integration Tests', () => {
             })
         };
 
+        // Load the timer component first (since practice planner depends on it)
+        const PracticeSessionTimer = require('../../scripts/practice-session-timer');
+        
+        // Make timer available on global/window
+        if (typeof global !== 'undefined') {
+            global.window = global.window || {};
+            global.window.PracticeSessionTimer = PracticeSessionTimer;
+        }
+        
         // Load the practice planner module
         const { PracticePlanner } = require('../../scripts/practice-planner');
         practicePlanner = new PracticePlanner(mockLogger, mockDatabase, mockHighlightPersistenceService);
@@ -1296,6 +1305,9 @@ describe('Practice Planner Integration Tests', () => {
         });
 
         test('should advance to next section when timer expires', async () => {
+            // Use fake timers for this test
+            jest.useFakeTimers();
+            
             // Set up a session with very short timer
             const sessionNameInput = document.querySelector('[data-role="session-name"]');
             sessionNameInput.value = 'Quick Test';
@@ -1303,10 +1315,10 @@ describe('Practice Planner Integration Tests', () => {
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
                 <div data-role="practice-section" data-highlight-id="highlight-1">
-                    <input type="number" data-role="target-time" value="0.01" />
+                    <input type="number" data-role="target-time" value="1" />
                 </div>
                 <div data-role="practice-section" data-highlight-id="highlight-2">
-                    <input type="number" data-role="target-time" value="0.01" />
+                    <input type="number" data-role="target-time" value="1" />
                 </div>
             `;
 
@@ -1325,17 +1337,29 @@ describe('Practice Planner Integration Tests', () => {
                 </div>
             `;
 
+            // Mock alert to prevent errors in test environment
+            global.alert = jest.fn();
+
             // Start session
             practicePlanner.handleStartPracticeSession();
 
-            // Wait for timer to expire and advance
-            await new Promise(resolve => setTimeout(resolve, 1100));
+            // Add spy to track if timer completion callback is called
+            const handleTimerCompleteSpy = jest.spyOn(practicePlanner, 'handleTimerComplete');
 
-            // Should have advanced to second section
+            // Fast-forward time to complete first section (60 seconds)
+            jest.advanceTimersByTime(60000);
+
+            // Should have advanced to second section (check via practice planner)
             expect(practicePlanner.practiceSession.currentSectionIndex).toBe(1);
+            
+            // Restore real timers
+            jest.useRealTimers();
         });
 
         test('should end session when all sections complete', async () => {
+            // Use fake timers for this test
+            jest.useFakeTimers();
+            
             // Set up session with one very short section
             const sessionNameInput = document.querySelector('[data-role="session-name"]');
             sessionNameInput.value = 'Single Section Test';
@@ -1343,14 +1367,20 @@ describe('Practice Planner Integration Tests', () => {
             const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
             sectionsList.innerHTML = `
                 <div data-role="practice-section" data-highlight-id="highlight-1">
-                    <input type="number" data-role="target-time" value="0.01" />
+                    <input type="number" data-role="target-time" value="1" />
                 </div>
             `;
 
             // Mock elements
             document.body.innerHTML += `
                 <div data-role="highlight" data-highlight-id="highlight-1"></div>
-                <div id="practice-session-timer" style="display: none;"></div>
+                <div id="practice-session-timer" style="display: none;">
+                    <div data-role="time-remaining"></div>
+                    <button data-role="pause-timer"><i data-lucide="pause"></i></button>
+                    <button data-role="next-section"></button>
+                    <button data-role="exit-practice-session"></button>
+                    <input data-role="section-notes-input" />
+                </div>
             `;
 
             // Mock alert
@@ -1359,17 +1389,18 @@ describe('Practice Planner Integration Tests', () => {
             // Start session
             practicePlanner.handleStartPracticeSession();
 
-            // Wait for session to complete
-            await new Promise(resolve => setTimeout(resolve, 1100));
+            // Fast-forward time to complete the single section (60 seconds)
+            jest.advanceTimersByTime(60000);
 
             // Session should be ended
             expect(practicePlanner.practiceSession).toBeNull();
             expect(alertSpy).toHaveBeenCalledWith(
-                expect.stringContaining('Practice session ended.')
+                expect.stringContaining('Practice session completed!')
             );
             expect(window.PlayTimeHighlighting.exitFocusMode).toHaveBeenCalled();
 
             alertSpy.mockRestore();
+            jest.useRealTimers();
         });
 
         test('should pause and resume timer', () => {
@@ -1396,15 +1427,15 @@ describe('Practice Planner Integration Tests', () => {
             practicePlanner.handleStartPracticeSession();
 
             // Should not be paused initially
-            expect(practicePlanner.practiceSession.isPaused).toBe(false);
+            expect(practicePlanner.practiceSessionTimer.isPaused).toBe(false);
 
             // Pause timer
-            practicePlanner.togglePauseTimer();
-            expect(practicePlanner.practiceSession.isPaused).toBe(true);
+            practicePlanner.practiceSessionTimer.togglePause();
+            expect(practicePlanner.practiceSessionTimer.isPaused).toBe(true);
 
             // Resume timer
-            practicePlanner.togglePauseTimer();
-            expect(practicePlanner.practiceSession.isPaused).toBe(false);
+            practicePlanner.practiceSessionTimer.togglePause();
+            expect(practicePlanner.practiceSessionTimer.isPaused).toBe(false);
         });
     });
 });
