@@ -63,7 +63,7 @@ describe('Practice Planner Integration Tests', () => {
         };
 
         // Load the timer component first (since practice planner depends on it)
-        const PracticeSessionTimer = require('../../scripts/practice-session-timer');
+        const PracticeSessionTimer = require('../../scripts/practice/practice-session-timer');
         
         // Make timer available on global/window
         if (typeof global !== 'undefined') {

@@ -10,7 +10,7 @@ const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 global.document = dom.window.document;
 global.window = dom.window;
 
-const PracticeSessionTimer = require('../../scripts/practice-session-timer');
+const PracticeSessionTimer = require('../../scripts/practice/practice-session-timer');
 
 describe('PracticeSessionTimer', () => {
     let timer;
