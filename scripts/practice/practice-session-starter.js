@@ -273,3 +273,8 @@ class PracticeSessionStarter {
 window.createPracticeSessionStarter = function(logger, database, practicePlanPersistenceService) {
     return new PracticeSessionStarter(logger, database, practicePlanPersistenceService);
 };
+
+// Export for Node.js/CommonJS (testing)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PracticeSessionStarter;
+}
