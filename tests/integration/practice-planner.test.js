@@ -72,7 +72,7 @@ describe('Practice Planner Integration Tests', () => {
         }
         
         // Load the practice planner module
-        const { PracticePlanner } = require('../../scripts/practice-planner');
+        const { PracticePlanner } = require('../../scripts/practice/practice-planner');
         practicePlanner = new PracticePlanner(mockLogger, mockDatabase, mockHighlightPersistenceService);
     });
 
@@ -637,7 +637,7 @@ describe('Practice Planner Integration Tests', () => {
             };
 
             // Create practice planner with persistence service
-            const { PracticePlanner } = require('../../scripts/practice-planner');
+            const { PracticePlanner } = require('../../scripts/practice/practice-planner');
             practicePlanner = new PracticePlanner(
                 mockLogger, 
                 mockDatabase, 
@@ -796,7 +796,7 @@ describe('Practice Planner Integration Tests', () => {
 
         test('should handle missing persistence service', async () => {
             // Create practice planner without persistence service
-            const { PracticePlanner } = require('../../scripts/practice-planner');
+            const { PracticePlanner } = require('../../scripts/practice/practice-planner');
             const plannerWithoutService = new PracticePlanner(
                 mockLogger, 
                 mockDatabase, 
