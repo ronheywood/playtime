@@ -2,14 +2,19 @@
 
 require('../../../scripts/main.js');
 const { PT_CONSTANTS } = require('../../../scripts/constants.js');
+const TestHelpers = require('../../helpers/test-helpers');
 
 describe('Highlight Creation with Immediate Annotation', () => {
     let highlighting;
     let mockCanvas;
     let mockConfidenceModule;
     let mockConstantsModule;
+    let silentLogger;
 
     beforeEach(() => {
+        // Create silent logger to reduce test noise
+        silentLogger = TestHelpers.createSilentLogger();
+        
         // Ensure highlighting module is available
         const Highlighting = require('../../../scripts/highlighting/highlighting.js');
         global.PlayTimeHighlighting = Highlighting;
@@ -90,7 +95,7 @@ describe('Highlight Creation with Immediate Annotation', () => {
 
         // Initialize highlighting system
         highlighting = global.PlayTimeHighlighting;
-        highlighting.init({}, console, mockConfidenceModule, mockConstantsModule);
+        highlighting.init({}, silentLogger, mockConfidenceModule, mockConstantsModule);
 
         // Mock persistence service
         highlighting._components.persistenceService = {

@@ -5,8 +5,11 @@ const { PT_CONSTANTS } = require('../../../scripts/constants.js');
 
 describe('Second upload clears first score highlights', () => {
   beforeEach(async () => {
-    const logger = require('../../../scripts/logger.js');
-    logger.setSilent(false);
+    // Setup silent logger to reduce test noise
+    const testLogger = require('../../../scripts/logger.js');
+    testLogger.setSilent(true);
+    global.logger = testLogger;
+    global.window.logger = testLogger;
     global.window.createPlayTimeDB = () => ({
       init: jest.fn().mockResolvedValue(true),
       _pdfs: [],
@@ -63,6 +66,13 @@ describe('Second upload clears first score highlights', () => {
     require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,60));
+  });
+
+  afterEach(() => {
+    // Reset logger to non-silent mode
+    if (global.logger && typeof global.logger.setSilent === 'function') {
+      global.logger.setSilent(false);
+    }
   });
 
   test('uploading second score removes visible first score highlight', async () => {

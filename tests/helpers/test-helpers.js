@@ -430,6 +430,20 @@ const TestHelpers = {
             if (global.logger.loading?.mockRestore) global.logger.loading.mockRestore();
             if (global.logger.debug?.mockRestore) global.logger.debug.mockRestore();
         }
+    },
+
+    /**
+     * Create a silent logger for tests to reduce console noise
+     * @returns {Object} Silent logger that suppresses all output
+     */
+    createSilentLogger: () => {
+        return {
+            info: () => {},
+            warn: () => {},
+            error: () => {},
+            loading: () => {},
+            debug: () => {}
+        };
     }
 };
 

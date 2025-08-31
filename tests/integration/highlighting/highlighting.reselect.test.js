@@ -4,8 +4,12 @@ const { SELECTORS } = require('../../../scripts/constants.js');
 
 describe('Highlighting re-select score', () => {
   beforeEach(async () => {
-    const logger = require('../../../scripts/logger.js');
-    logger.setSilent(false);
+    // Setup silent logger to reduce test noise
+    const testLogger = require('../../../scripts/logger.js');
+    testLogger.setSilent(true);
+    global.logger = testLogger;
+    global.window.logger = testLogger;
+    
     global.window.createPlayTimeDB = () => ({
       init: jest.fn().mockResolvedValue(true),
       save: jest.fn().mockResolvedValue(1),
@@ -55,6 +59,13 @@ describe('Highlighting re-select score', () => {
     require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,120)); // allow auto-select + rehydrate
+  });
+
+  afterEach(() => {
+    // Reset logger to non-silent mode
+    if (global.logger && typeof global.logger.setSilent === 'function') {
+      global.logger.setSilent(false);
+    }
   });
 
   test('re-select shows highlight again', async () => {

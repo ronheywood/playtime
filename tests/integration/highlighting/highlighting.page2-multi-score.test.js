@@ -5,8 +5,11 @@ const { PT_CONSTANTS, SELECTORS } = require('../../../scripts/constants.js');
 
 describe('Highlighting multi score page 2 reselect', () => {
   beforeEach(async () => {
-    const logger = require('../../../scripts/logger.js');
-    logger.setSilent(false);
+    // Setup silent logger to reduce test noise
+    const testLogger = require('../../../scripts/logger.js');
+    testLogger.setSilent(true);
+    global.logger = testLogger;
+    global.window.logger = testLogger;
 
     // Shared store to mimic persistence
     if (!global.__storeMulti) global.__storeMulti = { pdfs: [], sections: [] };
@@ -72,6 +75,13 @@ describe('Highlighting multi score page 2 reselect', () => {
     require('../../../scripts/main.js');
     document.dispatchEvent(new Event('DOMContentLoaded'));
     await new Promise(r=>setTimeout(r,120)); // allow auto-select first score and rehydrate (page 1 only visible)
+  });
+
+  afterEach(() => {
+    // Reset logger to non-silent mode
+    if (global.logger && typeof global.logger.setSilent === 'function') {
+      global.logger.setSilent(false);
+    }
   });
 
   test('page2 highlight survives score switch and back', async () => {
