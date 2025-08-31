@@ -132,8 +132,13 @@ class PracticePlanner {
                 this.updateSetupButtonText(false);
                 this.resetForm(); // Reset form when no existing plan
                 
+                // Load highlights for the new score and populate sections
+                const highlights = await this.getHighlightsForScore(scoreId);
+                this.populatePracticeSections(highlights);
+                
                 this.logger.debug?.('Practice Planner: No existing practice plans found for score', {
-                    scoreId: scoreId
+                    scoreId: scoreId,
+                    highlightCount: highlights.length
                 });
             }
         } catch (error) {
@@ -141,6 +146,16 @@ class PracticePlanner {
             this.currentPracticePlan = null;
             this.updateSetupButtonText(false);
             this.resetForm(); // Reset form on error as well
+            
+            // Clear sections on error and try to load highlights for current score
+            try {
+                const highlights = await this.getHighlightsForScore(scoreId);
+                this.populatePracticeSections(highlights);
+            } catch (highlightError) {
+                this.logger.warn?.('Practice Planner: Error loading highlights after error', highlightError);
+                // Clear sections if we can't load highlights
+                this.populatePracticeSections([]);
+            }
         }
     }
 

@@ -1020,5 +1020,81 @@ describe('Practice Planner Integration Tests', () => {
             expect(sessionDurationInput.value).toBe('30');
             expect(sessionFocusSelect.value).toBe('accuracy');
         });
+
+        test('should repopulate sections when switching to score without existing plan', async () => {
+            // First, set up a score with existing plan and sections
+            const existingPlan = {
+                id: 10,
+                name: 'Existing Plan',
+                focus: 'tempo',
+                duration: 45,
+                createdAt: '2023-01-01T10:00:00Z',
+                scoreId: 'test-score-1'
+            };
+
+            const score1Highlights = [
+                { id: 'highlight-1', page: 1, confidence: 'medium', x: 100, y: 200 },
+                { id: 'highlight-2', page: 1, confidence: 'high', x: 150, y: 250 }
+            ];
+
+            const score2Highlights = [
+                { id: 'highlight-3', page: 2, confidence: 'low', x: 300, y: 400 },
+                { id: 'highlight-4', page: 2, confidence: 'medium', x: 350, y: 450 },
+                { id: 'highlight-5', page: 3, confidence: 'high', x: 500, y: 600 }
+            ];
+
+            // Mock persistence service to return existing plan for score 1, none for score 2
+            mockPracticePlanPersistenceService.loadPracticePlansForScore = jest.fn()
+                .mockResolvedValueOnce([existingPlan]) // First call (score 1) returns existing plan
+                .mockResolvedValueOnce([]); // Second call (score 2) returns no plans
+
+            // Mock highlight retrieval for both scores
+            const getHighlightsSpy = jest.spyOn(practicePlanner, 'getHighlightsForScore')
+                .mockImplementation((scoreId) => {
+                    if (scoreId === 'test-score-1') {
+                        return Promise.resolve(score1Highlights);
+                    } else if (scoreId === 'test-score-2') {
+                        return Promise.resolve(score2Highlights);
+                    }
+                    return Promise.resolve([]);
+                });
+
+            const populateSectionsSpy = jest.spyOn(practicePlanner, 'populatePracticeSections');
+
+            // Clear any previous calls
+            getHighlightsSpy.mockClear();
+            populateSectionsSpy.mockClear();
+
+            // Simulate score selection with existing plan (score 1)
+            const scoreSelectedEvent1 = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'test-score-1' }
+            });
+            await practicePlanner.handleScoreSelected(scoreSelectedEvent1);
+
+            // Verify existing plan is loaded
+            expect(practicePlanner.currentPracticePlan).toEqual(expect.objectContaining({
+                id: 10,
+                name: 'Existing Plan'
+            }));
+
+            // Now switch to a score without existing plan (score 2)
+            const scoreSelectedEvent2 = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'test-score-2' }
+            });
+            await practicePlanner.handleScoreSelected(scoreSelectedEvent2);
+
+            // Verify plan is cleared
+            expect(practicePlanner.currentPracticePlan).toBeNull();
+
+            // Verify highlights were retrieved for the new score
+            expect(getHighlightsSpy).toHaveBeenCalledWith('test-score-2');
+
+            // Verify sections were repopulated with new score's highlights
+            // Check that the most recent call was with score2Highlights
+            const populateCallsCount = populateSectionsSpy.mock.calls.length;
+            expect(populateCallsCount).toBeGreaterThan(0);
+            const lastCall = populateSectionsSpy.mock.calls[populateCallsCount - 1];
+            expect(lastCall[0]).toEqual(score2Highlights);
+        });
     });
 });
