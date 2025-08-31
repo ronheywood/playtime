@@ -25,6 +25,10 @@ function createPlayTimePDFViewer(logger = console) {
     let isRendering = false;
     let pendingRender = null;
 
+    // UI update function references (set by attachUIControls)
+    let updateZoomDisplayFn = null;
+    let publishLayoutChangedFn = null;
+
     // Clamp helper
     const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 
@@ -85,14 +89,18 @@ function createPlayTimePDFViewer(logger = console) {
                 }
             };
 
+            // Store references to UI update functions for use by setZoom
+            updateZoomDisplayFn = updateZoomDisplay;
+            publishLayoutChangedFn = publishLayoutChanged;
+
             // Navigation binding
             const bindClick = (els, fn) => els.forEach(el => el && typeof el.addEventListener === 'function' && el.addEventListener('click', fn));
             bindClick(prevButtons, async () => { try { await this.prevPage(); } catch(e){ logger.error('Failed prev page', e); } });
             bindClick(nextButtons, async () => { try { await this.nextPage(); } catch(e){ logger.error('Failed next page', e); } });
 
-            // Zoom binding
-            bindClick(zoomInButtons, () => { this.zoomIn(); updateZoomDisplay(); publishLayoutChanged(); });
-            bindClick(zoomOutButtons, () => { this.zoomOut(); updateZoomDisplay(); publishLayoutChanged(); });
+            // Zoom binding - simplified to use single handler approach
+            bindClick(zoomInButtons, () => { this.zoomIn(); });
+            bindClick(zoomOutButtons, () => { this.zoomOut(); });
 
             updateZoomDisplay();
 
@@ -227,10 +235,23 @@ function createPlayTimePDFViewer(logger = console) {
             zoomMultiplier = clamp(Number(multiplier) || 1.0, ZOOM.MIN, ZOOM.MAX);
             if (zoomMultiplier !== prev) {
                 logger.info(`🔍 Zoom set to ${zoomMultiplier.toFixed(2)}`);
-                // Auto re-render current page when PDF is loaded so UI updates immediately
+                
+                // Single handler approach: update canvas, UI, and notify layout change
+                
+                // 1. Auto re-render current page when PDF is loaded
                 if (currentPDF) {
                     // fire and forget; callers can still explicitly call reRenderCurrentPage() if they want await semantics
                     this.reRenderCurrentPage();
+                }
+                
+                // 2. Update zoom display UI (if available)
+                if (typeof updateZoomDisplayFn === 'function') {
+                    updateZoomDisplayFn();
+                }
+                
+                // 3. Notify layout change (if available)
+                if (typeof publishLayoutChangedFn === 'function') {
+                    publishLayoutChangedFn();
                 }
             }
             return zoomMultiplier;
