@@ -24,11 +24,12 @@ const PRACTICE_PLANNER_CONFIG = {
 };
 
 class PracticePlanner {
-    constructor(logger, database, highlightPersistenceService) {
+    constructor(logger, database, highlightPersistenceService, practicePlanPersistenceService) {
         this.config = PRACTICE_PLANNER_CONFIG;
         this.logger = logger;
         this.database = database;
         this.highlightPersistenceService = highlightPersistenceService;
+        this.practicePlanPersistenceService = practicePlanPersistenceService;
         this.currentScoreId = null;
         this.isActive = false;
         
@@ -408,13 +409,59 @@ class PracticePlanner {
     /**
      * Handle saving a practice plan
      */
-    handleSavePracticePlan() {
-        const sessionData = this.collectSessionData();
-        
-        this.logger.info('Practice Planner: Saving practice plan', sessionData);
-        
-        // TODO: Implement practice plan persistence
-        alert('Practice plan saved! (Feature coming soon)');
+    async handleSavePracticePlan() {
+        try {
+            const sessionData = this.collectSessionData();
+            
+            this.logger.info('Practice Planner: Saving practice plan', sessionData);
+
+            // Validate that we have a current score ID
+            if (!this.currentScoreId) {
+                throw new Error('No active score selected');
+            }
+
+            // Validate that we have sections to save
+            if (!sessionData.sections || sessionData.sections.length === 0) {
+                throw new Error('No practice sections to save');
+            }
+
+            // Prepare practice plan data
+            const practicePlanData = {
+                name: sessionData.name,
+                focus: sessionData.focus,
+                duration: sessionData.duration,
+                scoreId: this.currentScoreId,
+                sections: sessionData.sections,
+                totalSections: sessionData.totalSections,
+                estimatedTime: sessionData.estimatedTime
+            };
+
+            // Save the practice plan using the persistence service
+            if (!this.practicePlanPersistenceService) {
+                throw new Error('Practice plan persistence service not available');
+            }
+
+            const practicePlanId = await this.practicePlanPersistenceService.savePracticePlan(practicePlanData);
+            
+            this.logger.info('Practice Planner: Practice plan saved successfully', { 
+                id: practicePlanId,
+                name: sessionData.name 
+            });
+
+            // Show success message
+            alert(`Practice plan "${sessionData.name}" saved successfully!`);
+
+            // Dispatch event for other components
+            this._dispatchEvent('playtime:practice-plan-saved', {
+                practicePlanId: practicePlanId,
+                scoreId: this.currentScoreId,
+                planData: practicePlanData
+            });
+
+        } catch (error) {
+            this.logger.error('Practice Planner: Failed to save practice plan', error);
+            alert(`Failed to save practice plan: ${error.message}`);
+        }
     }
 
     /**
@@ -489,8 +536,8 @@ class PracticePlanner {
 }
 
 // Factory function for creating practice planner instance
-function createPlayTimePracticePlanner(logger, database, highlightPersistenceService) {
-    return new PracticePlanner(logger, database, highlightPersistenceService);
+function createPlayTimePracticePlanner(logger, database, highlightPersistenceService, practicePlanPersistenceService) {
+    return new PracticePlanner(logger, database, highlightPersistenceService, practicePlanPersistenceService);
 }
 
 // Export for both Node.js (tests) and browser

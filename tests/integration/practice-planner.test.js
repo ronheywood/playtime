@@ -563,4 +563,204 @@ describe('Practice Planner Integration Tests', () => {
             expect(practicePlanner.isInPracticeMode()).toBe(false);
         });
     });
+
+    describe('Practice Plan Persistence', () => {
+        let mockPracticePlanPersistenceService;
+
+        beforeEach(() => {
+            // Mock practice plan persistence service
+            mockPracticePlanPersistenceService = {
+                savePracticePlan: jest.fn()
+            };
+
+            // Create practice planner with persistence service
+            const { PracticePlanner } = require('../../scripts/practice-planner');
+            practicePlanner = new PracticePlanner(
+                mockLogger, 
+                mockDatabase, 
+                mockHighlightPersistenceService, 
+                mockPracticePlanPersistenceService
+            );
+            
+            practicePlanner.init();
+            practicePlanner.currentScoreId = 'test-score-123';
+        });
+
+        test('should save practice plan successfully', async () => {
+            mockPracticePlanPersistenceService.savePracticePlan.mockResolvedValue(42);
+
+            // Set up form data
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            const sessionDurationInput = document.querySelector('[data-role="session-duration"]');
+            const sessionFocusSelect = document.querySelector('[data-role="session-focus"]');
+            
+            sessionNameInput.value = 'Test Practice Session';
+            sessionDurationInput.value = '45';
+            sessionFocusSelect.value = 'tempo';
+
+            // Add practice sections
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div class="practice-section" data-highlight-id="highlight-1">
+                    <select class="practice-method">
+                        <option value="slow-practice" selected>Slow Practice</option>
+                    </select>
+                    <input type="number" class="target-time" value="8" />
+                    <textarea class="section-notes">Focus on dynamics</textarea>
+                </div>
+                <div class="practice-section" data-highlight-id="highlight-2">
+                    <select class="practice-method">
+                        <option value="metronome" selected>With Metronome</option>
+                    </select>
+                    <input type="number" class="target-time" value="12" />
+                    <textarea class="section-notes">Work on timing</textarea>
+                </div>
+            `;
+
+            // Mock alert to avoid dialog
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+            
+            // Mock event dispatch
+            const eventSpy = jest.spyOn(practicePlanner, '_dispatchEvent');
+
+            // Execute save
+            await practicePlanner.handleSavePracticePlan();
+
+            // Verify persistence service was called correctly
+            expect(mockPracticePlanPersistenceService.savePracticePlan).toHaveBeenCalledWith({
+                name: 'Test Practice Session',
+                focus: 'tempo',
+                duration: 45,
+                scoreId: 'test-score-123',
+                sections: [
+                    {
+                        highlightId: 'highlight-1',
+                        practiceMethod: 'slow-practice',
+                        targetTime: 8,
+                        notes: 'Focus on dynamics'
+                    },
+                    {
+                        highlightId: 'highlight-2',
+                        practiceMethod: 'metronome',
+                        targetTime: 12,
+                        notes: 'Work on timing'
+                    }
+                ],
+                totalSections: 2,
+                estimatedTime: 20
+            });
+
+            // Verify success feedback
+            expect(alertSpy).toHaveBeenCalledWith('Practice plan "Test Practice Session" saved successfully!');
+            
+            // Verify event dispatch
+            expect(eventSpy).toHaveBeenCalledWith('playtime:practice-plan-saved', {
+                practicePlanId: 42,
+                scoreId: 'test-score-123',
+                planData: expect.objectContaining({
+                    name: 'Test Practice Session',
+                    focus: 'tempo',
+                    duration: 45
+                })
+            });
+
+            alertSpy.mockRestore();
+        });
+
+        test('should handle save errors gracefully', async () => {
+            const error = new Error('Database connection failed');
+            mockPracticePlanPersistenceService.savePracticePlan.mockRejectedValue(error);
+
+            // Set up minimal form data
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            sessionNameInput.value = 'Test Session';
+
+            // Add at least one section
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div class="practice-section" data-highlight-id="highlight-1">
+                    <select class="practice-method">
+                        <option value="slow-practice" selected>Slow Practice</option>
+                    </select>
+                    <input type="number" class="target-time" value="5" />
+                </div>
+            `;
+
+            // Mock alert to capture error message
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+            // Execute save
+            await practicePlanner.handleSavePracticePlan();
+
+            // Verify error logging and user feedback
+            expect(mockLogger.error).toHaveBeenCalledWith('Practice Planner: Failed to save practice plan', error);
+            expect(alertSpy).toHaveBeenCalledWith('Failed to save practice plan: Database connection failed');
+
+            alertSpy.mockRestore();
+        });
+
+        test('should validate required data before saving', async () => {
+            // Test without score ID
+            practicePlanner.currentScoreId = null;
+            
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+            
+            await practicePlanner.handleSavePracticePlan();
+            
+            expect(alertSpy).toHaveBeenCalledWith('Failed to save practice plan: No active score selected');
+            expect(mockPracticePlanPersistenceService.savePracticePlan).not.toHaveBeenCalled();
+            
+            alertSpy.mockRestore();
+        });
+
+        test('should validate practice sections exist before saving', async () => {
+            practicePlanner.currentScoreId = 'test-score-123';
+            
+            // Empty sections list
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = '';
+            
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+            
+            await practicePlanner.handleSavePracticePlan();
+            
+            expect(alertSpy).toHaveBeenCalledWith('Failed to save practice plan: No practice sections to save');
+            expect(mockPracticePlanPersistenceService.savePracticePlan).not.toHaveBeenCalled();
+            
+            alertSpy.mockRestore();
+        });
+
+        test('should handle missing persistence service', async () => {
+            // Create practice planner without persistence service
+            const { PracticePlanner } = require('../../scripts/practice-planner');
+            const plannerWithoutService = new PracticePlanner(
+                mockLogger, 
+                mockDatabase, 
+                mockHighlightPersistenceService, 
+                null // No persistence service
+            );
+            
+            plannerWithoutService.init();
+            plannerWithoutService.currentScoreId = 'test-score-123';
+
+            // Add a section so validation passes
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div class="practice-section" data-highlight-id="highlight-1">
+                    <select class="practice-method">
+                        <option value="slow-practice" selected>Slow Practice</option>
+                    </select>
+                    <input type="number" class="target-time" value="5" />
+                </div>
+            `;
+            
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+            
+            await plannerWithoutService.handleSavePracticePlan();
+            
+            expect(alertSpy).toHaveBeenCalledWith('Failed to save practice plan: Practice plan persistence service not available');
+            
+            alertSpy.mockRestore();
+        });
+    });
 });

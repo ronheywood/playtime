@@ -1,7 +1,9 @@
 const DB_NAME = 'PlayTimeDB';
-const DB_VERSION = 2; // bumped for sections (practice sections) store
+const DB_VERSION = 3; // bumped for practice plans and practice plan highlights stores
 const STORE_NAME = 'pdfFiles';
 const SECTIONS_STORE = 'sections';
+const PRACTICE_PLANS_STORE = 'practicePlans';
+const PRACTICE_PLAN_HIGHLIGHTS_STORE = 'practicePlanHighlights';
 
 export class IndexedDBDatabase extends window.AbstractDatabase {
     // Abstract method: save(item)
@@ -226,6 +228,172 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
             } catch(e) { reject(e); }
         });
     }
+
+    // ---- Practice Plans API ----
+    async savePracticePlan(practicePlan) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_PLANS_STORE], 'readwrite');
+                const store = tx.objectStore(PRACTICE_PLANS_STORE);
+                const record = { 
+                    ...practicePlan, 
+                    createdAt: practicePlan.createdAt || new Date().toISOString() 
+                };
+                const req = store.add(record);
+                req.onsuccess = () => {
+                    this.logger.info('✅ Practice plan saved with ID:', req.result);
+                    resolve(req.result);
+                };
+                req.onerror = () => {
+                    this.logger.error('❌ Failed to save practice plan:', req.error);
+                    reject(req.error);
+                };
+            } catch (e) { 
+                this.logger.error('❌ Exception saving practice plan:', e);
+                reject(e); 
+            }
+        });
+    }
+
+    async getPracticePlan(id) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_PLANS_STORE], 'readonly');
+                const store = tx.objectStore(PRACTICE_PLANS_STORE);
+                const numericId = Number(id);
+                const req = store.get(numericId);
+                req.onsuccess = () => {
+                    resolve(req.result || null);
+                };
+                req.onerror = () => reject(req.error);
+            } catch(e) { reject(e); }
+        });
+    }
+
+    async getPracticePlansForScore(scoreId) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_PLANS_STORE], 'readonly');
+                const store = tx.objectStore(PRACTICE_PLANS_STORE);
+                const idx = store.index('scoreId');
+                const req = idx.getAll(IDBKeyRange.only(Number(scoreId)));
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => reject(req.error);
+            } catch(e) { reject(e); }
+        });
+    }
+
+    async deletePracticePlan(id) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_PLANS_STORE], 'readwrite');
+                const store = tx.objectStore(PRACTICE_PLANS_STORE);
+                const numericId = Number(id);
+                const req = store.delete(numericId);
+                req.onsuccess = () => {
+                    this.logger.info('✅ Practice plan deleted with ID:', id);
+                    resolve();
+                };
+                req.onerror = () => {
+                    this.logger.error('❌ Failed to delete practice plan:', req.error);
+                    reject(req.error);
+                };
+            } catch (e) { 
+                this.logger.error('❌ Exception deleting practice plan:', e);
+                reject(e); 
+            }
+        });
+    }
+
+    // ---- Practice Plan Highlights API ----
+    async savePracticePlanHighlight(planHighlight) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_PLAN_HIGHLIGHTS_STORE], 'readwrite');
+                const store = tx.objectStore(PRACTICE_PLAN_HIGHLIGHTS_STORE);
+                const record = { 
+                    ...planHighlight, 
+                    createdAt: planHighlight.createdAt || new Date().toISOString() 
+                };
+                const req = store.add(record);
+                req.onsuccess = () => {
+                    this.logger.debug?.('✅ Practice plan highlight saved with ID:', req.result);
+                    resolve(req.result);
+                };
+                req.onerror = () => {
+                    this.logger.error('❌ Failed to save practice plan highlight:', req.error);
+                    reject(req.error);
+                };
+            } catch (e) { 
+                this.logger.error('❌ Exception saving practice plan highlight:', e);
+                reject(e); 
+            }
+        });
+    }
+
+    async getPracticePlanHighlights(practicePlanId) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_PLAN_HIGHLIGHTS_STORE], 'readonly');
+                const store = tx.objectStore(PRACTICE_PLAN_HIGHLIGHTS_STORE);
+                const idx = store.index('practicePlanId');
+                const req = idx.getAll(IDBKeyRange.only(Number(practicePlanId)));
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => reject(req.error);
+            } catch(e) { reject(e); }
+        });
+    }
+
+    async deletePracticePlanHighlights(practicePlanId) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_PLAN_HIGHLIGHTS_STORE], 'readwrite');
+                const store = tx.objectStore(PRACTICE_PLAN_HIGHLIGHTS_STORE);
+                const idx = store.index('practicePlanId');
+                const req = idx.openCursor(IDBKeyRange.only(Number(practicePlanId)));
+                
+                req.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        cursor.delete();
+                        cursor.continue();
+                    } else {
+                        this.logger.info('✅ Practice plan highlights deleted for plan ID:', practicePlanId);
+                        resolve();
+                    }
+                };
+                req.onerror = () => {
+                    this.logger.error('❌ Failed to delete practice plan highlights:', req.error);
+                    reject(req.error);
+                };
+            } catch (e) { 
+                this.logger.error('❌ Exception deleting practice plan highlights:', e);
+                reject(e); 
+            }
+        });
+    }
+    
     constructor(logger = console) {
         super();
         this._db = null;
@@ -264,6 +432,21 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                     const s = database.createObjectStore(SECTIONS_STORE, { keyPath: 'id', autoIncrement: true });
                     s.createIndex('pdfId', 'pdfId', { unique: false });
                     this.logger.info('✅ sections store created');
+                }
+                // practice plans store
+                if (!database.objectStoreNames.contains(PRACTICE_PLANS_STORE)) {
+                    const pp = database.createObjectStore(PRACTICE_PLANS_STORE, { keyPath: 'id', autoIncrement: true });
+                    pp.createIndex('scoreId', 'scoreId', { unique: false });
+                    pp.createIndex('createdAt', 'createdAt', { unique: false });
+                    this.logger.info('✅ practice plans store created');
+                }
+                // practice plan highlights store (many-to-many)
+                if (!database.objectStoreNames.contains(PRACTICE_PLAN_HIGHLIGHTS_STORE)) {
+                    const pph = database.createObjectStore(PRACTICE_PLAN_HIGHLIGHTS_STORE, { keyPath: 'id', autoIncrement: true });
+                    pph.createIndex('practicePlanId', 'practicePlanId', { unique: false });
+                    pph.createIndex('highlightId', 'highlightId', { unique: false });
+                    pph.createIndex('sortOrder', 'sortOrder', { unique: false });
+                    this.logger.info('✅ practice plan highlights store created');
                 }
             };
         });

@@ -368,13 +368,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (typeof window.createPlayTimePracticePlanner === 'function') {
             // Pass the persistence service from the highlighting module for highlight retrieval
             const highlightPersistenceService = window.PlayTimeHighlighting?._components?.persistenceService;
+            
+            // Initialize practice plan persistence service
+            let practicePlanPersistenceService = null;
+            if (typeof window.createPracticePlanPersistenceService === 'function') {
+                practicePlanPersistenceService = window.createPracticePlanPersistenceService(window.PlayTimeDB, appLogger);
+                appLogger.info('Practice plan persistence service initialized');
+            } else {
+                appLogger.warn('Practice plan persistence service not available');
+            }
+            
             if (highlightPersistenceService) {
-                window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, highlightPersistenceService);
+                window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, highlightPersistenceService, practicePlanPersistenceService);
                 window.logger.info?.('Practice planner initialized with highlight persistence service');
             } else {
                 window.logger.warn?.('Practice planner: Highlight persistence service not available');
-                // Create without persistence service as fallback
-                window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, null);
+                // Create without highlight persistence service as fallback
+                window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, null, practicePlanPersistenceService);
             }
         }
     // (Removed legacy auto-select fallback; selection will be event driven in upcoming refactor)
