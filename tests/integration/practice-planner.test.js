@@ -1096,5 +1096,47 @@ describe('Practice Planner Integration Tests', () => {
             const lastCall = populateSectionsSpy.mock.calls[populateCallsCount - 1];
             expect(lastCall[0]).toEqual(score2Highlights);
         });
+
+        test('should close practice interface when switching scores while interface is open', async () => {
+            // Mock persistence service to return a plan for the first score
+            const existingPlan = {
+                id: 10,
+                name: 'Existing Plan',
+                scoreId: 'test-score-1'
+            };
+
+            mockPracticePlanPersistenceService.loadPracticePlansForScore = jest.fn()
+                .mockResolvedValueOnce([existingPlan]) // First call returns existing plan
+                .mockResolvedValueOnce([]); // Second call returns no plans
+
+            // Mock highlight retrieval
+            const getHighlightsSpy = jest.spyOn(practicePlanner, 'getHighlightsForScore')
+                .mockImplementation(() => Promise.resolve([]));
+
+            // Spy on hidePracticeInterface and isInPracticeMode
+            const hidePracticeInterfaceSpy = jest.spyOn(practicePlanner, 'hidePracticeInterface');
+            const isInPracticeModeSpy = jest.spyOn(practicePlanner, 'isInPracticeMode');
+
+            // First, select a score with an existing plan
+            const scoreSelectedEvent1 = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'test-score-1' }
+            });
+            await practicePlanner.handleScoreSelected(scoreSelectedEvent1);
+
+            // Simulate that practice interface is open
+            isInPracticeModeSpy.mockReturnValue(true);
+
+            // Now switch to a different score
+            const scoreSelectedEvent2 = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'test-score-2' }
+            });
+            await practicePlanner.handleScoreSelected(scoreSelectedEvent2);
+
+            // Verify that hidePracticeInterface was called
+            expect(hidePracticeInterfaceSpy).toHaveBeenCalled();
+
+            // Clean up
+            isInPracticeModeSpy.mockRestore();
+        });
     });
 });

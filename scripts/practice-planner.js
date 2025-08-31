@@ -114,6 +114,13 @@ class PracticePlanner {
                 return;
             }
 
+            // If practice interface is currently open, close it when switching scores
+            // to avoid showing stale data from the previous score
+            if (this.isInPracticeMode()) {
+                this.hidePracticeInterface();
+                this.logger.debug?.('Practice Planner: Closed practice interface due to score change');
+            }
+
             const existingPlans = await this.practicePlanPersistenceService.loadPracticePlansForScore(scoreId);
             
             if (existingPlans && existingPlans.length > 0) {
