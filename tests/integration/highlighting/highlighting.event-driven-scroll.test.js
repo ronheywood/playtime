@@ -52,10 +52,10 @@ describe('Event-Driven Scroll Timing', () => {
     function createMockHighlight() {
         const highlight = document.createElement('div');
         highlight.setAttribute('data-role', 'highlight');
-        highlight.dataset.xPct = '25';
-        highlight.dataset.yPct = '30';
-        highlight.dataset.wPct = '20';
-        highlight.dataset.hPct = '15';
+        highlight.dataset.hlXPct = '25';
+        highlight.dataset.hlYPct = '30';
+        highlight.dataset.hlWPct = '20';
+        highlight.dataset.hlHPct = '15';
         highlight.dataset.confidence = 'green';
         highlight.getBoundingClientRect = jest.fn().mockReturnValue({
             top: 100, left: 100, width: 200, height: 150,
@@ -76,7 +76,7 @@ describe('Event-Driven Scroll Timing', () => {
             scrollSpy.mockClear();
 
             // Call the internal scheduling method directly
-            highlighting._scheduleScrollAfterLayout(highlight, {
+            Highlighting._scheduleScrollAfterLayout(highlight, {
                 xPct: 25, yPct: 30, wPct: 20, hPct: 15
             });
             
@@ -103,7 +103,7 @@ describe('Event-Driven Scroll Timing', () => {
             scrollSpy.mockClear();
 
             // Schedule scroll but don't fire layout event
-            highlighting._scheduleScrollAfterLayout(highlight, {
+            Highlighting._scheduleScrollAfterLayout(highlight, {
                 xPct: 25, yPct: 30, wPct: 20, hPct: 15
             });
             
@@ -127,9 +127,9 @@ describe('Event-Driven Scroll Timing', () => {
             scrollSpy.mockClear();
 
             // Multiple rapid calls
-            highlighting._scheduleScrollAfterLayout(highlight, { xPct: 25, yPct: 30, wPct: 20, hPct: 15 });
-            highlighting._scheduleScrollAfterLayout(highlight, { xPct: 50, yPct: 60, wPct: 20, hPct: 15 });
-            highlighting._scheduleScrollAfterLayout(highlight, { xPct: 75, yPct: 90, wPct: 20, hPct: 15 });
+            Highlighting._scheduleScrollAfterLayout(highlight, { xPct: 25, yPct: 30, wPct: 20, hPct: 15 });
+            Highlighting._scheduleScrollAfterLayout(highlight, { xPct: 50, yPct: 60, wPct: 20, hPct: 15 });
+            Highlighting._scheduleScrollAfterLayout(highlight, { xPct: 75, yPct: 90, wPct: 20, hPct: 15 });
             
             // Trigger layout event
             window.dispatchEvent(new CustomEvent('playtime:layout-changed'));
@@ -151,7 +151,7 @@ describe('Event-Driven Scroll Timing', () => {
             removeEventListenerSpy.mockClear();
 
             // Schedule scroll
-            highlighting._scheduleScrollAfterLayout(highlight, {
+            Highlighting._scheduleScrollAfterLayout(highlight, {
                 xPct: 25, yPct: 30, wPct: 20, hPct: 15
             });
             
@@ -182,10 +182,10 @@ describe('Event-Driven Scroll Timing', () => {
             };
             
             // Spy on our scheduling method
-            const scheduleScrollSpy = jest.spyOn(highlighting, '_scheduleScrollAfterLayout');
+            const scheduleScrollSpy = jest.spyOn(Highlighting, '_scheduleScrollAfterLayout');
             
             // Call focus
-            highlighting.focusOnHighlight(highlight);
+            Highlighting.focusOnHighlight(highlight);
             
             // Should have called our scheduling method
             expect(scheduleScrollSpy).toHaveBeenCalledWith(

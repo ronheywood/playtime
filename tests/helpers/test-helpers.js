@@ -64,6 +64,36 @@ const TestHelpers = {
         getAnnotations: jest.fn(() => Promise.resolve([]))
     }),
 
+    /**
+     * Create mock confidence module for testing
+     * @returns {Object} Mock confidence module with color mapping functions
+     */
+    createMockConfidenceModule: () => ({
+        confidenceToColor: jest.fn((confidence) => {
+            const colors = ['red', 'amber', 'green'];
+            return colors[confidence] || 'red';
+        }),
+        colorToConfidence: jest.fn((color) => {
+            const confidenceMap = { 'red': 0, 'amber': 1, 'green': 2 };
+            return confidenceMap[color] || 0;
+        })
+    }),
+
+    /**
+     * Create mock constants module for testing
+     * @returns {Object} Mock constants module with standard values
+     */
+    createMockConstantsModule: () => ({
+        COLORS: {
+            RED: 'red',
+            AMBER: 'amber', 
+            GREEN: 'green'
+        },
+        EVENTS: {
+            LAYOUT_CHANGED: 'playtime:layout-changed'
+        }
+    }),
+
     // DOM Setup Helpers
 
     /**
