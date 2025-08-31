@@ -32,6 +32,8 @@ class PracticePlanner {
         this.practicePlanPersistenceService = practicePlanPersistenceService;
         this.currentScoreId = null;
         this.isActive = false;
+        this.currentPracticePlan = null; // Store currently loaded practice plan
+        this.isEditingExistingPlan = false; // Track if we're editing an existing plan
         
         // DOM elements - will be populated by init()
         this.setupButton = null;
@@ -76,6 +78,9 @@ class PracticePlanner {
             this.returnToHighlightingButton.addEventListener('click', this.handleExitPractice.bind(this));
         }
 
+        // Attach global button event listeners (once during initialization)
+        this.attachGlobalEventListeners();
+
         this.logger.info('Practice Planner event handlers attached');
 
         // Listen for score changes to update current score context
@@ -85,13 +90,91 @@ class PracticePlanner {
         return true;
     }
 
-    handleScoreSelected(event) {
+    async handleScoreSelected(event) {
         if (event.detail && event.detail.pdfId) {
             this.currentScoreId = event.detail.pdfId;
             this.logger.info('Practice Planner: Score context updated from score-selected event', { 
                 scoreId: this.currentScoreId,
                 eventDetail: event.detail
             });
+
+            // Check for existing practice plans for this score
+            await this.checkForExistingPracticePlans(this.currentScoreId);
+        }
+    }
+
+    /**
+     * Check if the selected score has existing practice plans and update UI accordingly
+     */
+    async checkForExistingPracticePlans(scoreId) {
+        try {
+            if (!this.practicePlanPersistenceService) {
+                this.logger.debug?.('Practice plan persistence service not available');
+                this.updateSetupButtonText(false);
+                return;
+            }
+
+            const existingPlans = await this.practicePlanPersistenceService.loadPracticePlansForScore(scoreId);
+            
+            if (existingPlans && existingPlans.length > 0) {
+                // For now, use the most recent plan (could be enhanced to show a list)
+                const mostRecentPlan = existingPlans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+                this.currentPracticePlan = mostRecentPlan;
+                this.updateSetupButtonText(true);
+                
+                this.logger.info('Practice Planner: Found existing practice plan for score', {
+                    scoreId: scoreId,
+                    planId: mostRecentPlan.id,
+                    planName: mostRecentPlan.name
+                });
+            } else {
+                this.currentPracticePlan = null;
+                this.updateSetupButtonText(false);
+                this.resetForm(); // Reset form when no existing plan
+                
+                this.logger.debug?.('Practice Planner: No existing practice plans found for score', {
+                    scoreId: scoreId
+                });
+            }
+        } catch (error) {
+            this.logger.warn?.('Practice Planner: Error checking for existing practice plans', error);
+            this.currentPracticePlan = null;
+            this.updateSetupButtonText(false);
+            this.resetForm(); // Reset form on error as well
+        }
+    }
+
+    /**
+     * Update the setup button text based on whether an existing plan exists
+     */
+    updateSetupButtonText(hasExistingPlan) {
+        if (!this.setupButton) return;
+
+        if (hasExistingPlan) {
+            this.setupButton.textContent = 'Edit practice plan';
+            this.setupButton.title = 'Edit existing practice plan for this score';
+        } else {
+            this.setupButton.textContent = 'Setup practice plan';
+            this.setupButton.title = 'Create a new practice plan for this score';
+        }
+    }
+
+    /**
+     * Reset the practice plan form to default values
+     */
+    resetForm() {
+        try {
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            const sessionDurationInput = document.querySelector('[data-role="session-duration"]');
+            const sessionFocusSelect = document.querySelector('[data-role="session-focus"]');
+
+            if (sessionNameInput) sessionNameInput.value = '';
+            if (sessionDurationInput) sessionDurationInput.value = '30'; // Default duration
+            if (sessionFocusSelect) sessionFocusSelect.value = 'accuracy'; // Default focus
+
+            this.logger.debug?.('Practice Planner: Form reset to default values');
+        } catch (error) {
+            this.logger.error?.('Practice Planner: Failed to reset form', error);
         }
     }
 
@@ -162,6 +245,14 @@ class PracticePlanner {
 
         // Show practice interface and hide canvas
         this.showPracticeInterface(highlights);
+
+        // If we have an existing practice plan, load it into the form
+        if (this.currentPracticePlan) {
+            this.isEditingExistingPlan = true;
+            await this.loadExistingPracticePlanIntoForm(this.currentPracticePlan);
+        } else {
+            this.isEditingExistingPlan = false;
+        }
     }
 
     async handleExitPractice() {
@@ -177,6 +268,93 @@ class PracticePlanner {
 
         // Hide practice interface and show canvas
         this.hidePracticeInterface();
+    }
+
+    /**
+     * Load existing practice plan data into the form
+     */
+    async loadExistingPracticePlanIntoForm(practicePlan) {
+        try {
+            this.logger.info('Practice Planner: Loading existing practice plan into form', {
+                planId: practicePlan.id,
+                planName: practicePlan.name
+            });
+
+            // Fill session form fields
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            const sessionDurationInput = document.querySelector('[data-role="session-duration"]');
+            const sessionFocusSelect = document.querySelector('[data-role="session-focus"]');
+
+            if (sessionNameInput) sessionNameInput.value = practicePlan.name || '';
+            if (sessionDurationInput) sessionDurationInput.value = practicePlan.duration || '30';
+            if (sessionFocusSelect) sessionFocusSelect.value = practicePlan.focus || 'accuracy';
+
+            // Load practice plan highlights to restore section settings
+            if (this.practicePlanPersistenceService) {
+                const fullPlan = await this.practicePlanPersistenceService.loadPracticePlan(practicePlan.id);
+                if (fullPlan && fullPlan.sections) {
+                    this.applySectionSettings(fullPlan.sections);
+                }
+            }
+
+            this.logger.info('Practice Planner: Existing practice plan loaded successfully');
+        } catch (error) {
+            this.logger.error('Practice Planner: Failed to load existing practice plan', error);
+        }
+    }
+
+    /**
+     * Apply saved section settings to the current practice sections
+     */
+    applySectionSettings(savedSections) {
+        try {
+            // Create a map of highlight IDs to their saved settings
+            const settingsMap = new Map();
+            savedSections.forEach(section => {
+                settingsMap.set(section.highlightId, section);
+            });
+
+            // Apply settings to current practice sections
+            const currentSections = document.querySelectorAll('.practice-section');
+            currentSections.forEach(sectionElement => {
+                const highlightId = sectionElement.dataset.highlightId;
+                const savedSettings = settingsMap.get(highlightId);
+
+                if (savedSettings) {
+                    // Apply practice method
+                    const methodSelect = sectionElement.querySelector('.practice-method');
+                    if (methodSelect && savedSettings.practiceMethod) {
+                        methodSelect.value = savedSettings.practiceMethod;
+                    }
+
+                    // Apply target time
+                    const targetTimeInput = sectionElement.querySelector('.target-time');
+                    if (targetTimeInput && savedSettings.targetTime) {
+                        targetTimeInput.value = savedSettings.targetTime;
+                    }
+
+                    // Apply notes
+                    const notesTextarea = sectionElement.querySelector('.section-notes');
+                    if (notesTextarea && savedSettings.notes) {
+                        notesTextarea.value = savedSettings.notes;
+                    }
+
+                    this.logger.debug?.('Practice Planner: Applied settings to section', {
+                        highlightId: highlightId,
+                        method: savedSettings.practiceMethod,
+                        targetTime: savedSettings.targetTime
+                    });
+                }
+            });
+
+            this.logger.info('Practice Planner: Section settings applied', {
+                savedSectionsCount: savedSections.length,
+                currentSectionsCount: currentSections.length
+            });
+
+        } catch (error) {
+            this.logger.error('Practice Planner: Failed to apply section settings', error);
+        }
     }
 
     async getHighlightsForScore(scoreId) {
@@ -322,7 +500,26 @@ class PracticePlanner {
     }
 
     /**
-     * Attach event listeners to practice section elements
+     * Attach global event listeners (called once during initialization)
+     */
+    attachGlobalEventListeners() {
+        // Start practice session button
+        const startButton = document.querySelector('[data-role="start-practice-session"]');
+        if (startButton) {
+            startButton.addEventListener('click', this.handleStartPracticeSession.bind(this));
+        }
+
+        // Save practice plan button
+        const saveButton = document.querySelector('[data-role="save-practice-plan"]');
+        if (saveButton) {
+            saveButton.addEventListener('click', this.handleSavePracticePlan.bind(this));
+        }
+
+        this.logger.debug?.('Practice Planner: Global event listeners attached');
+    }
+
+    /**
+     * Attach event listeners to practice section elements (called when sections are repopulated)
      */
     attachSectionEventListeners() {
         const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
@@ -359,17 +556,7 @@ class PracticePlanner {
             });
         });
 
-        // Start practice session button
-        const startButton = document.querySelector('[data-role="start-practice-session"]');
-        if (startButton) {
-            startButton.addEventListener('click', this.handleStartPracticeSession.bind(this));
-        }
-
-        // Save practice plan button
-        const saveButton = document.querySelector('[data-role="save-practice-plan"]');
-        if (saveButton) {
-            saveButton.addEventListener('click', this.handleSavePracticePlan.bind(this));
-        }
+        this.logger.debug?.('Practice Planner: Section event listeners attached');
     }
 
     /**
@@ -413,7 +600,12 @@ class PracticePlanner {
         try {
             const sessionData = this.collectSessionData();
             
-            this.logger.info('Practice Planner: Saving practice plan', sessionData);
+            const isUpdate = this.isEditingExistingPlan && !!this.currentPracticePlan;
+            this.logger.info('Practice Planner: Saving practice plan', { 
+                ...sessionData, 
+                isUpdate: isUpdate,
+                existingPlanId: isUpdate ? this.currentPracticePlan.id : null
+            });
 
             // Validate that we have a current score ID
             if (!this.currentScoreId) {
@@ -436,25 +628,47 @@ class PracticePlanner {
                 estimatedTime: sessionData.estimatedTime
             };
 
+            // If updating, include the existing plan ID
+            if (isUpdate) {
+                practicePlanData.id = this.currentPracticePlan.id;
+            }
+
             // Save the practice plan using the persistence service
             if (!this.practicePlanPersistenceService) {
                 throw new Error('Practice plan persistence service not available');
             }
 
-            const practicePlanId = await this.practicePlanPersistenceService.savePracticePlan(practicePlanData);
+            let practicePlanId;
+            if (isUpdate) {
+                practicePlanId = await this.practicePlanPersistenceService.updatePracticePlan(this.currentPracticePlan.id, practicePlanData);
+            } else {
+                practicePlanId = await this.practicePlanPersistenceService.savePracticePlan(practicePlanData);
+            }
             
             this.logger.info('Practice Planner: Practice plan saved successfully', { 
                 id: practicePlanId,
-                name: sessionData.name 
+                name: sessionData.name,
+                isUpdate: isUpdate
             });
 
             // Show success message
-            alert(`Practice plan "${sessionData.name}" saved successfully!`);
+            const actionText = isUpdate ? 'updated' : 'saved';
+            alert(`Practice plan "${sessionData.name}" ${actionText} successfully!`);
+
+            // Update our current practice plan reference
+            if (isUpdate) {
+                this.currentPracticePlan = { ...this.currentPracticePlan, ...practicePlanData };
+            } else {
+                this.currentPracticePlan = { id: practicePlanId, ...practicePlanData };
+                this.isEditingExistingPlan = true;
+                this.updateSetupButtonText(true); // Now we have a plan to edit
+            }
 
             // Dispatch event for other components
-            this._dispatchEvent('playtime:practice-plan-saved', {
+            this._dispatchEvent(isUpdate ? 'playtime:practice-plan-updated' : 'playtime:practice-plan-saved', {
                 practicePlanId: practicePlanId,
                 scoreId: this.currentScoreId,
+                isUpdate: isUpdate,
                 planData: practicePlanData
             });
 

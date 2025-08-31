@@ -72,6 +72,62 @@ class PracticePlanPersistenceService {
     }
 
     /**
+     * Update an existing practice plan
+     * @param {number} planId - The practice plan ID to update
+     * @param {Object} practicePlan - The updated practice plan data
+     * @returns {Promise<number>} The ID of the updated practice plan
+     */
+    async updatePracticePlan(planId, practicePlan) {
+        if (!this.database || typeof this.database.updatePracticePlan !== 'function') {
+            throw new Error('Database not available or does not support updatePracticePlan');
+        }
+
+        if (!planId) {
+            throw new Error('Practice plan ID is required for update');
+        }
+
+        if (!practicePlan) {
+            throw new Error('Practice plan data is required');
+        }
+
+        try {
+            this.logger.info('Updating practice plan:', {
+                planId: planId,
+                name: practicePlan.name,
+                scoreId: practicePlan.scoreId,
+                sectionsCount: practicePlan.sections?.length || 0
+            });
+
+            // Delete existing practice plan highlights first
+            if (typeof this.database.deletePracticePlanHighlights === 'function') {
+                await this.database.deletePracticePlanHighlights(planId);
+            }
+
+            // Update the practice plan record (without sections)
+            await this.database.updatePracticePlan(planId, {
+                name: practicePlan.name,
+                focus: practicePlan.focus,
+                duration: practicePlan.duration,
+                scoreId: practicePlan.scoreId,
+                totalSections: practicePlan.sections?.length || 0,
+                estimatedTime: practicePlan.estimatedTime || 0
+            });
+
+            // Save the new practice plan highlights
+            if (practicePlan.sections && practicePlan.sections.length > 0) {
+                await this.savePracticePlanHighlights(planId, practicePlan.sections);
+            }
+
+            this.logger.info('Practice plan updated successfully with ID:', planId);
+            return planId;
+
+        } catch (error) {
+            this.logger.error('Failed to update practice plan:', error);
+            throw new Error(`Failed to update practice plan: ${error.message}`);
+        }
+    }
+
+    /**
      * Save practice plan highlights (many-to-many relationship)
      * @param {number} planId - The practice plan ID
      * @param {Array} sections - Array of practice sections

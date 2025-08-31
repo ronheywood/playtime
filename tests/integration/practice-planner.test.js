@@ -657,6 +657,7 @@ describe('Practice Planner Integration Tests', () => {
             expect(eventSpy).toHaveBeenCalledWith('playtime:practice-plan-saved', {
                 practicePlanId: 42,
                 scoreId: 'test-score-123',
+                isUpdate: false,
                 planData: expect.objectContaining({
                     name: 'Test Practice Session',
                     focus: 'tempo',
@@ -761,6 +762,263 @@ describe('Practice Planner Integration Tests', () => {
             expect(alertSpy).toHaveBeenCalledWith('Failed to save practice plan: Practice plan persistence service not available');
             
             alertSpy.mockRestore();
+        });
+
+        test('should update existing practice plan successfully', async () => {
+            // Set up existing practice plan
+            const existingPlan = {
+                id: 5,
+                name: 'Existing Plan',
+                focus: 'accuracy',
+                duration: 30,
+                scoreId: 'test-score-123'
+            };
+
+            practicePlanner.currentPracticePlan = existingPlan;
+            practicePlanner.isEditingExistingPlan = true;
+
+            // Mock the update method
+            mockPracticePlanPersistenceService.updatePracticePlan = jest.fn().mockResolvedValue(5);
+
+            // Set up form data
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            const sessionDurationInput = document.querySelector('[data-role="session-duration"]');
+            const sessionFocusSelect = document.querySelector('[data-role="session-focus"]');
+            
+            sessionNameInput.value = 'Updated Practice Session';
+            sessionDurationInput.value = '60';
+            sessionFocusSelect.value = 'tempo';
+
+            // Add practice sections
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div class="practice-section" data-highlight-id="highlight-3">
+                    <select class="practice-method">
+                        <option value="hands-separate" selected>Hands Separate</option>
+                    </select>
+                    <input type="number" class="target-time" value="15" />
+                    <textarea class="section-notes">Updated notes</textarea>
+                </div>
+            `;
+
+            // Mock alert to avoid dialog
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+            
+            // Mock event dispatch
+            const eventSpy = jest.spyOn(practicePlanner, '_dispatchEvent');
+
+            // Execute save (should update)
+            await practicePlanner.handleSavePracticePlan();
+
+            // Verify update method was called correctly
+            expect(mockPracticePlanPersistenceService.updatePracticePlan).toHaveBeenCalledWith(5, {
+                name: 'Updated Practice Session',
+                focus: 'tempo',
+                duration: 60,
+                scoreId: 'test-score-123',
+                sections: [
+                    {
+                        highlightId: 'highlight-3',
+                        practiceMethod: 'hands-separate',
+                        targetTime: 15,
+                        notes: 'Updated notes'
+                    }
+                ],
+                totalSections: 1,
+                estimatedTime: 15,
+                id: 5
+            });
+
+            // Verify success feedback
+            expect(alertSpy).toHaveBeenCalledWith('Practice plan "Updated Practice Session" updated successfully!');
+            
+            // Verify event dispatch
+            expect(eventSpy).toHaveBeenCalledWith('playtime:practice-plan-updated', {
+                practicePlanId: 5,
+                scoreId: 'test-score-123',
+                isUpdate: true,
+                planData: expect.objectContaining({
+                    name: 'Updated Practice Session',
+                    focus: 'tempo',
+                    duration: 60
+                })
+            });
+
+            alertSpy.mockRestore();
+        });
+
+        test('should check for existing practice plans on score selection', async () => {
+            // Mock persistence service methods
+            mockPracticePlanPersistenceService.loadPracticePlansForScore = jest.fn().mockResolvedValue([
+                { 
+                    id: 10, 
+                    name: 'Existing Plan', 
+                    createdAt: '2023-01-01T10:00:00Z',
+                    scoreId: 'test-score-456'
+                }
+            ]);
+
+            // Mock the button update method
+            const updateButtonSpy = jest.spyOn(practicePlanner, 'updateSetupButtonText');
+
+            // Simulate score selection event
+            const scoreSelectedEvent = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'test-score-456' }
+            });
+
+            await practicePlanner.handleScoreSelected(scoreSelectedEvent);
+
+            // Verify persistence service was called
+            expect(mockPracticePlanPersistenceService.loadPracticePlansForScore).toHaveBeenCalledWith('test-score-456');
+            
+            // Verify current plan is set
+            expect(practicePlanner.currentPracticePlan).toEqual(expect.objectContaining({
+                id: 10,
+                name: 'Existing Plan'
+            }));
+
+            // Verify button text was updated
+            expect(updateButtonSpy).toHaveBeenCalledWith(true);
+        });
+
+        test('should handle no existing practice plans on score selection', async () => {
+            // Mock persistence service methods
+            mockPracticePlanPersistenceService.loadPracticePlansForScore = jest.fn().mockResolvedValue([]);
+
+            // Mock the button update method
+            const updateButtonSpy = jest.spyOn(practicePlanner, 'updateSetupButtonText');
+
+            // Simulate score selection event
+            const scoreSelectedEvent = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'test-score-789' }
+            });
+
+            await practicePlanner.handleScoreSelected(scoreSelectedEvent);
+
+            // Verify persistence service was called
+            expect(mockPracticePlanPersistenceService.loadPracticePlansForScore).toHaveBeenCalledWith('test-score-789');
+            
+            // Verify current plan is cleared
+            expect(practicePlanner.currentPracticePlan).toBeNull();
+
+            // Verify button text was updated for new plan
+            expect(updateButtonSpy).toHaveBeenCalledWith(false);
+        });
+
+        test('should update setup button text correctly', () => {
+            // Test with existing plan
+            practicePlanner.updateSetupButtonText(true);
+            expect(practicePlanner.setupButton.textContent).toBe('Edit practice plan');
+            expect(practicePlanner.setupButton.title).toBe('Edit existing practice plan for this score');
+
+            // Test without existing plan
+            practicePlanner.updateSetupButtonText(false);
+            expect(practicePlanner.setupButton.textContent).toBe('Setup practice plan');
+            expect(practicePlanner.setupButton.title).toBe('Create a new practice plan for this score');
+        });
+
+        test('should not rebind global event listeners on score selection', async () => {
+            // Mock persistence service methods
+            mockPracticePlanPersistenceService.loadPracticePlansForScore = jest.fn().mockResolvedValue([]);
+
+            // Mock the save method to resolve successfully
+            mockPracticePlanPersistenceService.savePracticePlan.mockResolvedValue(1);
+
+            // Mock alert to avoid dialog
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+            // Count how many times the save method gets called
+            let saveCallCount = 0;
+            const originalSave = mockPracticePlanPersistenceService.savePracticePlan;
+            mockPracticePlanPersistenceService.savePracticePlan = jest.fn((...args) => {
+                saveCallCount++;
+                return originalSave(...args);
+            });
+
+            // Trigger score selection multiple times to test for event listener rebinding
+            for (let i = 0; i < 3; i++) {
+                const scoreSelectedEvent = new CustomEvent('playtime:score-selected', {
+                    detail: { pdfId: `test-score-${i}` }
+                });
+                await practicePlanner.handleScoreSelected(scoreSelectedEvent);
+            }
+
+            // Set up minimal form data and sections for save to work
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            sessionNameInput.value = 'Test Session';
+            
+            const sectionsList = document.querySelector('[data-role="practice-sections-list"]');
+            sectionsList.innerHTML = `
+                <div class="practice-section" data-highlight-id="highlight-1">
+                    <select class="practice-method">
+                        <option value="slow-practice" selected>Slow Practice</option>
+                    </select>
+                    <input type="number" class="target-time" value="5" />
+                </div>
+            `;
+
+            // Click save button once
+            const saveButton = document.querySelector('[data-role="save-practice-plan"]');
+            saveButton.click();
+
+            // Wait for async operation
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            // Verify save was only called once, not multiple times due to rebinding
+            expect(saveCallCount).toBe(1);
+
+            alertSpy.mockRestore();
+        });
+
+        test('should reset form when switching to score without existing plan', async () => {
+            // First, set up a score with existing plan
+            const existingPlan = {
+                id: 10,
+                name: 'Existing Plan',
+                focus: 'tempo',
+                duration: 45,
+                createdAt: '2023-01-01T10:00:00Z',
+                scoreId: 'test-score-1'
+            };
+
+            mockPracticePlanPersistenceService.loadPracticePlansForScore = jest.fn()
+                .mockResolvedValueOnce([existingPlan]) // First call returns existing plan
+                .mockResolvedValueOnce([]); // Second call returns no plans
+
+            // Simulate score selection with existing plan
+            const scoreSelectedEvent1 = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'test-score-1' }
+            });
+            await practicePlanner.handleScoreSelected(scoreSelectedEvent1);
+
+            // Verify plan is loaded
+            expect(practicePlanner.currentPracticePlan).toEqual(expect.objectContaining({
+                id: 10,
+                name: 'Existing Plan'
+            }));
+
+            // Manually fill form to simulate form being populated
+            const sessionNameInput = document.querySelector('[data-role="session-name"]');
+            const sessionDurationInput = document.querySelector('[data-role="session-duration"]');
+            const sessionFocusSelect = document.querySelector('[data-role="session-focus"]');
+            
+            sessionNameInput.value = 'Existing Plan';
+            sessionDurationInput.value = '45';
+            sessionFocusSelect.value = 'tempo';
+
+            // Now switch to a score without existing plan
+            const scoreSelectedEvent2 = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 'test-score-2' }
+            });
+            await practicePlanner.handleScoreSelected(scoreSelectedEvent2);
+
+            // Verify plan is cleared
+            expect(practicePlanner.currentPracticePlan).toBeNull();
+
+            // Verify form is reset to defaults
+            expect(sessionNameInput.value).toBe('');
+            expect(sessionDurationInput.value).toBe('30');
+            expect(sessionFocusSelect.value).toBe('accuracy');
         });
     });
 });

@@ -317,6 +317,52 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
         });
     }
 
+    async updatePracticePlan(id, updates) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_PLANS_STORE], 'readwrite');
+                const store = tx.objectStore(PRACTICE_PLANS_STORE);
+                const numericId = Number(id);
+                
+                // First get the existing record
+                const getReq = store.get(numericId);
+                getReq.onsuccess = () => {
+                    const existingRecord = getReq.result;
+                    if (!existingRecord) {
+                        reject(new Error(`Practice plan with id ${id} not found`));
+                        return;
+                    }
+                    
+                    // Merge the updates with existing data
+                    const updatedRecord = { 
+                        ...existingRecord, 
+                        ...updates, 
+                        id: numericId, // Ensure ID doesn't change and remains numeric
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    // Update the record
+                    const putReq = store.put(updatedRecord);
+                    putReq.onsuccess = () => {
+                        this.logger.info('✅ Practice plan updated with ID:', id);
+                        resolve(updatedRecord);
+                    };
+                    putReq.onerror = () => {
+                        this.logger.error('❌ Failed to update practice plan:', putReq.error);
+                        reject(putReq.error);
+                    };
+                };
+                getReq.onerror = () => reject(getReq.error);
+            } catch (e) { 
+                this.logger.error('❌ Exception updating practice plan:', e);
+                reject(e); 
+            }
+        });
+    }
+
     // ---- Practice Plan Highlights API ----
     async savePracticePlanHighlight(planHighlight) {
         return new Promise((resolve, reject) => {
