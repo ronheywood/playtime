@@ -269,8 +269,8 @@
                         window.PlayTimePDFViewer.focusOnRectPercent({ xPct, yPct, wPct, hPct }, { paddingPx: padding }).catch(()=>{});
                     }
                     
-                    // Ensure highlight is scrolled into view
-                    this._scrollHighlightIntoView(highlightEl, { xPct, yPct, wPct, hPct });
+                    // Ensure highlight is scrolled into view after layout changes complete
+                    this._scheduleScrollAfterLayout(highlightEl, { xPct, yPct, wPct, hPct });
                     
                     // NOTE: Removed legacy CSS transform duplication when command path active to prevent double scaling/UI mismatch
                 } else {
@@ -283,8 +283,8 @@
                         if (mode === 'zoom') {
                             this._applyZoomFocus(highlightRect, containerRect, padding);
                         }
-                        // Also ensure scrolling for legacy mode
-                        this._scrollHighlightIntoView(highlightEl, { xPct, yPct, wPct, hPct });
+                        // Also ensure scrolling for legacy mode after layout changes complete
+                        this._scheduleScrollAfterLayout(highlightEl, { xPct, yPct, wPct, hPct });
                     }
                 }
             } catch (e) {
@@ -911,6 +911,32 @@
             } catch (e) {
                 this._state.logger?.warn?.('Manual scroll calculation failed', e);
             }
+        },
+
+        /**
+         * Schedule scrolling to happen after layout changes complete
+         */
+        _scheduleScrollAfterLayout(highlightEl, coordinates, options = {}) {
+            const eventName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.LAYOUT_CHANGED) || 'playtime:layout-changed';
+            
+            // Set up one-time listener for layout change event
+            const scrollAfterLayout = () => {
+                // Remove the listener to prevent multiple calls
+                window.removeEventListener(eventName, scrollAfterLayout);
+                
+                // Small delay to ensure all layout changes are complete
+                setTimeout(() => {
+                    this._scrollHighlightIntoView(highlightEl, coordinates, options);
+                }, 50);
+            };
+            
+            window.addEventListener(eventName, scrollAfterLayout);
+            
+            // Fallback timeout in case layout change event doesn't fire
+            setTimeout(() => {
+                window.removeEventListener(eventName, scrollAfterLayout);
+                this._scrollHighlightIntoView(highlightEl, coordinates, options);
+            }, 1000);
         },
 
         /**
