@@ -73,14 +73,11 @@ class Logger {
     debug(message, ...args) {
         if (
             !this.isSilent &&
+            !this.isTestEnvironment &&
             typeof process !== 'undefined' &&
             process.env &&
             process.env.NODE_ENV === 'development'
         ) {
-            console.log('🐛', message, ...args);
-        }
-        // Always log debug messages in tests
-        if (this.isTestEnvironment) {
             console.log('🐛', message, ...args);
         }
     }
