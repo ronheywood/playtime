@@ -58,3 +58,69 @@ This document outlines the key technology choices made for the rapid prototype o
 ## Summary
 
 The technology stack for the PlayTime rapid prototype prioritizes a lean, client-centric approach using standard web technologies and `IndexedDB` for quick implementation of local PDF storage and markup. This allows for rapid iteration and validation of core user needs before considering more complex backend or cloud-based solutions.
+
+## Architecure
+
+We need to get a grip on the architecture now.
+We have some capabilities emerging and we need to ensure loose coupling to ensure they can be managed and extended efficiently and safely:
+
+main.js
+├── PlayTimeHighlighting.init()
+├── createPlayTimePracticePlanner() 
+└── registers event listeners
+
+highlighting.js
+├── imports: HighlightElement, CoordinateMapper, etc.
+├── registers with: layout-commands.js
+└── exports: PlayTimeHighlighting
+
+practice-planner.js  
+├── receives: highlightPersistenceService from highlighting
+└── listens to: playtime:score-selected events
+
+### Cross-cutting Concerns
+- logger.js
+- constants.js
+- Event System (playtime:* events)
+
+### Sheet Music Management
+- **Application Layer**
+    - pdf-viewer.js
+    - score-list.js
+- **Domain Layer**  
+    - score.js
+    - db/AbstractDatabase.js
+- **Infrastructure Layer**
+    - pdf.js (external)
+    - db/IndexedDBDatabase.js
+    - db/MemoryDatabase.js
+
+### Highlighting & Annotation System
+- **Application Layer**
+    - highlighting/highlighting.js (main orchestrator)
+    - highlighting/HighlightEventCoordinator.js
+    - highlighting/HighlightPersistenceService.js
+    - highlighting/HighlightActionButton.js
+    - highlighting/HighlightAnnotationForm.js
+- **Domain Layer**
+    - highlighting/HighlightElement.js
+    - highlighting/ConfidenceMapper.js  
+    - highlighting/CoordinateMapper.js
+- **Infrastructure Layer**
+    - highlighting/MouseSelectionHandler.js
+    - highlighting/SelectionOverlay.js
+
+### Layout & Focus Management
+- **Application Layer**
+    - layout/layout-commands.js
+    - layout/focus-mode-handler.js
+    - layout/focus-mode-commands.js
+
+### Practice Planning
+- **Application Layer**
+    - practice-planner.js
+    - templates/practice-planner-template.js
+- **Domain Layer**
+    - [TODO: Persistence Service, Practice session models, planning logic]
+- **Infrastructure Layer**
+    - [Reuses db/IndexedDBDatabase.js]

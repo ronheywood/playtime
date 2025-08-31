@@ -3,8 +3,9 @@
  * Abstracts database interactions and provides testable interface
  */
 class HighlightPersistenceService {
-    constructor(database = null, config = {}) {
+    constructor(database = null, logger = null, config = {}) {
         this.database = database;
+        this.logger = logger;
         this.config = {
             retryAttempts: 3,
             retryDelay: 100,
@@ -82,7 +83,7 @@ class HighlightPersistenceService {
         try {
             return await this.database.getHighlight(id);
         } catch (error) {
-            console.error('Failed to get highlight:', error);
+            this.logger.error('Failed to get highlight:', error);
             throw error;
         }
     }
@@ -101,7 +102,7 @@ class HighlightPersistenceService {
         try {
             return await this.database.updateHighlight(id, updates);
         } catch (error) {
-            console.error('Failed to update highlight:', error);
+            this.logger.error('Failed to update highlight:', error);
             throw error;
         }
     }
