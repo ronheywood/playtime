@@ -377,7 +377,7 @@
             });
 
             // Initialize annotation form
-            this._components.annotationForm = new HighlightAnnotationFormClass({
+            this._components.annotationForm = new HighlightAnnotationFormClass(this.logger,{
                 containerId: 'pdf-canvas',
                 maxTitleLength: 100,
                 maxNotesLength: 1000
@@ -453,7 +453,7 @@
 
         async _handleSelectionComplete(selection) {
             if (this._state.activeConfidence == null) {
-                this._state.logger.warn && this._state.logger.warn('No active confidence set for highlighting');
+                this._state.logger.warn?.('No active confidence set for highlighting');
                 return;
             }
 
@@ -493,8 +493,8 @@
         },
 
         async _handleScoreSelected(pdfId) {
-            this._state.logger.info && this._state.logger.info('🎯 Score selected, starting rehydration', { pdfId });
-            
+            this._state.logger.info?.('🎯 Score selected, starting rehydration', { pdfId });
+
             // Hide action button when score changes
             this.hideActionButton();
             
@@ -505,7 +505,7 @@
             try {
                 const sections = await this._components.persistenceService.loadHighlights(pdfId);
                 if (sections && sections.length > 0) {
-                    this._state.logger.info && this._state.logger.info('📊 Loaded highlights from database', { 
+                    this._state.logger.info?.('📊 Loaded highlights from database', { 
                         count: sections.length,
                         sampleData: sections[0] ? {
                             xPct: sections[0].xPct,
@@ -522,7 +522,7 @@
                     this._startCanvasSizeMonitoring();
                 }
             } catch (error) {
-                this._state.logger.warn && this._state.logger.warn('Failed to load highlights:', error);
+                this._state.logger.warn?.('Failed to load highlights:', error);
             }
         },
 
@@ -609,7 +609,7 @@
                     return highlightId;
                 }
             } catch (error) {
-                this._state.logger.warn && this._state.logger.warn('Failed to persist highlight:', error);
+                this._state.logger.warn?.('Failed to persist highlight:', error);
             }
         },
 
@@ -806,7 +806,7 @@
                     
                     // If canvas area has grown by more than 50%, reposition highlights
                     if (currentArea > lastArea * 1.5) {
-                        this._state.logger.info && this._state.logger.info('📏 Canvas size grew significantly, repositioning highlights', {
+                        this._state.logger.info?.('📏 Canvas size grew significantly, repositioning highlights', {
                             from: this._state.lastCanvasSize,
                             to: currentSize,
                             areaGrowth: Math.round((currentArea / lastArea) * 100) + '%'
@@ -820,7 +820,7 @@
                 
                 // Stop monitoring after max checks or if canvas seems stable
                 if (checkCount >= maxChecks) {
-                    this._state.logger.info && this._state.logger.info('⏱️ Canvas size monitoring completed', {
+                    this._state.logger.info?.('⏱️ Canvas size monitoring completed', {
                         finalSize: currentSize,
                         checksPerformed: checkCount
                     });

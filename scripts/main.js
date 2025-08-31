@@ -142,8 +142,15 @@ async function saveFileWithMeta(database, file, pagesMeta) {
                 window.dispatchEvent(new CustomEvent(SCORE_SELECTED, { detail }));
             }
             // Mark last dispatch for duplicate suppression in score-list
-            try { window.__playTimeLastScoreSelectedId = id; window.__playTimeLastScoreSelectedAt = Date.now(); } catch(_) {}
-        } catch (e) { (window.logger||console).warn('Failed dispatching SCORE_SELECTED after save', e); }
+            try { 
+                window.__playTimeLastScoreSelectedId = id; 
+                window.__playTimeLastScoreSelectedAt = Date.now(); 
+            } catch(globalError) {
+                appLogger.warn('Failed to set global tracking variables:', globalError.message);
+            }
+        } catch (eventError) { 
+            logger.warn('Failed dispatching SCORE_SELECTED after save:', eventError.message); 
+        }
     } catch (error) {
         logger.error('Failed to save PDF to database:', error);
     }
@@ -213,17 +220,40 @@ function initializeConfidenceControls() {
         });
     };
 
-    const CONST = (typeof window !== 'undefined' && window.PlayTimeConstants) ? window.PlayTimeConstants : (function(){ try { return require('./constants'); } catch(_) { return { EVENTS: { CONFIDENCE_CHANGED: 'playtime:confidence-changed' } }; } })();
+    const CONST = (typeof window !== 'undefined' && window.PlayTimeConstants) ? 
+        window.PlayTimeConstants : 
+        (function(){ 
+            try { 
+                return require('./constants'); 
+            } catch(error) { 
+                appLogger.warn('Failed to load constants module, using fallback:', error.message);
+                return { EVENTS: { CONFIDENCE_CHANGED: 'playtime:confidence-changed' } }; 
+            } 
+        })();
+    
     buttons.forEach(btn => {
         btn.addEventListener('click', () => {
             setPressed(btn);
             const color = btn.getAttribute('data-color');
+            
+            if (!color) {
+                appLogger.warn('Confidence button missing data-color attribute');
+                return;
+            }
+            
             // Publish confidence change event for decoupled subscribers
+            const eventDetail = { detail: { color } };
             try {
-                const ev = new CustomEvent(CONST.EVENTS.CONFIDENCE_CHANGED, { detail: { color } });
+                const ev = new CustomEvent(CONST.EVENTS.CONFIDENCE_CHANGED, eventDetail);
                 window.dispatchEvent(ev);
-            } catch (_) {
-                try { document.dispatchEvent(new CustomEvent(CONST.EVENTS.CONFIDENCE_CHANGED, { detail: { color } })); } catch (_) {}
+            } catch (windowError) {
+                appLogger.warn('Failed to dispatch event on window, trying document:', windowError.message);
+                try { 
+                    document.dispatchEvent(new CustomEvent(CONST.EVENTS.CONFIDENCE_CHANGED, eventDetail)); 
+                } catch (documentError) {
+                    appLogger.error('Failed to dispatch confidence change event:', documentError.message);
+                    throw new Error(`Event dispatch failed on both window and document: ${documentError.message}`);
+                }
             }
         });
     });
@@ -241,49 +271,97 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Get logger from window (loaded from logger.js script tag)
         const appLogger = window.logger || console;
         
+        if (!window.logger) {
+            console.warn('PlayTimeLogger not available, falling back to console logging');
+        }
+        
         // Create module instances with injected functions
         // DB: allow test injection, fallback to IndexedDBDatabase factory if not provided
-        if (typeof window.createPlayTimeDB === 'function') {
-            window.PlayTimeDB = window.createPlayTimeDB(appLogger);
-        } else {
-            // Fallback: dynamically import IndexedDBDatabase (ES module) and use the factory
-            const module = await import('./db/IndexedDBDatabase.js');
-            if (typeof module.createIndexedDBDatabase === 'function') {
-                window.PlayTimeDB = module.createIndexedDBDatabase(appLogger);
+        try {
+            if (typeof window.createPlayTimeDB === 'function') {
+                window.PlayTimeDB = window.createPlayTimeDB(appLogger);
             } else {
-                throw new Error('IndexedDBDatabase module does not export a usable factory');
+                // Fallback: dynamically import IndexedDBDatabase (ES module) and use the factory
+                const module = await import('./db/IndexedDBDatabase.js');
+                if (typeof module.createIndexedDBDatabase === 'function') {
+                    window.PlayTimeDB = module.createIndexedDBDatabase(appLogger);
+                } else {
+                    throw new Error('IndexedDBDatabase module does not export a usable factory');
+                }
             }
+        } catch (dbError) {
+            appLogger.error('Failed to create database instance:', dbError.message);
+            throw new Error(`Database initialization failed: ${dbError.message}`);
         }
 
-        if (typeof window.createPlayTimePDFViewer === 'function') {
-            window.PlayTimePDFViewer = window.createPlayTimePDFViewer(appLogger);
+        // Initialize modules with better error handling
+        try {
+            if (typeof window.createPlayTimePDFViewer === 'function') {
+                window.PlayTimePDFViewer = window.createPlayTimePDFViewer(appLogger);
+            } else {
+                appLogger.warn('PlayTimePDFViewer factory not available');
+            }
+        } catch (pdfViewerError) {
+            appLogger.error('Failed to create PDF viewer:', pdfViewerError.message);
         }
-        if (typeof window.createPlayTimeScoreList === 'function') {
-            window.PlayTimeScoreList = window.createPlayTimeScoreList(null, appLogger); // Database will be set after initialization
+        
+        try {
+            if (typeof window.createPlayTimeScoreList === 'function') {
+                window.PlayTimeScoreList = window.createPlayTimeScoreList(null, appLogger); // Database will be set after initialization
+            } else {
+                appLogger.warn('PlayTimeScoreList factory not available');
+            }
+        } catch (scoreListError) {
+            appLogger.error('Failed to create score list:', scoreListError.message);
         }
         // Practice planner will be initialized after highlighting module is ready
         
         // Initialize file upload handler first (driven by failing tests)
-        await initializeFileUpload(window.PlayTimeDB);
+        try {
+            await initializeFileUpload(window.PlayTimeDB);
+        } catch (fileUploadError) {
+            appLogger.error('Failed to initialize file upload handler:', fileUploadError.message);
+            throw new Error(`File upload initialization failed: ${fileUploadError.message}`);
+        }
         
         // Initialize all modules (placeholders for now)
-        // TODO: Add error handling for each module initialization
-        await window.PlayTimeDB.init();
+        try {
+            await window.PlayTimeDB.init();
+        } catch (dbInitError) {
+            appLogger.error('Failed to initialize database:', dbInitError.message);
+            throw new Error(`Database initialization failed: ${dbInitError.message}`);
+        }
         
         // Initialize PDF viewer early so highlighting + rehydration have a ready viewer
-        await window.PlayTimePDFViewer.init();
+        try {
+            if (window.PlayTimePDFViewer) {
+                await window.PlayTimePDFViewer.init();
+            } else {
+                appLogger.warn('PlayTimePDFViewer not available for initialization');
+            }
+        } catch (pdfInitError) {
+            appLogger.error('Failed to initialize PDF viewer:', pdfInitError.message);
+            throw new Error(`PDF viewer initialization failed: ${pdfInitError.message}`);
+        }
         // Attach navigation + zoom UI controls now that viewer is initialized
         if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.attachUIControls === 'function') {
             try {
                 window.PlayTimePDFViewer.attachUIControls();
-                (window.logger || console).info('PDF viewer UI controls attached');
+                window.logger.info?.('PDF viewer UI controls attached');
             } catch (e) {
-                (window.logger || console).warn('Failed attaching PDF viewer UI controls', e);
+                window.logger.warn?.('Failed attaching PDF viewer UI controls', e);
             }
         }
         // Initialize refactored highlighting with dependency injection
         if (window.PlayTimeHighlighting) {
-            await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants);
+            try {
+                await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants);
+            } catch (highlightingError) {
+                appLogger.error('Failed to initialize highlighting module:', highlightingError.message);
+                throw new Error(`Highlighting initialization failed: ${highlightingError.message}`);
+            }
+        } else {
+            appLogger.warn('PlayTimeHighlighting module not available');
         }
         
         // Initialize practice planner after highlighting is ready
@@ -292,9 +370,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const highlightPersistenceService = window.PlayTimeHighlighting?._components?.persistenceService;
             if (highlightPersistenceService) {
                 window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, highlightPersistenceService);
-                (window.logger || console).info('Practice planner initialized with highlight persistence service');
+                window.logger.info?.('Practice planner initialized with highlight persistence service');
             } else {
-                (window.logger || console).warn('Practice planner: Highlight persistence service not available');
+                window.logger.warn?.('Practice planner: Highlight persistence service not available');
                 // Create without persistence service as fallback
                 window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(appLogger, window.PlayTimeDB, null);
             }
@@ -311,8 +389,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const pdfId = detail.pdfId;
                 if (pdfId == null) return;
                 // Debug log removed (main SCORE_SELECTED handler invoked)
-                try { window.PlayTimeCurrentScoreId = pdfId; } catch(_) {}
-                try { updateCurrentScoreTitleDisplay(detail.name); } catch(_) {}
+                try { 
+                    window.PlayTimeCurrentScoreId = pdfId; 
+                } catch(scoreIdError) { 
+                    appLogger.warn('Failed to set PlayTimeCurrentScoreId:', scoreIdError.message); 
+                }
+                try { 
+                    updateCurrentScoreTitleDisplay(detail.name); 
+                } catch(titleError) { 
+                    appLogger.warn('Failed to update score title display:', titleError.message); 
+                }
                 // Load PDF binary & render first page; highlight will rehydrate after PAGE_CHANGED
                 try {
                     const pdf = await window.PlayTimeDB.get(pdfId);
@@ -321,17 +407,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                         await window.PlayTimePDFViewer.loadPDF(blob);
                         await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
                     }
-                } catch(errLoad) { (window.logger || console).warn('SCORE_SELECTED viewer load failed', errLoad); }
+                } catch(errLoad) { window.logger.warn?.('SCORE_SELECTED viewer load failed', errLoad); }
             };
             window.addEventListener(SCORE_SELECTED, window.__playTimeScoreSelectedHandler);
-        } catch (errHandler) { (window.logger || console).warn('Failed to set SCORE_SELECTED handler', errHandler); }
+        } catch (errHandler) { window.logger.warn?.('Failed to set SCORE_SELECTED handler', errHandler); }
 
         // Initialize score list component after database, viewer & highlighting are ready
-    if (window.PlayTimeScoreList) { window.PlayTimeScoreList.setDatabase(window.PlayTimeDB); await window.PlayTimeScoreList.init(); await window.PlayTimeScoreList.refresh(); }
+        try {
+            if (window.PlayTimeScoreList) { 
+                window.PlayTimeScoreList.setDatabase(window.PlayTimeDB); 
+                await window.PlayTimeScoreList.init(); 
+                await window.PlayTimeScoreList.refresh(); 
+            } else {
+                appLogger.warn('PlayTimeScoreList not available for initialization');
+            }
+        } catch (scoreListInitError) {
+            appLogger.error('Failed to initialize score list:', scoreListInitError.message);
+        }
         
         // Initialize practice planner component
-        if (window.PlayTimePracticePlanner) { 
-            await window.PlayTimePracticePlanner.init(); 
+        try {
+            if (window.PlayTimePracticePlanner) { 
+                await window.PlayTimePracticePlanner.init(); 
+            } else {
+                appLogger.warn('PlayTimePracticePlanner not available for initialization');
+            }
+        } catch (practicePlannerError) {
+            appLogger.error('Failed to initialize practice planner:', practicePlannerError.message);
         }
         
         // Register practice mode layout command handler
@@ -345,20 +447,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (viewerSection) {
                             viewerSection.setAttribute('data-practice-mode', 'active');
                         }
-                        (window.logger || console).info('Practice mode: Entered practice planning mode');
+                        window.logger.info?.('Practice mode: Entered practice planning mode');
                         break;
                     case 'exit':
                         // Remove data attribute to return to normal mode
                         if (viewerSection) {
                             viewerSection.removeAttribute('data-practice-mode');
                         }
-                        (window.logger || console).info('Practice mode: Exited practice planning mode');
+                        window.logger.info?.('Practice mode: Exited practice planning mode');
                         break;
                     default:
-                        (window.logger || console).warn('Unknown practice mode action:', options.action);
+                        window.logger.warn?.('Unknown practice mode action:', options.action);
                 }
             });
-            (window.logger || console).info('Practice mode layout command handler registered');
+            window.logger.info?.('Practice mode layout command handler registered');
         }
         // Reload scenario: current score id already set but no highlights rendered yet -> replay SCORE_SELECTED
         try {
@@ -416,7 +518,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Application ready
     } catch (error) {
-        logger.error('Failed to initialize PlayTime:', error);
+        appLogger.error('Failed to initialize PlayTime application:', error.message);
+        // Show user-friendly error message
+        const errorContainer = document.querySelector('.error-container') || document.body;
+        if (errorContainer) {
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'application-error';
+            errorMessage.style.cssText = 'background: #ffebee; color: #c62828; padding: 12px; margin: 8px; border-radius: 4px; border: 1px solid #e57373;';
+            errorMessage.textContent = `Application failed to start: ${error.message}. Please refresh the page or check the console for details.`;
+            errorContainer.appendChild(errorMessage);
+        }
+        throw error; // Re-throw so it's visible in console
     }
 });
 }

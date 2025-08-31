@@ -3,7 +3,8 @@
  * Appears when user clicks the action button on a highlight
  */
 class HighlightAnnotationForm {
-    constructor(config = {}) {
+    constructor(logger = null, config = {}) {
+        this.logger = logger;
         this.config = {
             containerId: config.containerId || 'pdf-canvas',
             overlayClass: 'highlight-annotation-overlay',
@@ -110,7 +111,7 @@ class HighlightAnnotationForm {
         // Get container
         const container = this.getContainer();
         if (!container) {
-            console.error('Could not find container for annotation form');
+            this.logger.error('Could not find container for annotation form', this.config.containerId);
             return;
         }
 

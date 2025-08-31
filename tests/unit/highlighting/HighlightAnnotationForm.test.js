@@ -15,7 +15,7 @@ describe('HighlightAnnotationForm', () => {
         mockContainer.id = 'pdf-canvas';
         document.body.appendChild(mockContainer);
         
-        form = new HighlightAnnotationForm({
+        form = new HighlightAnnotationForm(console,{
             containerId: 'pdf-canvas',
             maxTitleLength: 50,
             maxNotesLength: 200
@@ -181,7 +181,7 @@ describe('HighlightAnnotationForm', () => {
         canvasParent.appendChild(canvas);
         document.body.appendChild(canvasParent);
         
-        const canvasForm = new HighlightAnnotationForm({
+        const canvasForm = new HighlightAnnotationForm(console,{
             containerId: 'canvas-container'
         });
         
