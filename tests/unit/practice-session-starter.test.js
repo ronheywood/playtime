@@ -77,7 +77,12 @@ describe('PracticeSessionStarter', () => {
         practiceSessionStarter = new PracticeSessionStarter(
             mockLogger,
             mockDatabase,
-            mockPracticePlanPersistenceService
+            mockPracticePlanPersistenceService,
+            {
+                // Use zero timeouts for fast tests
+                pageRenderTimeout: 0,
+                elementCheckInterval: 0
+            }
         );
     });
 
@@ -92,6 +97,23 @@ describe('PracticeSessionStarter', () => {
             expect(practiceSessionStarter.practicePlanPersistenceService).toBe(mockPracticePlanPersistenceService);
             expect(practiceSessionStarter.practiceSession).toBeNull();
             expect(practiceSessionStarter.practiceSessionTimer).toBeNull();
+        });
+
+        test('should use default timeouts when no options provided', () => {
+            const defaultInstance = new PracticeSessionStarter(mockLogger, mockDatabase, mockPracticePlanPersistenceService);
+            expect(defaultInstance.pageRenderTimeout).toBe(500);
+            expect(defaultInstance.elementCheckInterval).toBe(100);
+        });
+
+        test('should use custom timeouts when options provided', () => {
+            const customInstance = new PracticeSessionStarter(
+                mockLogger, 
+                mockDatabase, 
+                mockPracticePlanPersistenceService,
+                { pageRenderTimeout: 1000, elementCheckInterval: 50 }
+            );
+            expect(customInstance.pageRenderTimeout).toBe(1000);
+            expect(customInstance.elementCheckInterval).toBe(50);
         });
     });
 
@@ -837,6 +859,25 @@ describe('PracticeSessionStarter', () => {
             expect(instance.logger).toBe(mockLogger);
             expect(instance.database).toBe(mockDatabase);
             expect(instance.practicePlanPersistenceService).toBe(mockPracticePlanPersistenceService);
+            expect(instance.pageRenderTimeout).toBe(500); // default
+            expect(instance.elementCheckInterval).toBe(100); // default
+        });
+
+        test('should create instance with custom options via factory function', () => {
+            // Load the factory function
+            require('../../scripts/practice/practice-session-starter');
+
+            const options = { pageRenderTimeout: 200, elementCheckInterval: 25 };
+            const instance = global.window.createPracticeSessionStarter(
+                mockLogger,
+                mockDatabase,
+                mockPracticePlanPersistenceService,
+                options
+            );
+
+            expect(instance).toBeInstanceOf(PracticeSessionStarter);
+            expect(instance.pageRenderTimeout).toBe(200);
+            expect(instance.elementCheckInterval).toBe(25);
         });
     });
 });

@@ -5,12 +5,16 @@
  */
 
 class PracticeSessionStarter {
-    constructor(logger, database, practicePlanPersistenceService) {
+    constructor(logger, database, practicePlanPersistenceService, options = {}) {
         this.logger = logger;
         this.database = database;
         this.practicePlanPersistenceService = practicePlanPersistenceService;
         this.practiceSession = null;
         this.practiceSessionTimer = null;
+        
+        // Configurable timeouts for testing
+        this.pageRenderTimeout = options.pageRenderTimeout ?? 500;
+        this.elementCheckInterval = options.elementCheckInterval ?? 100;
     }
 
     /**
@@ -223,7 +227,7 @@ class PracticeSessionStarter {
     async _waitForPageRender() {
         return new Promise(resolve => {
             // Wait for rendering and highlight rehydration
-            setTimeout(resolve, 500);
+            setTimeout(resolve, this.pageRenderTimeout);
         });
     }
 
@@ -244,7 +248,7 @@ class PracticeSessionStarter {
                         resolve();
                     } else {
                         attempts++;
-                        setTimeout(checkElement, 100);
+                        setTimeout(checkElement, this.elementCheckInterval);
                     }
                 } catch (error) {
                     // If querySelector fails (e.g., in test environment), just resolve
@@ -461,8 +465,8 @@ class PracticeSessionStarter {
 }
 
 // Factory function for creating practice session starter instances
-window.createPracticeSessionStarter = function(logger, database, practicePlanPersistenceService) {
-    return new PracticeSessionStarter(logger, database, practicePlanPersistenceService);
+window.createPracticeSessionStarter = function(logger, database, practicePlanPersistenceService, options) {
+    return new PracticeSessionStarter(logger, database, practicePlanPersistenceService, options);
 };
 
 // Export for Node.js/CommonJS (testing)
