@@ -121,6 +121,6 @@ practice-planner.js
     - practice-planner.js
     - templates/practice-planner-template.js
 - **Domain Layer**
-    - [TODO: Persistence Service, Practice session models, planning logic]
+    - Persistence Service, Practice session models, planning logic
 - **Infrastructure Layer**
-    - [Reuses db/IndexedDBDatabase.js]
+    - Reuses db/IndexedDBDatabase.js
