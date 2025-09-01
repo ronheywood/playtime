@@ -316,15 +316,23 @@ body {
 }
 
 /* Practice Mode UI State Management */
-/* Keep PDF viewer visible in practice mode - we need to see the score */
-/* The practice planner will be shown alongside or as an overlay */
-#viewer-section[data-practice-mode="active"] .card[data-role="practice-planner"] {
-    display: block;
+/* The planner is rendered as a fixed modal overlay when practice mode is active */
+.practice-planner-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    z-index: 1200; /* above toolbar (1100) */
 }
 
-/* Ensure practice planner is hidden when practice mode is not active */
-#viewer-section:not([data-practice-mode="active"]) .card[data-role="practice-planner"] {
-    display: none;
+.practice-planner-modal.open { display: flex; }
+
+.practice-planner-modal .card[data-role="practice-planner"] {
+    width: min(960px, 92vw);
+    max-height: 86vh;
+    overflow: auto;
 }
 
 /* Practice Mode Highlight Visibility Control */

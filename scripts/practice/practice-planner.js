@@ -46,19 +46,25 @@ class PracticePlanner {
         this.practiceInterface = null;
         this.noHighlightsMessage = null;
         this.practiceContent = null;
+    this.modalOverlay = null; // container for modal overlay
     }
 
     init() {
         this.logger.info('Initializing Practice Planner');
         
-        // Find DOM elements
+    // Find sidebar trigger first
         this.setupButton = document.querySelector('[data-role="setup-practice-plan"]');
-        this.startPracticeSessionButton = document.querySelector('[data-role="start-practice-session-sidebar"]');
-        this.exitButton = document.querySelector('[data-role="exit-practice-planning"]');
-        this.returnToHighlightingButton = document.querySelector('[data-role="return-to-highlighting"]');
-        this.practiceInterface = document.querySelector('[data-role="practice-planner"]');
-        this.noHighlightsMessage = document.querySelector('[data-role="no-highlights-message"]');
-        this.practiceContent = document.querySelector('[data-role="practice-plan-content"]');
+
+    // Ensure the planner UI exists (inject from template if necessary)
+    this.ensurePracticePlannerUI();
+
+    // Find DOM elements inside planner
+    this.startPracticeSessionButton = document.querySelector('[data-role="start-practice-session-sidebar"]');
+    this.exitButton = document.querySelector('[data-role="exit-practice-planning"]');
+    this.returnToHighlightingButton = document.querySelector('[data-role="return-to-highlighting"]');
+    this.practiceInterface = document.querySelector('[data-role="practice-planner"]');
+    this.noHighlightsMessage = document.querySelector('[data-role="no-highlights-message"]');
+    this.practiceContent = document.querySelector('[data-role="practice-plan-content"]');
 
         this.logger.info('Practice Planner DOM elements found:', {
             setupButton: !!this.setupButton,
@@ -66,7 +72,7 @@ class PracticePlanner {
             practiceInterface: !!this.practiceInterface
         });
 
-        if (!this.setupButton || !this.exitButton || !this.practiceInterface) {
+    if (!this.setupButton || !this.exitButton || !this.practiceInterface) {
             if (this.logger.error) {
                 this.logger.error('Practice Planner: Required DOM elements not found');
             } else {
@@ -109,6 +115,41 @@ class PracticePlanner {
         
         this.logger.info('Practice Planner initialized successfully');
         return true;
+    }
+
+    /**
+     * Ensure the practice planner UI exists in the DOM. If missing, inject a modal overlay
+     * using the PracticePlannerTemplates.
+     */
+    ensurePracticePlannerUI() {
+        // If planner already present, capture overlay if wrapped and return
+        const existing = document.querySelector('[data-role="practice-planner"]');
+        if (existing) {
+            this.modalOverlay = existing.closest('.practice-planner-modal');
+            return;
+        }
+
+        // Require templates to inject
+        if (!window.PracticePlannerTemplates || typeof window.PracticePlannerTemplates.mainCard !== 'function') {
+            this.logger.warn?.('Practice Planner: Templates not available to build UI');
+            return;
+        }
+
+        // Create overlay container
+        const overlay = document.createElement('div');
+        overlay.className = 'practice-planner-modal';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+
+        // Insert the planner card
+        overlay.innerHTML = window.PracticePlannerTemplates.mainCard();
+
+        // Append to body so it overlays the whole app
+        document.body.appendChild(overlay);
+
+        // Store refs and initialize icons
+        this.modalOverlay = overlay;
+        try { window.lucide?.createIcons?.(); } catch(_) {}
     }
 
     async handleScoreSelected(event) {
@@ -453,7 +494,10 @@ class PracticePlanner {
             this.logger.warn?.('Practice Planner: PlayTimeLayoutCommands not available');
         }
 
-        // Show practice interface
+        // Show modal overlay + planner card
+        if (this.modalOverlay) {
+            this.modalOverlay.classList.add('open');
+        }
         if (this.practiceInterface) {
             this.practiceInterface.style.display = 'block';
         }
@@ -1337,6 +1381,9 @@ class PracticePlanner {
         // Hide practice interface
         if (this.practiceInterface) {
             this.practiceInterface.style.display = 'none';
+        }
+        if (this.modalOverlay) {
+            this.modalOverlay.classList.remove('open');
         }
 
         this.logger.info('Practice Planner: Interface hidden');

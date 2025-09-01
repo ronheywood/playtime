@@ -11,6 +11,7 @@ class PracticeSessionStarter {
         this.practicePlanPersistenceService = practicePlanPersistenceService;
         this.practiceSession = null;
         this.practiceSessionTimer = null;
+        this.wakeLock = null; // Screen wake lock instance
         
         // Configurable timeouts for testing
         this.pageRenderTimeout = options.pageRenderTimeout ?? 500;
@@ -114,6 +115,9 @@ class PracticeSessionStarter {
                     this.logger.info('Practice Session Starter: Set practice mode attribute directly');
                 }
             }
+
+            // Request screen wake lock to prevent screen from turning off during practice
+            await this.requestWakeLock();
 
             // Dispatch practice session start event
             const event = new CustomEvent('playtime:practice-session-configured', {
@@ -294,6 +298,68 @@ class PracticeSessionStarter {
             
             checkElement();
         });
+    }
+
+    /**
+     * Request screen wake lock to prevent device screen from turning off during practice
+     * @private
+     */
+    async requestWakeLock() {
+        // Only attempt wake lock in browsers that support it
+        if (!('wakeLock' in navigator)) {
+            this.logger.info('Practice Session Starter: Wake Lock API not supported');
+            return;
+        }
+
+        try {
+            this.wakeLock = await navigator.wakeLock.request('screen');
+            this.logger.info('Practice Session Starter: Screen wake lock acquired');
+            
+            // Listen for wake lock release (e.g., when page becomes hidden)
+            this.wakeLock.addEventListener('release', () => {
+                this.logger.info('Practice Session Starter: Screen wake lock was released');
+            });
+
+            // Re-acquire wake lock when page becomes visible again (if session is still active)
+            this._handleVisibilityChange = () => {
+                if (document.visibilityState === 'visible' && this.practiceSession && !this.wakeLock) {
+                    this.logger.info('Practice Session Starter: Page visible again, re-acquiring wake lock');
+                    this.requestWakeLock();
+                }
+            };
+            
+            document.addEventListener('visibilitychange', this._handleVisibilityChange);
+            
+        } catch (error) {
+            this.logger.warn('Practice Session Starter: Failed to acquire screen wake lock', {
+                error: error.message,
+                name: error.name
+            });
+        }
+    }
+
+    /**
+     * Release screen wake lock
+     * @private
+     */
+    async releaseWakeLock() {
+        if (this.wakeLock) {
+            try {
+                await this.wakeLock.release();
+                this.wakeLock = null;
+                this.logger.info('Practice Session Starter: Screen wake lock released');
+            } catch (error) {
+                this.logger.warn('Practice Session Starter: Error releasing wake lock', {
+                    error: error.message
+                });
+            }
+        }
+
+        // Clean up visibility change listener
+        if (this._handleVisibilityChange) {
+            document.removeEventListener('visibilitychange', this._handleVisibilityChange);
+            this._handleVisibilityChange = null;
+        }
     }
 
     /**
@@ -478,6 +544,9 @@ class PracticeSessionStarter {
      * End the current practice session
      */
     endSession() {
+        // Release screen wake lock
+        this.releaseWakeLock();
+
         // Re-enable highlight selection
         if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
             window.PlayTimeHighlighting.enableSelection();
@@ -600,10 +669,12 @@ class PracticeSessionStarter {
     }
 }
 
-// Factory function for creating practice session starter instances
-window.createPracticeSessionStarter = function(logger, database, practicePlanPersistenceService, options) {
-    return new PracticeSessionStarter(logger, database, practicePlanPersistenceService, options);
-};
+// Factory function for creating practice session starter instances (browser only)
+if (typeof window !== 'undefined') {
+    window.createPracticeSessionStarter = function(logger, database, practicePlanPersistenceService, options) {
+        return new PracticeSessionStarter(logger, database, practicePlanPersistenceService, options);
+    };
+}
 
 // Export for Node.js/CommonJS (testing)
 if (typeof module !== 'undefined' && module.exports) {
