@@ -73,6 +73,29 @@ describe('PracticeSessionStarter', () => {
         // Mock event dispatching
         global.window.dispatchEvent = jest.fn();
 
+        // Mock DOM elements with required methods
+        const mockElement = {
+            setAttribute: jest.fn(),
+            removeAttribute: jest.fn(),
+            classList: {
+                add: jest.fn(),
+                remove: jest.fn()
+            },
+            scrollIntoView: jest.fn()
+        };
+
+        // Set up querySelector to return mock elements when needed
+        const originalQuerySelector = document.querySelector;
+        document.querySelector = jest.fn((selector) => {
+            if (selector === '#viewer-section') {
+                return mockElement;
+            }
+            return originalQuerySelector.call(document, selector);
+        });
+
+        // Set up querySelectorAll to return empty array by default
+        document.querySelectorAll = jest.fn().mockReturnValue([]);
+
         // Create instance
         practiceSessionStarter = new PracticeSessionStarter(
             mockLogger,
@@ -287,12 +310,22 @@ describe('PracticeSessionStarter', () => {
         const highlightId = 'test-highlight-id';
 
         test('should focus on highlight using PlayTimeHighlighting when available', async () => {
-            const mockElement = { scrollIntoView: jest.fn() };
-            document.querySelector = jest.fn().mockReturnValue(mockElement);
+            const mockElement = { 
+                scrollIntoView: jest.fn(),
+                classList: {
+                    add: jest.fn(),
+                    remove: jest.fn()
+                }
+            };
+            document.querySelector = jest.fn()
+                .mockReturnValueOnce(null) // First call for all highlights (querySelectorAll mock)
+                .mockReturnValue(mockElement); // Second call for specific highlight
+            document.querySelectorAll = jest.fn().mockReturnValue([]);
 
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
             expect(document.querySelector).toHaveBeenCalledWith(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
+            expect(mockElement.classList.add).toHaveBeenCalledWith('current-practice-section');
             expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
             expect(mockLogger.info).toHaveBeenCalledWith(
                 'Practice Session Starter: Triggering focus action on highlight',
@@ -303,11 +336,19 @@ describe('PracticeSessionStarter', () => {
         test('should fallback to scrollIntoView when PlayTimeHighlighting is not available', async () => {
             const originalHighlighting = global.window.PlayTimeHighlighting;
             global.window.PlayTimeHighlighting = undefined;
-            const mockElement = { scrollIntoView: jest.fn() };
+            const mockElement = { 
+                scrollIntoView: jest.fn(),
+                classList: {
+                    add: jest.fn(),
+                    remove: jest.fn()
+                }
+            };
             document.querySelector = jest.fn().mockReturnValue(mockElement);
+            document.querySelectorAll = jest.fn().mockReturnValue([]);
 
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
+            expect(mockElement.classList.add).toHaveBeenCalledWith('current-practice-section');
             expect(mockElement.scrollIntoView).toHaveBeenCalledWith({
                 behavior: 'smooth',
                 block: 'center'
@@ -368,11 +409,18 @@ describe('PracticeSessionStarter', () => {
 
             // Mock querySelector to return null first (not found), then return element after "page navigation"
             let callCount = 0;
-            const mockElement = { scrollIntoView: jest.fn() };
+            const mockElement = { 
+                scrollIntoView: jest.fn(),
+                classList: {
+                    add: jest.fn(),
+                    remove: jest.fn()
+                }
+            };
             document.querySelector = jest.fn().mockImplementation(() => {
                 callCount++;
                 return callCount > 1 ? mockElement : null; // Return null first time, element after navigation
             });
+            document.querySelectorAll = jest.fn().mockReturnValue([]);
 
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
@@ -380,6 +428,7 @@ describe('PracticeSessionStarter', () => {
             expect(mockPersistenceService.getHighlight).toHaveBeenCalledWith(highlightId);
             expect(mockPDFViewer.getCurrentPage).toHaveBeenCalled();
             expect(mockPDFViewer.renderPage).toHaveBeenCalledWith(2);
+            expect(mockElement.classList.add).toHaveBeenCalledWith('current-practice-section');
             expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
 
             expect(mockLogger.info).toHaveBeenCalledWith(
@@ -408,8 +457,15 @@ describe('PracticeSessionStarter', () => {
             };
             global.window.PlayTimePDFViewer = mockPDFViewer;
 
-            const mockElement = { scrollIntoView: jest.fn() };
+            const mockElement = { 
+                scrollIntoView: jest.fn(),
+                classList: {
+                    add: jest.fn(),
+                    remove: jest.fn()
+                }
+            };
             document.querySelector = jest.fn().mockReturnValue(mockElement);
+            document.querySelectorAll = jest.fn().mockReturnValue([]);
 
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
@@ -417,6 +473,7 @@ describe('PracticeSessionStarter', () => {
             expect(mockPersistenceService.getHighlight).toHaveBeenCalledWith(highlightId);
             expect(mockPDFViewer.getCurrentPage).toHaveBeenCalled();
             expect(mockPDFViewer.renderPage).not.toHaveBeenCalled(); // Should not navigate
+            expect(mockElement.classList.add).toHaveBeenCalledWith('current-practice-section');
             expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
 
             expect(mockLogger.info).toHaveBeenCalledWith(
@@ -447,8 +504,15 @@ describe('PracticeSessionStarter', () => {
             global.window.PlayTimePDFViewer = mockPDFViewer;
 
             // Mock querySelector to always return an element (simulating element exists in DOM but on wrong page)
-            const mockElement = { scrollIntoView: jest.fn() };
+            const mockElement = { 
+                scrollIntoView: jest.fn(),
+                classList: {
+                    add: jest.fn(),
+                    remove: jest.fn()
+                }
+            };
             document.querySelector = jest.fn().mockReturnValue(mockElement);
+            document.querySelectorAll = jest.fn().mockReturnValue([]);
 
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
@@ -456,6 +520,7 @@ describe('PracticeSessionStarter', () => {
             expect(mockPersistenceService.getHighlight).toHaveBeenCalledWith(highlightId);
             expect(mockPDFViewer.getCurrentPage).toHaveBeenCalled();
             expect(mockPDFViewer.renderPage).toHaveBeenCalledWith(3); // Should navigate to page 3
+            expect(mockElement.classList.add).toHaveBeenCalledWith('current-practice-section');
             expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
 
             expect(mockLogger.info).toHaveBeenCalledWith(
@@ -600,8 +665,20 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should exit focus mode when session completes and focus mode is active', () => {
-            const mockCanvas = { getAttribute: jest.fn().mockReturnValue('active') };
-            document.querySelector = jest.fn().mockReturnValue(mockCanvas);
+            const mockCanvas = { 
+                getAttribute: jest.fn().mockReturnValue('active'),
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            document.querySelector = jest.fn((selector) => {
+                if (selector === '[data-role="pdf-canvas"]') return mockCanvas;
+                if (selector === '#viewer-section') return mockViewerSection;
+                return null;
+            });
             global.window.PlayTimeHighlighting = { exitFocusMode: jest.fn() };
 
             practiceSessionStarter.handleSessionComplete();
@@ -612,8 +689,20 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should not exit focus mode when focus mode is not active', () => {
-            const mockCanvas = { getAttribute: jest.fn().mockReturnValue('inactive') };
-            document.querySelector = jest.fn().mockReturnValue(mockCanvas);
+            const mockCanvas = { 
+                getAttribute: jest.fn().mockReturnValue('inactive'),
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            document.querySelector = jest.fn((selector) => {
+                if (selector === '[data-role="pdf-canvas"]') return mockCanvas;
+                if (selector === '#viewer-section') return mockViewerSection;
+                return null;
+            });
             global.window.PlayTimeHighlighting = { exitFocusMode: jest.fn() };
 
             practiceSessionStarter.handleSessionComplete();
@@ -622,7 +711,15 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should handle missing canvas element gracefully', () => {
-            document.querySelector = jest.fn().mockReturnValue(null);
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            document.querySelector = jest.fn((selector) => {
+                if (selector === '[data-role="pdf-canvas"]') return null;
+                if (selector === '#viewer-section') return mockViewerSection;
+                return null;
+            });
             global.window.PlayTimeHighlighting = { exitFocusMode: jest.fn() };
 
             expect(() => practiceSessionStarter.handleSessionComplete()).not.toThrow();
@@ -631,8 +728,13 @@ describe('PracticeSessionStarter', () => {
 
         test('should hide timer UI when session completes', () => {
             const mockTimerContainer = { style: { display: 'block' } };
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
             document.querySelector = jest.fn((selector) => {
                 if (selector === '#practice-session-timer') return mockTimerContainer;
+                if (selector === '#viewer-section') return mockViewerSection;
                 return null;
             });
 
@@ -642,7 +744,15 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should handle missing timer container gracefully', () => {
-            document.querySelector = jest.fn().mockReturnValue(null);
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            document.querySelector = jest.fn((selector) => {
+                if (selector === '#practice-session-timer') return null;
+                if (selector === '#viewer-section') return mockViewerSection;
+                return null;
+            });
 
             expect(() => practiceSessionStarter.handleSessionComplete()).not.toThrow();
         });
@@ -710,8 +820,20 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should exit focus mode when timer exits and focus mode is active', () => {
-            const mockCanvas = { getAttribute: jest.fn().mockReturnValue('active') };
-            document.querySelector = jest.fn().mockReturnValue(mockCanvas);
+            const mockCanvas = { 
+                getAttribute: jest.fn().mockReturnValue('active'),
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            document.querySelector = jest.fn((selector) => {
+                if (selector === '[data-role="pdf-canvas"]') return mockCanvas;
+                if (selector === '#viewer-section') return mockViewerSection;
+                return null;
+            });
             global.window.PlayTimeHighlighting = { exitFocusMode: jest.fn() };
 
             practiceSessionStarter.handleTimerExit();
@@ -722,8 +844,20 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should not exit focus mode on timer exit when focus mode is not active', () => {
-            const mockCanvas = { getAttribute: jest.fn().mockReturnValue('inactive') };
-            document.querySelector = jest.fn().mockReturnValue(mockCanvas);
+            const mockCanvas = { 
+                getAttribute: jest.fn().mockReturnValue('inactive'),
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            document.querySelector = jest.fn((selector) => {
+                if (selector === '[data-role="pdf-canvas"]') return mockCanvas;
+                if (selector === '#viewer-section') return mockViewerSection;
+                return null;
+            });
             global.window.PlayTimeHighlighting = { exitFocusMode: jest.fn() };
 
             practiceSessionStarter.handleTimerExit();
@@ -733,8 +867,13 @@ describe('PracticeSessionStarter', () => {
 
         test('should hide timer UI when timer exits', () => {
             const mockTimerContainer = { style: { display: 'block' } };
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
             document.querySelector = jest.fn((selector) => {
                 if (selector === '#practice-session-timer') return mockTimerContainer;
+                if (selector === '#viewer-section') return mockViewerSection;
                 return null;
             });
 
@@ -744,7 +883,15 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should handle missing timer container on exit gracefully', () => {
-            document.querySelector = jest.fn().mockReturnValue(null);
+            const mockViewerSection = { 
+                setAttribute: jest.fn(),
+                removeAttribute: jest.fn()
+            };
+            document.querySelector = jest.fn((selector) => {
+                if (selector === '#practice-session-timer') return null;
+                if (selector === '#viewer-section') return mockViewerSection;
+                return null;
+            });
 
             expect(() => practiceSessionStarter.handleTimerExit()).not.toThrow();
         });

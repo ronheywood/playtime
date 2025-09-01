@@ -948,13 +948,26 @@ class PracticePlanner {
      */
     async focusOnPracticeSection(highlightId) {
         try {
-            // Find the highlight element
-            const highlightElement = document.querySelector(`[data-role="highlight"][data-highlight-id="${highlightId}"]`);
+            // Find the highlight element (try both attribute formats for compatibility)
+            let highlightElement = document.querySelector(`[data-role="highlight"][data-highlight-id="${highlightId}"]`);
+            if (!highlightElement) {
+                highlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
+            }
             
             if (!highlightElement) {
                 this.logger.warn?.('Practice Planner: Highlight element not found', { highlightId });
                 return;
             }
+
+            // Remove current-practice-section class from all highlights first
+            const allHighlights = document.querySelectorAll('[data-role="highlight"]');
+            allHighlights.forEach(highlight => {
+                highlight.classList.remove('current-practice-section');
+            });
+
+            // Add current-practice-section class to the current highlight
+            highlightElement.classList.add('current-practice-section');
+            this.logger.debug?.('Practice Planner: Applied current-practice-section class', { highlightId });
             
             // Use the highlighting module to focus on this highlight
             if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.focusOnHighlight === 'function') {

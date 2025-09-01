@@ -102,6 +102,19 @@ class PracticeSessionStarter {
                 this._showSelectionDisabledIndicator();
             }
 
+            // Set practice mode layout
+            if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
+                window.PlayTimeLayoutCommands.execute('practice-mode', { action: 'enter' });
+                this.logger.info('Practice Session Starter: Entered practice mode layout');
+            } else {
+                // Fallback: Set the attribute directly if layout commands are not available
+                const viewerSection = document.querySelector('#viewer-section');
+                if (viewerSection) {
+                    viewerSection.setAttribute('data-practice-mode', 'active');
+                    this.logger.info('Practice Session Starter: Set practice mode attribute directly');
+                }
+            }
+
             // Dispatch practice session start event
             const event = new CustomEvent('playtime:practice-session-configured', {
                 detail: {
@@ -152,6 +165,16 @@ class PracticeSessionStarter {
             let highlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
 
             if (highlightElement) {
+                // Remove current-practice-section class from all highlights first
+                const allHighlights = document.querySelectorAll('[data-role="highlight"]');
+                allHighlights.forEach(highlight => {
+                    highlight.classList.remove('current-practice-section');
+                });
+
+                // Add current-practice-section class to the current highlight
+                highlightElement.classList.add('current-practice-section');
+                this.logger.info('Practice Session Starter: Applied current-practice-section class', { highlightId });
+
                 // Use highlighting module's focus method if available (same as double-click behavior)
                 if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.focusOnHighlight === 'function') {
                     this.logger.info('Practice Session Starter: Triggering focus action on highlight', { highlightId });
@@ -337,15 +360,6 @@ class PracticeSessionStarter {
     handleSessionComplete() {
         this.logger.info('Practice Session Starter: Session completed');
 
-        // Re-enable highlight selection
-        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
-            window.PlayTimeHighlighting.enableSelection();
-            this.logger.info('Practice Session Starter: Highlight selection re-enabled');
-            
-            // Remove visual indicator
-            this._hideSelectionDisabledIndicator();
-        }
-
         // Dispatch session complete event
         const event = new CustomEvent('playtime:practice-session-complete', {
             detail: {
@@ -363,9 +377,8 @@ class PracticeSessionStarter {
         // Hide the timer UI (same as exit button behavior)
         this._hideTimer();
 
-        // Clean up
-        this.practiceSession = null;
-        this.practiceSessionTimer = null;
+        // Clean up by calling endSession to ensure all cleanup happens consistently
+        this.endSession();
     }
 
     /**
@@ -436,15 +449,6 @@ class PracticeSessionStarter {
     handleTimerExit() {
         this.logger.info('Practice Session Starter: Timer exit triggered');
         
-        // Re-enable highlight selection
-        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
-            window.PlayTimeHighlighting.enableSelection();
-            this.logger.info('Practice Session Starter: Highlight selection re-enabled');
-            
-            // Remove visual indicator
-            this._hideSelectionDisabledIndicator();
-        }
-        
         // Dispatch session exit event
         const event = new CustomEvent('playtime:practice-session-exit', {
             detail: {
@@ -459,9 +463,8 @@ class PracticeSessionStarter {
         // Hide the timer UI (same as exit button behavior)
         this._hideTimer();
 
-        // Clean up
-        this.practiceSession = null;
-        this.practiceSessionTimer = null;
+        // Clean up by calling endSession to ensure all cleanup happens consistently
+        this.endSession();
     }
 
     /**
@@ -483,6 +486,26 @@ class PracticeSessionStarter {
             // Remove visual indicator
             this._hideSelectionDisabledIndicator();
         }
+
+        // Exit practice mode layout
+        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
+            window.PlayTimeLayoutCommands.execute('practice-mode', { action: 'exit' });
+            this.logger.info('Practice Session Starter: Exited practice mode layout');
+        } else {
+            // Fallback: Remove the attribute directly if layout commands are not available
+            const viewerSection = document.querySelector('#viewer-section');
+            if (viewerSection) {
+                viewerSection.removeAttribute('data-practice-mode');
+                this.logger.info('Practice Session Starter: Removed practice mode attribute directly');
+            }
+        }
+
+        // Clean up current-practice-section class from all highlights
+        const allHighlights = document.querySelectorAll('[data-role="highlight"]');
+        allHighlights.forEach(highlight => {
+            highlight.classList.remove('current-practice-section');
+        });
+        this.logger.info('Practice Session Starter: Cleaned up current-practice-section classes');
         
         if (this.practiceSessionTimer) {
             this.practiceSessionTimer.stop();

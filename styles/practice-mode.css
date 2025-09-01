@@ -312,23 +312,32 @@ body {
 }
 
 /* Practice Mode UI State Management */
-/* When practice mode is active, hide the PDF viewer card and show the practice planner */
-#viewer-section[data-practice-mode="active"] .card:has([data-role="pdf-viewer"]) {
-    display: none;
-}
-
+/* Keep PDF viewer visible in practice mode - we need to see the score */
+/* The practice planner will be shown alongside or as an overlay */
 #viewer-section[data-practice-mode="active"] .card[data-role="practice-planner"] {
     display: block;
-}
-
-/* Ensure PDF canvas is hidden when practice mode is active */
-#viewer-section[data-practice-mode="active"] [data-role="pdf-canvas"] {
-    display: none;
 }
 
 /* Ensure practice planner is hidden when practice mode is not active */
 #viewer-section:not([data-practice-mode="active"]) .card[data-role="practice-planner"] {
     display: none;
+}
+
+/* Practice Mode Highlight Visibility Control */
+/* Hide all highlights during practice mode to reduce visual distractions */
+#viewer-section[data-practice-mode="active"] [data-role="highlight"]:not(.current-practice-section) {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Show only the current practice section with reduced visibility */
+#viewer-section[data-practice-mode="active"] [data-role="highlight"].current-practice-section {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 0.3;
+    border-style: dotted !important;
+    border-width: 2px !important;
+    transition: opacity 0.3s ease, border-style 0.3s ease;
 }
 
 /* Practice Planner Component Styles */
