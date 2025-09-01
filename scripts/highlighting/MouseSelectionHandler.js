@@ -208,7 +208,11 @@ class MouseSelectionHandler {
     // Touch event handlers for mobile/tablet support
     
     handleTouchStart(event) {
-        if (this.disabled) return; // Skip if selection is disabled
+        if (this.disabled) {
+            // In practice mode, allow natural touch scrolling and zooming
+            // Don't prevent default - let the browser handle scrolling naturally
+            return;
+        }
         
         // Prevent scrolling and other default behaviors during selection
         event.preventDefault();
@@ -242,6 +246,11 @@ class MouseSelectionHandler {
     }
 
     handleTouchMove(event) {
+        if (this.disabled) {
+            // In practice mode, allow natural touch scrolling
+            return;
+        }
+        
         if (!this.state.isSelecting) return;
         
         // Prevent scrolling during selection
@@ -262,6 +271,11 @@ class MouseSelectionHandler {
     }
 
     handleTouchEnd(event) {
+        if (this.disabled) {
+            // In practice mode, allow natural touch behavior
+            return;
+        }
+        
         if (!this.state.isSelecting) return;
         
         // Prevent default behaviors

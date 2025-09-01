@@ -285,6 +285,18 @@ body {
         user-select: none;
     }
     
+    /* Enable smooth scrolling during practice mode when selection is disabled */
+    #viewer-section[data-practice-mode="active"] #pdf-canvas {
+        touch-action: pan-x pan-y pinch-zoom !important;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+    
+    /* Ensure container also supports smooth touch interaction during practice mode */
+    #viewer-section[data-practice-mode="active"] .pdf-viewer-container {
+        touch-action: pan-x pan-y pinch-zoom !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    
     /* Prevent text selection during highlighting */
     .pdf-viewer-container {
         -webkit-user-select: none;
