@@ -116,6 +116,26 @@ HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
     fill: jest.fn()
 }));
 
+// Mock matchMedia API for testing media queries
+global.matchMedia = jest.fn((query) => ({
+    matches: false, // Default to desktop behavior in tests
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // Deprecated
+    removeListener: jest.fn(), // Deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+}));
+
+// Mock navigator API for touch device detection
+if (!global.navigator) {
+    global.navigator = {
+        maxTouchPoints: 0, // Default to desktop behavior
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    };
+}
+
 // Setup DOM before each test
 beforeEach(() => {
     // Only set up DOM if document is available (i.e., in JSDOM environment)
@@ -135,7 +155,7 @@ beforeEach(() => {
             </section>
             <section id="viewer-section">
                 <aside class="sidebar" data-role="sidebar"></aside>
-                <div class="viewer-controls">
+                <div class="viewer-controls" data-role="viewer-toolbar">
                     <button id="prev-page-btn">◀</button>
                     <span id="page-info" data-role="page-info">Page 1 of 1</span>
                     <button id="next-page-btn">▶</button>
@@ -145,6 +165,12 @@ beforeEach(() => {
                     <button data-role="setup-practice-plan">Setup practice plan</button>
                     <button data-role="toggle-focus-mode" aria-pressed="false"></button>
                     <div data-role="current-score-title" class="current-score-title"></div>
+                    <div data-role="practice-session-timer" style="display: none;">
+                        <span data-role="timer-display">05:00</span>
+                        <button data-role="timer-pause">⏸</button>
+                        <button data-role="timer-next">Next</button>
+                        <button data-role="timer-stop">Stop</button>
+                    </div>
                 </div>
                 <div class="pdf-viewer-container" data-role="pdf-viewer">
                     <canvas id="pdf-canvas" data-role="pdf-canvas"></canvas>

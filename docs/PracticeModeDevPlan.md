@@ -22,26 +22,17 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Testing**: ✅ Verify touch/mouse events don't create new highlights during practice, ✅ Verify highlights can be added again after practice
 - **Effort**: 4 hours ✅ COMPLETED
 
-#### Task 1.2: Fix iPad Timer Positioning
-- **Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-timer.js`
-- **Implementation**:
-  ```css
-  #practice-session-timer {
-    position: fixed !important;
-    top: env(safe-area-inset-top, 1rem);
-    right: 1rem;
-    z-index: 1003;
-  }
-  
-  @media (hover: none) and (pointer: coarse) {
-    #practice-session-timer {
-      top: env(safe-area-inset-top, 0.5rem);
-      right: 0.5rem;
-    }
-  }
-  ```
-- **Testing**: iPad Safari, iPhone Safari, Android Chrome
-- **Effort**: 6 hours
+#### Task 1.2: Fix iPad Timer Positioning ✅ COMPLETED  
+- **Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-timer.js`, `index.html`, test files
+- **Implementation**: 
+  - ✅ Added responsive CSS with touch device media queries for fixed timer positioning
+  - ✅ Enhanced JavaScript with mobile device detection using multiple signals (`ontouchstart`, `maxTouchPoints`, `matchMedia`)
+  - ✅ Implemented dynamic timer positioning that moves out of toolbar on mobile devices
+  - ✅ Added safe area support for devices with notches using `env(safe-area-inset-top)`
+  - ✅ Updated all selectors to use consistent `data-role` attributes instead of IDs
+  - ✅ Added proper test environment mocks for `navigator` and `matchMedia` APIs
+- **Testing**: ✅ iPad Safari, iPhone Safari, Android Chrome, all unit and integration tests passing
+- **Effort**: 6 hours ✅ COMPLETED
 
 #### Task 1.3: Practice Mode Highlight Visibility
 - **Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-starter.js`

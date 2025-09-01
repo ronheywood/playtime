@@ -1,5 +1,8 @@
 /**
- * Practice Session Timer Unit Tests
+ * Practice Session Tim    dispatchEvent: jest.fn(),
+}));
+
+const { PracticeSessionTimer } = require('../../scripts/practice/practice-session-timer.js');it Tests
  * Tests the timer component in isolation
  */
 
@@ -8,6 +11,26 @@ const { JSDOM } = require('jsdom');
 // Set up DOM environment
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 global.document = dom.window.document;
+global.window = dom.window;
+
+// Mock navigator API for touch device detection
+global.navigator = {
+    maxTouchPoints: 0, // Default to desktop behavior
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    ...dom.window.navigator
+};
+
+// Mock matchMedia API for testing
+global.window.matchMedia = jest.fn().mockImplementation(query => ({
+    matches: false, // Default to desktop behavior in tests
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // Deprecated
+    removeListener: jest.fn(), // Deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+}));
 global.window = dom.window;
 
 const PracticeSessionTimer = require('../../scripts/practice/practice-session-timer');
@@ -39,13 +62,15 @@ describe('PracticeSessionTimer', () => {
 
         // Set up DOM elements that the timer expects
         document.body.innerHTML = `
-            <div id="practice-session-timer" style="display: none;">
-                <div data-role="time-remaining">05:00</div>
-                <button data-role="pause-timer">
-                    <i data-lucide="pause"></i>
-                </button>
-                <button data-role="next-section">Next</button>
-                <button data-role="exit-practice-session">Exit</button>
+            <div data-role="main-toolbar">
+                <div id="practice-session-timer" data-role="practice-session-timer" style="display: none;">
+                    <div data-role="time-remaining">05:00</div>
+                    <button data-role="pause-timer">
+                        <i data-lucide="pause"></i>
+                    </button>
+                    <button data-role="next-section">Next</button>
+                    <button data-role="exit-practice-session">Exit</button>
+                </div>
             </div>
         `;
 
@@ -95,7 +120,8 @@ describe('PracticeSessionTimer', () => {
         });
 
         test('should set up proper selectors', () => {
-            expect(timer.selectors.timerContainer).toBe('#practice-session-timer');
+            expect(timer.selectors.timerContainer).toBe('[data-role="practice-session-timer"]');
+            expect(timer.selectors.mainToolbar).toBe('[data-role="main-toolbar"]');
             expect(timer.selectors.timeRemaining).toBe('[data-role="time-remaining"]');
             expect(timer.selectors.pauseButton).toBe('[data-role="pause-timer"]');
             expect(timer.selectors.nextButton).toBe('[data-role="next-section"]');
@@ -116,7 +142,7 @@ describe('PracticeSessionTimer', () => {
             expect(timer.timerId).toBeTruthy();
             
             // Should show timer UI
-            const timerElement = document.querySelector('#practice-session-timer');
+            const timerElement = document.querySelector('[data-role="practice-session-timer"]');
             expect(timerElement.style.display).toBe('block');
             
             expect(mockLogger.info).toHaveBeenCalledWith('Practice Session Timer: Timer started', {
@@ -257,7 +283,7 @@ describe('PracticeSessionTimer', () => {
             expect(onExit).toHaveBeenCalledWith();
             
             // Should hide timer UI
-            const timerElement = document.querySelector('#practice-session-timer');
+            const timerElement = document.querySelector('[data-role="practice-session-timer"]');
             expect(timerElement.style.display).toBe('none');
         });
 
@@ -351,7 +377,7 @@ describe('PracticeSessionTimer', () => {
 
     describe('UI Show/Hide', () => {
         test('should show timer UI', () => {
-            const timerElement = document.querySelector('#practice-session-timer');
+            const timerElement = document.querySelector('[data-role="practice-session-timer"]');
             timerElement.style.display = 'none';
             
             timer.show();
@@ -359,7 +385,7 @@ describe('PracticeSessionTimer', () => {
         });
 
         test('should hide timer UI', () => {
-            const timerElement = document.querySelector('#practice-session-timer');
+            const timerElement = document.querySelector('[data-role="practice-session-timer"]');
             timerElement.style.display = 'block';
             
             timer.hide();
@@ -367,7 +393,7 @@ describe('PracticeSessionTimer', () => {
         });
 
         test('should handle missing timer element gracefully', () => {
-            const timerElement = document.querySelector('#practice-session-timer');
+            const timerElement = document.querySelector('[data-role="practice-session-timer"]');
             timerElement.remove();
             
             // Should not throw errors
@@ -390,7 +416,7 @@ describe('PracticeSessionTimer', () => {
             expect(timer.listenersAttached).toBe(false);
             
             // Should hide UI
-            const timerElement = document.querySelector('#practice-session-timer');
+            const timerElement = document.querySelector('[data-role="practice-session-timer"]');
             expect(timerElement.style.display).toBe('none');
             
             expect(mockLogger.info).toHaveBeenCalledWith('Practice Session Timer: Component destroyed');

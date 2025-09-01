@@ -532,7 +532,7 @@ describe('Practice Planner Integration Tests', () => {
             document.body.appendChild(highlight);
             
             const timerDiv = document.createElement('div');
-            timerDiv.id = 'practice-session-timer';
+            timerDiv.setAttribute('data-role', 'practice-session-timer');
             timerDiv.style.display = 'none';
             timerDiv.innerHTML = `
                 <div data-role="time-remaining"></div>
@@ -1263,7 +1263,7 @@ describe('Practice Planner Integration Tests', () => {
 
             // Mock timer element
             const timerDiv = document.createElement('div');
-            timerDiv.id = 'practice-session-timer';
+            timerDiv.setAttribute('data-role', 'practice-session-timer');
             timerDiv.style.display = 'none';
             timerDiv.innerHTML = `
                 <div data-role="time-remaining"></div>
@@ -1300,7 +1300,7 @@ describe('Practice Planner Integration Tests', () => {
             );
 
             // Verify timer UI is shown
-            const timerElement = document.getElementById('practice-session-timer');
+            const timerElement = document.querySelector('[data-role="practice-session-timer"]');
             expect(timerElement.style.display).toBe('block');
         });
 
@@ -1326,7 +1326,7 @@ describe('Practice Planner Integration Tests', () => {
             document.body.innerHTML += `
                 <div data-role="highlight" data-highlight-id="highlight-1"></div>
                 <div data-role="highlight" data-highlight-id="highlight-2"></div>
-                <div id="practice-session-timer" style="display: none;">
+                <div data-role="practice-session-timer" style="display: none;">
                     <div data-role="time-remaining"></div>
                     <div data-role="section-counter"></div>
                     <div data-role="active-session-name"></div>
@@ -1374,7 +1374,7 @@ describe('Practice Planner Integration Tests', () => {
             // Mock elements
             document.body.innerHTML += `
                 <div data-role="highlight" data-highlight-id="highlight-1"></div>
-                <div id="practice-session-timer" style="display: none;">
+                <div data-role="practice-session-timer" style="display: none;">
                     <div data-role="time-remaining"></div>
                     <button data-role="pause-timer"><i data-lucide="pause"></i></button>
                     <button data-role="next-section"></button>
@@ -1418,7 +1418,7 @@ describe('Practice Planner Integration Tests', () => {
             // Mock elements
             document.body.innerHTML += `
                 <div data-role="highlight" data-highlight-id="highlight-1"></div>
-                <div id="practice-session-timer" style="display: none;">
+                <div data-role="practice-session-timer" style="display: none;">
                     <button data-role="pause-timer"><i data-lucide="pause"></i></button>
                 </div>
             `;

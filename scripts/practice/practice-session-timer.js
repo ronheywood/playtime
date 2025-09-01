@@ -28,12 +28,17 @@ class PracticeSessionTimer {
         
         // DOM selectors
         this.selectors = {
-            timerContainer: '#practice-session-timer',
+            timerContainer: '[data-role="practice-session-timer"]',
+            mainToolbar: '[data-role="main-toolbar"]',
             timeRemaining: '[data-role="time-remaining"]',
             pauseButton: '[data-role="pause-timer"]',
             nextButton: '[data-role="next-section"]',
             exitButton: '[data-role="exit-practice-session"]'
         };
+        
+        // Mobile state tracking
+        this.originalParent = null;
+        this.isMovedToFixed = false;
     }
     
     /**
@@ -217,6 +222,42 @@ class PracticeSessionTimer {
         const timerContainer = document.querySelector(this.selectors.timerContainer);
         if (timerContainer) {
             timerContainer.style.display = 'block';
+            
+            // Apply mobile-specific positioning if on touch device
+            this._applyMobilePositioning(timerContainer);
+        }
+    }
+    
+    /**
+     * Apply mobile-specific positioning for better iPad/mobile experience
+     * @private
+     */
+    _applyMobilePositioning(timerContainer) {
+        // Detect touch device
+        const isTouchDevice = 'ontouchstart' in window || 
+                             navigator.maxTouchPoints > 0 ||
+                             window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+        
+        if (isTouchDevice) {
+            // On mobile/tablet, ensure the timer is properly positioned
+            // The CSS media query handles most styling, but we need to ensure proper z-index and positioning context
+            timerContainer.style.position = 'fixed';
+            timerContainer.style.zIndex = '1003';
+            
+            // Move timer to body to avoid any container positioning issues
+            if (timerContainer.parentElement && timerContainer.parentElement !== document.body) {
+                // Store original parent using data role if available, otherwise fallback to ID
+                const parentElement = timerContainer.parentElement;
+                const parentDataRole = parentElement.getAttribute('data-role');
+                const parentId = parentElement.id;
+                
+                timerContainer.dataset.originalParent = parentDataRole || parentId || 'unknown';
+                document.body.appendChild(timerContainer);
+                
+                this.logger.info('Practice Session Timer: Moved to body for mobile positioning', {
+                    originalParent: timerContainer.dataset.originalParent
+                });
+            }
         }
     }
     
@@ -227,6 +268,33 @@ class PracticeSessionTimer {
         const timerContainer = document.querySelector(this.selectors.timerContainer);
         if (timerContainer) {
             timerContainer.style.display = 'none';
+            
+            // Restore original positioning if it was moved for mobile
+            this._restoreOriginalPositioning(timerContainer);
+        }
+    }
+    
+    /**
+     * Restore timer to its original position
+     * @private
+     */
+    _restoreOriginalPositioning(timerContainer) {
+        if (timerContainer.dataset.originalParent && timerContainer.parentElement === document.body) {
+            // Try to restore to original parent using data role
+            const originalParent = timerContainer.dataset.originalParent === 'main-toolbar' 
+                ? document.querySelector('[data-role="main-toolbar"]')
+                : document.getElementById(timerContainer.dataset.originalParent);
+                
+            if (originalParent) {
+                originalParent.appendChild(timerContainer);
+                delete timerContainer.dataset.originalParent;
+                
+                // Clear mobile-specific styles
+                timerContainer.style.position = '';
+                timerContainer.style.zIndex = '';
+                
+                this.logger.info('Practice Session Timer: Restored to original position');
+            }
         }
     }
     
