@@ -107,6 +107,9 @@ class PracticeSessionStarter {
                 });
             }
 
+            // Update section counter display
+            this.updateSectionCounter();
+
             // Focus on the first section
             await this.focusOnPracticeSection(firstSection.highlightId);
 
@@ -258,6 +261,26 @@ class PracticeSessionStarter {
     }
 
     /**
+     * Update the section counter display
+     */
+    updateSectionCounter() {
+        if (!this.practiceSession) return;
+
+        const sectionCounterElement = document.querySelector('[data-role="section-counter"]');
+        if (sectionCounterElement) {
+            const current = this.practiceSession.currentSectionIndex + 1;
+            const total = this.practiceSession.config.sections.length;
+            sectionCounterElement.textContent = `Section ${current} of ${total}`;
+            
+            this.logger.debug?.('Practice Session Starter: Updated section counter', {
+                current,
+                total,
+                currentIndex: this.practiceSession.currentSectionIndex
+            });
+        }
+    }
+
+    /**
      * Handle timer completion - move to next section or end session
      */
     async handleTimerComplete() {
@@ -284,6 +307,9 @@ class PracticeSessionStarter {
                 this.practiceSessionTimer.startTimer(nextSection.targetTime);
             }
 
+            // Update section counter display
+            this.updateSectionCounter();
+
             // Focus on next section
             await this.focusOnPracticeSection(nextSection.highlightId);
         } else {
@@ -309,9 +335,54 @@ class PracticeSessionStarter {
         });
         window.dispatchEvent(event);
 
+        // Exit focus mode if active
+        this._exitFocusMode();
+
+        // Hide the timer UI (same as exit button behavior)
+        this._hideTimer();
+
         // Clean up
         this.practiceSession = null;
         this.practiceSessionTimer = null;
+    }
+
+    /**
+     * Exit focus mode if currently active
+     * @private
+     */
+    _exitFocusMode() {
+        try {
+            // Check if focus mode is currently active by looking at canvas attribute
+            const canvas = document.querySelector('[data-role="pdf-canvas"]');
+            const isInFocusMode = canvas && canvas.getAttribute('data-focus-mode') === 'active';
+            
+            if (isInFocusMode && window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.exitFocusMode === 'function') {
+                this.logger.info('Practice Session Starter: Exiting focus mode after session completion');
+                window.PlayTimeHighlighting.exitFocusMode();
+            } else {
+                this.logger.debug?.('Practice Session Starter: Focus mode not active or highlighting not available');
+            }
+        } catch (error) {
+            this.logger.warn('Practice Session Starter: Error exiting focus mode', { error: error.message });
+        }
+    }
+
+    /**
+     * Hide the timer UI (same as exit button behavior)
+     * @private
+     */
+    _hideTimer() {
+        try {
+            const timerContainer = document.querySelector('#practice-session-timer');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+                this.logger.info('Practice Session Starter: Timer UI hidden');
+            } else {
+                this.logger.debug?.('Practice Session Starter: Timer container not found');
+            }
+        } catch (error) {
+            this.logger.warn('Practice Session Starter: Error hiding timer', { error: error.message });
+        }
     }
 
     /**
@@ -350,6 +421,12 @@ class PracticeSessionStarter {
             }
         });
         window.dispatchEvent(event);
+
+        // Exit focus mode if active
+        this._exitFocusMode();
+
+        // Hide the timer UI (same as exit button behavior)
+        this._hideTimer();
 
         // Clean up
         this.practiceSession = null;
