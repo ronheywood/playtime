@@ -127,22 +127,16 @@ class PracticeSessionStarter {
         try {
             this.logger.info('Practice Session Starter: Focusing on section', { highlightId });
 
-            // First, check if the highlight element is already visible
-            let highlightElement = document.querySelector(`[data-highlight-id="${highlightId}"]`);
+            // Always check if we need to navigate to the correct page first
+            // Don't rely on element existence since elements might exist in DOM but not be visible
+            await this._navigateToHighlightPage(highlightId);
             
-            if (!highlightElement) {
-                // Element not found - might be on a different page
-                // Try to get highlight data to determine which page it's on
-                await this._navigateToHighlightPage(highlightId);
-                
-                // After navigation, try to find the element again
-                // Wait a bit for the page to render and highlights to be rehydrated
-                await this._waitForHighlightElement(highlightId);
-                highlightElement = document.querySelector(`[data-highlight-id="${highlightId}"]`);
-            }
+            // After potential navigation, wait for highlights to be rendered and find the element
+            await this._waitForHighlightElement(highlightId);
+            let highlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
 
             if (highlightElement) {
-                // Use highlighting module's focus method if available
+                // Use highlighting module's focus method if available (same as double-click behavior)
                 if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.focusOnHighlight === 'function') {
                     this.logger.info('Practice Session Starter: Triggering focus action on highlight', { highlightId });
                     window.PlayTimeHighlighting.focusOnHighlight(highlightElement);
@@ -242,7 +236,7 @@ class PracticeSessionStarter {
             
             const checkElement = () => {
                 try {
-                    const element = document.querySelector(`[data-highlight-id="${highlightId}"]`);
+                    const element = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
                     if (element || attempts >= maxAttempts) {
                         resolve();
                     } else {

@@ -264,7 +264,7 @@ describe('PracticeSessionStarter', () => {
 
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
-            expect(document.querySelector).toHaveBeenCalledWith(`[data-highlight-id="${highlightId}"]`);
+            expect(document.querySelector).toHaveBeenCalledWith(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
             expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
             expect(mockLogger.info).toHaveBeenCalledWith(
                 'Practice Session Starter: Triggering focus action on highlight',
@@ -360,19 +360,79 @@ describe('PracticeSessionStarter', () => {
             );
         });
 
-        test('should not navigate when highlight is already visible on current page', async () => {
-            // Mock element as immediately found (no need for page navigation)
+        test('should not navigate when highlight is already on current page', async () => {
+            // Mock the highlight data to indicate it's on the current page
+            const mockHighlightData = { id: highlightId, page: 1, xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.4 };
+            const mockPersistenceService = {
+                getHighlight: jest.fn().mockResolvedValue(mockHighlightData)
+            };
+            const mockPDFViewer = {
+                getCurrentPage: jest.fn().mockReturnValue(1),
+                renderPage: jest.fn().mockResolvedValue()
+            };
+
+            // Set up mocks
+            global.window.PlayTimeHighlighting = {
+                _components: {
+                    persistenceService: mockPersistenceService
+                },
+                focusOnHighlight: jest.fn()
+            };
+            global.window.PlayTimePDFViewer = mockPDFViewer;
+
             const mockElement = { scrollIntoView: jest.fn() };
             document.querySelector = jest.fn().mockReturnValue(mockElement);
 
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
-            // Since element was found immediately, no navigation should occur
+            // Should check page but not navigate since we're already on the correct page
+            expect(mockPersistenceService.getHighlight).toHaveBeenCalledWith(highlightId);
+            expect(mockPDFViewer.getCurrentPage).toHaveBeenCalled();
+            expect(mockPDFViewer.renderPage).not.toHaveBeenCalled(); // Should not navigate
             expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
 
             expect(mockLogger.info).toHaveBeenCalledWith(
-                'Practice Session Starter: Triggering focus action on highlight',
-                { highlightId }
+                'Practice Session Starter: Highlight already on current page',
+                { highlightId, currentPage: 1 }
+            );
+        });
+
+        test('should navigate to correct page even when highlight element exists in DOM on different page', async () => {
+            // This test covers the scenario where highlight elements from multiple pages exist in DOM
+            // but we need to navigate to the correct page before focusing
+            const mockHighlightData = { id: highlightId, page: 3, xPct: 0.1, yPct: 0.2, wPct: 0.3, hPct: 0.4 };
+            const mockPersistenceService = {
+                getHighlight: jest.fn().mockResolvedValue(mockHighlightData)
+            };
+            const mockPDFViewer = {
+                getCurrentPage: jest.fn().mockReturnValue(1),
+                renderPage: jest.fn().mockResolvedValue()
+            };
+
+            // Set up mocks
+            global.window.PlayTimeHighlighting = {
+                _components: {
+                    persistenceService: mockPersistenceService
+                },
+                focusOnHighlight: jest.fn()
+            };
+            global.window.PlayTimePDFViewer = mockPDFViewer;
+
+            // Mock querySelector to always return an element (simulating element exists in DOM but on wrong page)
+            const mockElement = { scrollIntoView: jest.fn() };
+            document.querySelector = jest.fn().mockReturnValue(mockElement);
+
+            await practiceSessionStarter.focusOnPracticeSection(highlightId);
+
+            // Should navigate even though element exists in DOM
+            expect(mockPersistenceService.getHighlight).toHaveBeenCalledWith(highlightId);
+            expect(mockPDFViewer.getCurrentPage).toHaveBeenCalled();
+            expect(mockPDFViewer.renderPage).toHaveBeenCalledWith(3); // Should navigate to page 3
+            expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockElement);
+
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                'Practice Session Starter: Navigating to highlight page',
+                { highlightId, currentPage: 1, targetPage: 3 }
             );
         });
 
