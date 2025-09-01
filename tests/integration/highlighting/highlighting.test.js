@@ -386,4 +386,100 @@ describe('Highlighting - Integration Tests', () => {
             expect(() => Highlighting.repositionAll()).not.toThrow();
         });
     });
+
+    describe('practice mode selection disable/enable', () => {
+        beforeEach(async () => {
+            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+        });
+
+        test('should disable selection when disableSelection() is called', () => {
+            // Get the mouse handler instance
+            const mouseHandler = Highlighting._components.mouseHandler;
+            expect(mouseHandler.disabled).toBe(false);
+
+            // Disable selection
+            Highlighting.disableSelection();
+
+            // Verify selection is disabled
+            expect(mouseHandler.disabled).toBe(true);
+        });
+
+        test('should re-enable selection when enableSelection() is called', () => {
+            // Get the mouse handler instance
+            const mouseHandler = Highlighting._components.mouseHandler;
+            
+            // First disable
+            Highlighting.disableSelection();
+            expect(mouseHandler.disabled).toBe(true);
+
+            // Then re-enable
+            Highlighting.enableSelection();
+            expect(mouseHandler.disabled).toBe(false);
+        });
+
+        test('should not create highlights when selection is disabled', () => {
+            const canvas = document.querySelector('[data-role="pdf-canvas"]');
+            Highlighting.disableSelection();
+
+            // Simulate mouse events that would normally create a highlight
+            const mouseDownEvent = new MouseEvent('mousedown', {
+                bubbles: true,
+                clientX: 100,
+                clientY: 100
+            });
+            const mouseUpEvent = new MouseEvent('mouseup', {
+                bubbles: true,
+                clientX: 150,
+                clientY: 150
+            });
+
+            canvas.dispatchEvent(mouseDownEvent);
+            canvas.dispatchEvent(mouseUpEvent);
+
+            // Verify no highlight was created (no database call)
+            expect(mockDatabase.addHighlight).not.toHaveBeenCalled();
+        });
+
+        test('should create highlights normally when selection is re-enabled', async () => {
+            const canvas = document.querySelector('[data-role="pdf-canvas"]');
+            
+            // Disable and then re-enable selection
+            Highlighting.disableSelection();
+            Highlighting.enableSelection();
+
+            // Set a confidence level
+            Highlighting.setActiveConfidenceFromColor('amber');
+
+            // Wait for any async operations
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            // Simulate mouse events to create a highlight
+            const mouseDownEvent = new MouseEvent('mousedown', {
+                bubbles: true,
+                clientX: 100,
+                clientY: 100
+            });
+            canvas.dispatchEvent(mouseDownEvent);
+
+            const mouseMoveEvent = new MouseEvent('mousemove', {
+                bubbles: true,
+                clientX: 150,
+                clientY: 150
+            });
+            document.dispatchEvent(mouseMoveEvent);
+
+            const mouseUpEvent = new MouseEvent('mouseup', {
+                bubbles: true,
+                clientX: 150,
+                clientY: 150
+            });
+            document.dispatchEvent(mouseUpEvent);
+
+            // Wait for async database operations
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            // Verify highlight creation was attempted
+            expect(mockDatabase.addHighlight).toHaveBeenCalled();
+        });
+    });
 });

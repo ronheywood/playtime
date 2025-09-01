@@ -16,6 +16,7 @@ class MouseSelectionHandler {
             activePointerId: null // Track active touch/pointer
         };
         
+        this.disabled = false; // Track disabled state for practice mode
         this.selectionOverlay = null;
         this.coordinateMapper = null;
         // Event handlers
@@ -63,10 +64,35 @@ class MouseSelectionHandler {
     }
 
     /**
+     * Disable selection temporarily (for practice mode)
+     */
+    disable() {
+        this.removeEventListeners();
+        this.reset();
+        this.disabled = true;
+    }
+
+    /**
+     * Re-enable selection after being disabled
+     */
+    enable() {
+        this.disabled = false;
+        this.setupEventListeners();
+    }
+
+    /**
      * Clean up event listeners and state
      */
     destroy() {
         this.removeDocumentListeners();
+        this.removeEventListeners();
+        this.reset();
+    }
+
+    /**
+     * Remove canvas event listeners
+     */
+    removeEventListeners() {
         if (this.canvas && this.canvas.removeEventListener) {
             // Remove mouse events
             this.canvas.removeEventListener('mousedown', this.handleMouseDown);
@@ -80,7 +106,6 @@ class MouseSelectionHandler {
             this.canvas.removeEventListener('touchend', this.handleTouchEnd);
             this.canvas.removeEventListener('touchcancel', this.handleTouchEnd);
         }
-        this.reset();
     }
 
     /**
@@ -115,6 +140,8 @@ class MouseSelectionHandler {
     }
 
     handleMouseDown(event) {
+        if (this.disabled) return; // Skip if selection is disabled
+        
         this.state.isSelecting = true;
         this.state.startPoint = this.coordinateMapper.getRelativePoint(
             this.container, 
@@ -181,6 +208,8 @@ class MouseSelectionHandler {
     // Touch event handlers for mobile/tablet support
     
     handleTouchStart(event) {
+        if (this.disabled) return; // Skip if selection is disabled
+        
         // Prevent scrolling and other default behaviors during selection
         event.preventDefault();
         

@@ -10,14 +10,17 @@ This plan addresses critical usability issues in practice mode, particularly on 
 **Duration**: 1-2 weeks  
 **Goal**: Fix fundamental issues that break practice sessions
 
-#### Task 1.1: Disable Highlight Selection in Practice Mode
-- **Files**: `scripts/practice/practice-session-starter.js`, `scripts/highlighting/highlighting.js`
+#### Task 1.1: Disable Highlight Creation in Practice Mode ✅ COMPLETED
+- **Files**: `scripts/practice/practice-session-starter.js`, `scripts/highlighting/highlighting.js`, `scripts/highlighting/MouseSelectionHandler.js`
 - **Implementation**: 
-  - Call `window.PlayTimeHighlighting.disableSelection()` on practice session start
-  - Restore selection with `enableSelection()` on session end  
-  - Add visual indicator (cursor change, overlay message)
-- **Testing**: Verify touch/mouse events don't create new highlights during practice
-- **Effort**: 4 hours
+  - ✅ Added new `disable()` and `enable()` methods to `MouseSelectionHandler.js`
+  - ✅ Changed `window.PlayTimeHighlighting.disableSelection()` to call the disable method on the handler rather than destroying it
+  - ✅ Added `window.PlayTimeHighlighting.enableSelection()` method to proxy to MouseSelectionHandler enable methods
+  - ✅ Call `window.PlayTimeHighlighting.disableSelection()` on practice session start
+  - ✅ Call `window.PlayTimeHighlighting.enableSelection()` on practice session end and exit
+  - ✅ Added visual indicator CSS and JavaScript to show selection is disabled
+- **Testing**: ✅ Verify touch/mouse events don't create new highlights during practice, ✅ Verify highlights can be added again after practice
+- **Effort**: 4 hours ✅ COMPLETED
 
 #### Task 1.2: Fix iPad Timer Positioning
 - **Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-timer.js`
@@ -58,7 +61,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Testing**: Visual verification of single visible highlight with reduced opacity
 - **Effort**: 8 hours
 
-**Sprint 1 Total**: 18 hours
+**Sprint 1 Total**: 18 hours (Task 1.1 ✅ COMPLETED - 4 hours)
 
 ### Sprint 2: Touch & Scrolling Improvements (Priority: High)
 **Duration**: 1 week  

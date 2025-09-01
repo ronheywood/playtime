@@ -470,3 +470,35 @@ body {
 .practice-session-timer-compact[style*="display: none"] {
     display: none !important;
 }
+
+/* Practice Mode Selection Disabled State */
+.practice-mode-selection-disabled [data-role="pdf-canvas"] {
+    cursor: default !important;
+}
+
+.practice-mode-selection-disabled [data-role="pdf-canvas"]:hover {
+    cursor: default !important;
+}
+
+/* Optional: Add visual indicator when selection is disabled */
+.practice-mode-selection-disabled::after {
+    content: "Selection disabled during practice";
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    z-index: 1004;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Show the indicator temporarily when practice mode starts */
+.practice-mode-selection-disabled.show-indicator::after {
+    opacity: 1;
+}

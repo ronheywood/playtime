@@ -93,6 +93,15 @@ class PracticeSessionStarter {
                 this.logger.warn('Practice Session Starter: Timer component not available');
             }
 
+            // Disable highlight selection during practice mode
+            if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.disableSelection === 'function') {
+                window.PlayTimeHighlighting.disableSelection();
+                this.logger.info('Practice Session Starter: Highlight selection disabled');
+                
+                // Add visual indicator
+                this._showSelectionDisabledIndicator();
+            }
+
             // Dispatch practice session start event
             const event = new CustomEvent('playtime:practice-session-configured', {
                 detail: {
@@ -328,6 +337,15 @@ class PracticeSessionStarter {
     handleSessionComplete() {
         this.logger.info('Practice Session Starter: Session completed');
 
+        // Re-enable highlight selection
+        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
+            window.PlayTimeHighlighting.enableSelection();
+            this.logger.info('Practice Session Starter: Highlight selection re-enabled');
+            
+            // Remove visual indicator
+            this._hideSelectionDisabledIndicator();
+        }
+
         // Dispatch session complete event
         const event = new CustomEvent('playtime:practice-session-complete', {
             detail: {
@@ -418,6 +436,15 @@ class PracticeSessionStarter {
     handleTimerExit() {
         this.logger.info('Practice Session Starter: Timer exit triggered');
         
+        // Re-enable highlight selection
+        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
+            window.PlayTimeHighlighting.enableSelection();
+            this.logger.info('Practice Session Starter: Highlight selection re-enabled');
+            
+            // Remove visual indicator
+            this._hideSelectionDisabledIndicator();
+        }
+        
         // Dispatch session exit event
         const event = new CustomEvent('playtime:practice-session-exit', {
             detail: {
@@ -448,6 +475,15 @@ class PracticeSessionStarter {
      * End the current practice session
      */
     endSession() {
+        // Re-enable highlight selection
+        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
+            window.PlayTimeHighlighting.enableSelection();
+            this.logger.info('Practice Session Starter: Highlight selection re-enabled');
+            
+            // Remove visual indicator
+            this._hideSelectionDisabledIndicator();
+        }
+        
         if (this.practiceSessionTimer) {
             this.practiceSessionTimer.stop();
             this.practiceSessionTimer = null;
@@ -461,6 +497,42 @@ class PracticeSessionStarter {
      */
     isSessionActive() {
         return this.practiceSession !== null;
+    }
+
+    /**
+     * Show visual indicator that selection is disabled
+     * @private
+     */
+    _showSelectionDisabledIndicator() {
+        try {
+            const viewerContainer = document.querySelector('[data-role="pdf-viewer"]') || document.body;
+            viewerContainer.classList.add('practice-mode-selection-disabled');
+            
+            // Show indicator temporarily
+            viewerContainer.classList.add('show-indicator');
+            setTimeout(() => {
+                viewerContainer.classList.remove('show-indicator');
+            }, 3000); // Hide after 3 seconds
+            
+            this.logger.debug?.('Practice Session Starter: Selection disabled indicator shown');
+        } catch (error) {
+            this.logger.warn('Practice Session Starter: Error showing selection disabled indicator', { error: error.message });
+        }
+    }
+
+    /**
+     * Hide visual indicator that selection is disabled
+     * @private
+     */
+    _hideSelectionDisabledIndicator() {
+        try {
+            const viewerContainer = document.querySelector('[data-role="pdf-viewer"]') || document.body;
+            viewerContainer.classList.remove('practice-mode-selection-disabled', 'show-indicator');
+            
+            this.logger.debug?.('Practice Session Starter: Selection disabled indicator hidden');
+        } catch (error) {
+            this.logger.warn('Practice Session Starter: Error hiding selection disabled indicator', { error: error.message });
+        }
     }
 }
 

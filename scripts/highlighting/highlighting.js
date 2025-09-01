@@ -323,7 +323,15 @@
 
         disableSelection() { 
             if (this._components.mouseHandler) {
-                this._components.mouseHandler.destroy();
+                this._components.mouseHandler.disable();
+                this._state.logger.info?.('Highlighting: Selection disabled for practice mode');
+            }
+        },
+
+        enableSelection() {
+            if (this._components.mouseHandler) {
+                this._components.mouseHandler.enable();
+                this._state.logger.info?.('Highlighting: Selection re-enabled after practice mode');
             }
         },
 
