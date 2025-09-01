@@ -242,7 +242,8 @@ class PracticeSessionTimer {
             // On mobile/tablet, ensure the timer is properly positioned
             // The CSS media query handles most styling, but we need to ensure proper z-index and positioning context
             timerContainer.style.position = 'fixed';
-            timerContainer.style.zIndex = '1003';
+            timerContainer.style.zIndex = '9999'; // Match the CSS z-index
+            timerContainer.style.pointerEvents = 'auto'; // Ensure touch events work
             
             // Move timer to body to avoid any container positioning issues
             if (timerContainer.parentElement && timerContainer.parentElement !== document.body) {
@@ -254,8 +255,23 @@ class PracticeSessionTimer {
                 timerContainer.dataset.originalParent = parentDataRole || parentId || 'unknown';
                 document.body.appendChild(timerContainer);
                 
+                // Ensure all buttons within timer have proper touch handling
+                const buttons = timerContainer.querySelectorAll('button');
+                buttons.forEach(button => {
+                    button.style.pointerEvents = 'auto';
+                    button.style.touchAction = 'manipulation';
+                    // Add visual touch feedback
+                    button.addEventListener('touchstart', function() {
+                        this.style.opacity = '0.7';
+                    }, { passive: true });
+                    button.addEventListener('touchend', function() {
+                        this.style.opacity = '1';
+                    }, { passive: true });
+                });
+                
                 this.logger.info('Practice Session Timer: Moved to body for mobile positioning', {
-                    originalParent: timerContainer.dataset.originalParent
+                    originalParent: timerContainer.dataset.originalParent,
+                    buttonsConfigured: buttons.length
                 });
             }
         }

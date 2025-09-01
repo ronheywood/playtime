@@ -415,13 +415,14 @@ body {
         top: env(safe-area-inset-top, 0.5rem) !important;
         right: 0.5rem !important;
         left: auto !important;
-        z-index: 1003 !important;
+        z-index: 9999 !important; /* Much higher z-index to ensure no overlaps */
         background: rgba(var(--card-rgb, 255, 255, 255), 0.95) !important;
         backdrop-filter: blur(8px) !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         border-radius: 12px !important;
         padding: 12px 16px !important;
         max-width: calc(100vw - 1rem) !important;
+        pointer-events: auto !important; /* Explicitly enable pointer events */
     }
     
     /* Adjust timer layout for mobile */
@@ -430,13 +431,32 @@ body {
         border: none !important;
         padding: 0 !important;
         gap: 8px !important;
+        pointer-events: auto !important;
     }
     
     /* Make timer controls more touch-friendly */
+    #practice-session-timer .timer-controls-compact {
+        pointer-events: auto !important;
+    }
+    
     #practice-session-timer .timer-controls-compact .btn {
-        min-width: 40px !important;
-        min-height: 40px !important;
+        min-width: 44px !important; /* iOS recommended minimum touch target */
+        min-height: 44px !important;
         padding: 8px !important;
+        pointer-events: auto !important; /* Explicitly enable touches */
+        touch-action: manipulation !important; /* Improve touch responsiveness */
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1) !important; /* Visual feedback */
+    }
+    
+    /* Ensure all interactive elements within timer can receive touches */
+    #practice-session-timer button,
+    #practice-session-timer [data-role="pause-timer"],
+    #practice-session-timer [data-role="next-section"], 
+    #practice-session-timer [data-role="exit-practice-session"] {
+        pointer-events: auto !important;
+        touch-action: manipulation !important;
+        position: relative !important; /* Ensure proper stacking context */
+        z-index: 1 !important;
     }
     
     /* Compact section info for mobile */
@@ -554,13 +574,14 @@ body {
         top: env(safe-area-inset-top, 0.5rem) !important;
         right: 0.5rem !important;
         left: auto !important;
-        z-index: 1003 !important;
+        z-index: 9999 !important; /* Match the higher z-index from main mobile rules */
         background: rgba(255, 255, 255, 0.95) !important;
         backdrop-filter: blur(8px) !important;
         border-radius: 0.5rem !important;
         padding: 0.5rem !important;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
         border: 1px solid hsl(var(--border)) !important;
+        pointer-events: auto !important;
     }
     
     /* Dark mode support for mobile timer */
