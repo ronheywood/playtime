@@ -155,14 +155,6 @@ body {
     color: hsl(var(--foreground));
 }
 
-/* Dark mode toggle button */
-.theme-toggle {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 1101;
-}
-
 /* Sheet music - always light for readability */
 .sheet-music {
     background-color: white !important;
@@ -603,7 +595,7 @@ body {
     #practice-session-timer {
         position: fixed !important;
         top: env(safe-area-inset-top, 0.5rem) !important;
-        right: 0.5rem !important;
+        right: 1rem !important; /* Better positioning now that theme toggle is in sidebar */
         left: auto !important;
         z-index: 9999 !important; /* Match the higher z-index from main mobile rules */
         background: rgba(255, 255, 255, 0.95) !important;

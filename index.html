@@ -13,21 +13,22 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body>
-    <!-- Add floating Dark Mode Toggle to match prototype -->
-    <button id="theme-toggle" class="theme-toggle btn btn-outline btn-icon" title="Toggle dark mode">
-        <i id="sun-icon" data-lucide="sun" class="w-6 h-6"></i>
-        <i id="moon-icon" data-lucide="moon" class="w-6 h-6 hidden"></i>
-    </button>
-
     <div id="app" class="min-h-screen bg-background flex">
         <!-- Left Sidebar - Score Library & Controls -->
         <div class="sidebar w-80 border-r border-border bg-card-50 flex flex-col">
             <!-- Header -->
             <div class="p-4 border-b border-border">
-                <div class="flex items-center gap-2 mb-4">
-                    <!-- Remove decorative icon to reduce visual noise -->
-                    <!-- <i data-lucide="music-3" class="w-4 h-4"></i> -->
-                    <span class="text-lg font-semibold text-foreground">PlayTime Practice</span>
+                <div class="flex items-center justify-between gap-2 mb-4">
+                    <div class="flex items-center gap-2">
+                        <!-- Remove decorative icon to reduce visual noise -->
+                        <!-- <i data-lucide="music-3" class="w-4 h-4"></i> -->
+                        <span class="text-lg font-semibold text-foreground">PlayTime Practice</span>
+                    </div>
+                    <!-- Move theme toggle to control bar -->
+                    <button id="theme-toggle" class="theme-toggle btn btn-outline btn-icon" title="Toggle dark mode">
+                        <i id="sun-icon" data-lucide="sun" class="w-4 h-4"></i>
+                        <i id="moon-icon" data-lucide="moon" class="w-4 h-4 hidden"></i>
+                    </button>
                 </div>
                 
                 <!-- File Upload -->
