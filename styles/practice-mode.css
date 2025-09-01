@@ -324,8 +324,10 @@ body {
 }
 
 /* Practice Mode Highlight Visibility Control */
-/* Hide all highlights during practice mode to reduce visual distractions */
-#viewer-section[data-practice-mode="active"] [data-role="highlight"]:not(.current-practice-section) {
+/* Use simpler selectors for better performance on mobile devices */
+
+/* Hide all highlights during practice mode by default */
+#viewer-section[data-practice-mode="active"] [data-role="highlight"] {
     display: none !important;
     visibility: hidden !important;
 }
@@ -337,7 +339,15 @@ body {
     opacity: 0.3;
     border-style: dotted !important;
     border-width: 2px !important;
-    transition: opacity 0.3s ease, border-style 0.3s ease;
+    /* Remove transition for faster performance on iPad */
+    transition: none;
+}
+
+/* Performance optimization: temporarily disable all highlight styles during cleanup */
+#viewer-section[style*="--practice-mode-exit"] [data-role="highlight"] {
+    display: none !important;
+    visibility: hidden !important;
+    transition: none !important;
 }
 
 /* Practice Planner Component Styles */

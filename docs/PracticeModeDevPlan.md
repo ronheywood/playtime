@@ -35,25 +35,37 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Testing**: ✅ iPad Safari, iPhone Safari, Android Chrome, all unit and integration tests passing
 - **Effort**: 6 hours ✅ COMPLETED
 
-#### Task 1.3: Practice Mode Highlight Visibility
+#### Task 1.3: Practice Mode Highlight Visibility ✅ COMPLETED
 - **Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-starter.js`
 - **Implementation**:
+  - ✅ Added CSS rules to hide all highlights during practice mode except current section
+  - ✅ Used simpler CSS selectors for better mobile performance (removed `:not()` pseudo-class)
+  - ✅ Integrated practice mode state management with layout command system
+  - ✅ Added performance optimizations for iPad using `requestAnimationFrame` for DOM cleanup
+  - ✅ Current section shown with reduced opacity (0.3) and dotted border for visual focus
+  - ✅ Consolidated session cleanup in `endSession()` method with async DOM operations
   ```css
-  .practice-mode-active [data-role="highlight"] {
-    display: none;
+  #viewer-section[data-practice-mode="active"] [data-role="highlight"] {
+    display: none !important;
+    visibility: hidden !important;
   }
   
-  .practice-mode-active [data-role="highlight"].current-practice-section {
-    display: block;
+  #viewer-section[data-practice-mode="active"] [data-role="highlight"].current-practice-section {
+    display: block !important;
+    visibility: visible !important;
     opacity: 0.3;
-    border-style: dotted;
-    border-width: 2px;
+    border-style: dotted !important;
+    border-width: 2px !important;
   }
   ```
-- **Testing**: Visual verification of single visible highlight with reduced opacity
-- **Effort**: 8 hours
+- **Performance Enhancements**: 
+  - ✅ Deferred DOM cleanup using `requestAnimationFrame` for smoother iPad performance
+  - ✅ Removed CSS transitions that were causing slow practice mode exit
+  - ✅ Batched DOM operations to minimize reflows during cleanup
+- **Testing**: ✅ Visual verification of single visible highlight with reduced opacity, ✅ All unit tests passing with performance optimizations
+- **Effort**: 4 hours ✅ COMPLETED
 
-**Sprint 1 Total**: 18 hours (Task 1.1 ✅ COMPLETED - 4 hours)
+**Sprint 1 Total**: 14 hours (All tasks ✅ COMPLETED)
 
 ### Sprint 2: Touch & Scrolling Improvements (Priority: High)
 **Duration**: 1 week  

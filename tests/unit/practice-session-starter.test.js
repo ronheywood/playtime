@@ -10,6 +10,13 @@ const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 global.document = dom.window.document;
 global.window = dom.window;
 
+// Mock requestAnimationFrame for the test environment
+global.window.requestAnimationFrame = jest.fn(callback => {
+    // Execute immediately in tests
+    callback();
+    return 1;
+});
+
 // Mock window.PracticeSessionTimer before requiring the module
 const mockTimerConstructor = jest.fn();
 global.window.PracticeSessionTimer = mockTimerConstructor;

@@ -487,32 +487,73 @@ class PracticeSessionStarter {
             this._hideSelectionDisabledIndicator();
         }
 
-        // Exit practice mode layout
-        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
-            window.PlayTimeLayoutCommands.execute('practice-mode', { action: 'exit' });
-            this.logger.info('Practice Session Starter: Exited practice mode layout');
-        } else {
-            // Fallback: Remove the attribute directly if layout commands are not available
-            const viewerSection = document.querySelector('#viewer-section');
-            if (viewerSection) {
-                viewerSection.removeAttribute('data-practice-mode');
-                this.logger.info('Practice Session Starter: Removed practice mode attribute directly');
-            }
-        }
-
-        // Clean up current-practice-section class from all highlights
-        const allHighlights = document.querySelectorAll('[data-role="highlight"]');
-        allHighlights.forEach(highlight => {
-            highlight.classList.remove('current-practice-section');
+        // Optimize DOM cleanup for better performance on iPad
+        // Use requestAnimationFrame to defer heavy DOM operations
+        const scheduleCleanup = (typeof requestAnimationFrame !== 'undefined') 
+            ? requestAnimationFrame 
+            : (callback) => setTimeout(callback, 0);
+            
+        scheduleCleanup(() => {
+            this._performDOMCleanup();
         });
-        this.logger.info('Practice Session Starter: Cleaned up current-practice-section classes');
         
+        // Clean up session state immediately
         if (this.practiceSessionTimer) {
             this.practiceSessionTimer.stop();
             this.practiceSessionTimer = null;
         }
         
         this.practiceSession = null;
+    }
+
+    /**
+     * Perform DOM cleanup operations with performance optimizations
+     * @private
+     */
+    _performDOMCleanup() {
+        // Batch DOM operations to minimize reflows
+        const viewerSection = document.querySelector('#viewer-section');
+        
+        if (viewerSection && typeof viewerSection.removeAttribute === 'function') {
+            // Use a single style change to disable CSS rules efficiently (browser only)
+            if (viewerSection.style && typeof viewerSection.style.setProperty === 'function') {
+                viewerSection.style.setProperty('--practice-mode-exit', 'true');
+            }
+            
+            // Remove practice mode attribute (triggers CSS recalculation)
+            viewerSection.removeAttribute('data-practice-mode');
+            
+            // Clean up current-practice-section class only from elements that have it
+            if (typeof viewerSection.querySelectorAll === 'function') {
+                const currentSectionHighlights = viewerSection.querySelectorAll('[data-role="highlight"].current-practice-section');
+                currentSectionHighlights.forEach(highlight => {
+                    if (highlight && highlight.classList && typeof highlight.classList.remove === 'function') {
+                        highlight.classList.remove('current-practice-section');
+                    }
+                });
+            }
+            
+            // Remove the temporary style property (browser only)
+            if (viewerSection.style && typeof viewerSection.style.removeProperty === 'function') {
+                const scheduleStyleCleanup = (typeof requestAnimationFrame !== 'undefined') 
+                    ? requestAnimationFrame 
+                    : (callback) => setTimeout(callback, 0);
+                    
+                scheduleStyleCleanup(() => {
+                    if (viewerSection.style && typeof viewerSection.style.removeProperty === 'function') {
+                        viewerSection.style.removeProperty('--practice-mode-exit');
+                    }
+                });
+            }
+            
+            this.logger.info('Practice Session Starter: DOM cleanup completed');
+        }
+        
+        // Exit practice mode layout after DOM operations
+        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
+            window.PlayTimeLayoutCommands.execute('practice-mode', { action: 'exit' });
+            this.logger.info('Practice Session Starter: Exited practice mode layout');
+        }
     }
 
     /**
