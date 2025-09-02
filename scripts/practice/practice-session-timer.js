@@ -70,7 +70,7 @@ class PracticeSessionTimer {
         if (this.timeLeftSeconds <= 0) {
             this.logger.info('Practice Session Timer: Timer started with 0 or negative time, completing immediately');
             // Use setTimeout to complete asynchronously
-            setTimeout(() => this.completeTimer(), 0);
+            setTimeout(() => this.completeTimer(), 0).unref?.();
             return;
         }
         
@@ -95,6 +95,9 @@ class PracticeSessionTimer {
                 }
             }
         }, 1000);
+        
+        // Add unref to prevent timer from keeping process alive in tests
+        this.timerId.unref?.();
     }
     
     /**

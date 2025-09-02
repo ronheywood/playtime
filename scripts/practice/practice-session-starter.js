@@ -1,154 +1,72 @@
 /**
  * Practice Session Starter Module
- * Handles starting practice sessions independently from the UI
- * This module can be used by both the practice planning UI and sidebar shortcuts
+ * Handles practice mode environment setup and cleanup
+ * This module focuses only on configuring the UI state for practice mode
  */
 
 class PracticeSessionStarter {
-    constructor(logger, database, practicePlanPersistenceService, options = {}) {
+    constructor(logger, options = {}) {
         this.logger = logger;
-        this.database = database;
-        this.practicePlanPersistenceService = practicePlanPersistenceService;
-        this.practiceSession = null;
-        this.practiceSessionTimer = null;
-        this.wakeLock = null; // Screen wake lock instance
+    }
+
+    /**
+     * Setup practice mode environment (UI state, highlighting, layout)
+     */
+    async setupPracticeModeEnvironment() {
+        // Disable highlight selection during practice mode
+        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.disableSelection === 'function') {
+            window.PlayTimeHighlighting.disableSelection();
+            this.logger.info('Practice Session Starter: Highlight selection disabled');
+            
+            // Add visual indicator
+            this._showSelectionDisabledIndicator();
+        }
+
+        // Set practice mode layout
+        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
+            window.PlayTimeLayoutCommands.execute('practice-mode', { action: 'enter' });
+            this.logger.info('Practice Session Starter: Entered practice mode layout');
+        } else {
+            // Fallback: Set the attribute directly if layout commands are not available
+            const viewerSection = document.querySelector('#viewer-section');
+            if (viewerSection) {
+                viewerSection.setAttribute('data-practice-mode', 'active');
+                this.logger.info('Practice Session Starter: Set practice mode attribute directly');
+            }
+        }
         
-        // Configurable timeouts for testing
-        this.pageRenderTimeout = options.pageRenderTimeout ?? 500;
-        this.elementCheckInterval = options.elementCheckInterval ?? 100;
+        // Return success
+        return true;
     }
 
     /**
-     * Start a practice session from a saved practice plan
-     * @param {string} planId - The ID of the practice plan to start
-     * @param {string} scoreId - The ID of the score the plan belongs to
-     * @returns {Promise<boolean>} - Success/failure status
+     * Cleanup practice mode environment
      */
-    async startFromPlan(planId, scoreId) {
-        try {
-            this.logger.info('Practice Session Starter: Starting session from plan', { planId, scoreId });
-
-            // Load the practice plan
-            const practicePlan = await this.practicePlanPersistenceService.loadPracticePlan(planId);
-            if (!practicePlan) {
-                this.logger.error('Practice Session Starter: Plan not found', { planId });
-                return false;
-            }
-
-            // Validate the plan has sections
-            if (!practicePlan.sections || practicePlan.sections.length === 0) {
-                this.logger.warn('Practice Session Starter: Plan has no sections', { planId });
-                return false;
-            }
-
-            // Start the session with the plan configuration
-            return await this._startSession(practicePlan, scoreId);
-
-        } catch (error) {
-            this.logger.error('Practice Session Starter: Error starting from plan', { planId, scoreId, error });
-            return false;
+    cleanupPracticeModeEnvironment() {
+        // Re-enable highlight selection
+        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
+            window.PlayTimeHighlighting.enableSelection();
+            this.logger.info('Practice Session Starter: Highlight selection re-enabled');
+            
+            // Remove visual indicator
+            this._hideSelectionDisabledIndicator();
         }
-    }
 
-    /**
-     * Start a practice session from session configuration (internal method)
-     * @private
-     * @param {Object} sessionConfig - The practice session configuration
-     * @param {string} scoreId - The ID of the score
-     * @returns {Promise<boolean>} - Success/failure status
-     */
-    async _startSession(sessionConfig, scoreId) {
-        try {
-            this.logger.info('Practice Session Starter: Starting practice session', { 
-                sessionName: sessionConfig.name,
-                scoreId: scoreId,
-                sectionsCount: sessionConfig.sections?.length || 0
-            });
+        // Exit focus mode if active
+        this._exitFocusMode();
 
-            // Validate session configuration
-            if (!sessionConfig.sections || sessionConfig.sections.length === 0) {
-                this.logger.error('Practice Session Starter: No practice sections available');
-                return false;
-            }
+        // Hide the timer UI
+        this._hideTimer();
 
-            // Initialize practice session state
-            this.practiceSession = {
-                config: sessionConfig,
-                currentSectionIndex: 0,
-                startTime: Date.now(),
-                sectionNotes: {},
-                scoreId: scoreId
-            };
-
-            // Initialize timer component if available
-            if (window.PracticeSessionTimer) {
-                this.practiceSessionTimer = new window.PracticeSessionTimer({
-                    logger: this.logger,
-                    onTimerComplete: () => this.handleTimerComplete(),
-                    onTimerTick: (timeLeft) => this.handleTimerTick(timeLeft),
-                    onPauseToggle: (isPaused) => this.handlePauseToggle(isPaused),
-                    onManualNext: () => this.handleManualNext(),
-                    onExit: () => this.handleTimerExit()
-                });
-            } else {
-                this.logger.warn('Practice Session Starter: Timer component not available');
-            }
-
-            // Disable highlight selection during practice mode
-            if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.disableSelection === 'function') {
-                window.PlayTimeHighlighting.disableSelection();
-                this.logger.info('Practice Session Starter: Highlight selection disabled');
-                
-                // Add visual indicator
-                this._showSelectionDisabledIndicator();
-            }
-
-            // Set practice mode layout
-            if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
-                window.PlayTimeLayoutCommands.execute('practice-mode', { action: 'enter' });
-                this.logger.info('Practice Session Starter: Entered practice mode layout');
-            } else {
-                // Fallback: Set the attribute directly if layout commands are not available
-                const viewerSection = document.querySelector('#viewer-section');
-                if (viewerSection) {
-                    viewerSection.setAttribute('data-practice-mode', 'active');
-                    this.logger.info('Practice Session Starter: Set practice mode attribute directly');
-                }
-            }
-
-            // Request screen wake lock to prevent screen from turning off during practice
-            await this.requestWakeLock();
-
-            // Dispatch practice session start event
-            const event = new CustomEvent('playtime:practice-session-configured', {
-                detail: {
-                    scoreId: scoreId,
-                    sessionConfig: sessionConfig
-                }
-            });
-            window.dispatchEvent(event);
-
-            // Start the timer for the first section
-            const firstSection = sessionConfig.sections[0];
-            if (this.practiceSessionTimer) {
-                this.practiceSessionTimer.startTimer(firstSection.targetTime);
-                this.logger.info('Practice Session Starter: Timer started for first section', { 
-                    targetTime: firstSection.targetTime
-                });
-            }
-
-            // Update section counter display
-            this.updateSectionCounter();
-
-            // Focus on the first section
-            await this.focusOnPracticeSection(firstSection.highlightId);
-
-            return true;
-
-        } catch (error) {
-            this.logger.error('Practice Session Starter: Error starting session', { error });
-            return false;
-        }
+        // Optimize DOM cleanup for better performance on iPad
+        // Use requestAnimationFrame to defer heavy DOM operations
+        const scheduleCleanup = (typeof requestAnimationFrame !== 'undefined') 
+            ? requestAnimationFrame 
+            : (callback) => setTimeout(callback, 0);
+            
+        scheduleCleanup(() => {
+            this._performDOMCleanup();
+        });
     }
 
     /**
@@ -263,7 +181,7 @@ class PracticeSessionStarter {
     async _waitForPageRender() {
         return new Promise(resolve => {
             // Wait for rendering and highlight rehydration
-            setTimeout(resolve, this.pageRenderTimeout);
+            setTimeout(resolve, 500).unref?.();
         });
     }
 
@@ -284,7 +202,7 @@ class PracticeSessionStarter {
                         resolve();
                     } else {
                         attempts++;
-                        setTimeout(checkElement, this.elementCheckInterval);
+                        setTimeout(checkElement, 100).unref?.();
                     }
                 } catch (error) {
                     // If querySelector fails (e.g., in test environment), just resolve
@@ -298,153 +216,6 @@ class PracticeSessionStarter {
             
             checkElement();
         });
-    }
-
-    /**
-     * Request screen wake lock to prevent device screen from turning off during practice
-     * @private
-     */
-    async requestWakeLock() {
-        // Only attempt wake lock in browsers that support it
-        if (!('wakeLock' in navigator)) {
-            this.logger.info('Practice Session Starter: Wake Lock API not supported');
-            return;
-        }
-
-        try {
-            this.wakeLock = await navigator.wakeLock.request('screen');
-            this.logger.info('Practice Session Starter: Screen wake lock acquired');
-            
-            // Listen for wake lock release (e.g., when page becomes hidden)
-            this.wakeLock.addEventListener('release', () => {
-                this.logger.info('Practice Session Starter: Screen wake lock was released');
-            });
-
-            // Re-acquire wake lock when page becomes visible again (if session is still active)
-            this._handleVisibilityChange = () => {
-                if (document.visibilityState === 'visible' && this.practiceSession && !this.wakeLock) {
-                    this.logger.info('Practice Session Starter: Page visible again, re-acquiring wake lock');
-                    this.requestWakeLock();
-                }
-            };
-            
-            document.addEventListener('visibilitychange', this._handleVisibilityChange);
-            
-        } catch (error) {
-            this.logger.warn('Practice Session Starter: Failed to acquire screen wake lock', {
-                error: error.message,
-                name: error.name
-            });
-        }
-    }
-
-    /**
-     * Release screen wake lock
-     * @private
-     */
-    async releaseWakeLock() {
-        if (this.wakeLock) {
-            try {
-                await this.wakeLock.release();
-                this.wakeLock = null;
-                this.logger.info('Practice Session Starter: Screen wake lock released');
-            } catch (error) {
-                this.logger.warn('Practice Session Starter: Error releasing wake lock', {
-                    error: error.message
-                });
-            }
-        }
-
-        // Clean up visibility change listener
-        if (this._handleVisibilityChange) {
-            document.removeEventListener('visibilitychange', this._handleVisibilityChange);
-            this._handleVisibilityChange = null;
-        }
-    }
-
-    /**
-     * Update the section counter display
-     */
-    updateSectionCounter() {
-        if (!this.practiceSession) return;
-
-        const sectionCounterElement = document.querySelector('[data-role="section-counter"]');
-        if (sectionCounterElement) {
-            const current = this.practiceSession.currentSectionIndex + 1;
-            const total = this.practiceSession.config.sections.length;
-            sectionCounterElement.textContent = `Section ${current} of ${total}`;
-            
-            this.logger.debug?.('Practice Session Starter: Updated section counter', {
-                current,
-                total,
-                currentIndex: this.practiceSession.currentSectionIndex
-            });
-        }
-    }
-
-    /**
-     * Handle timer completion - move to next section or end session
-     */
-    async handleTimerComplete() {
-        if (!this.practiceSession) return;
-
-        this.logger.info('Practice Session Starter: Timer completed for section', {
-            currentIndex: this.practiceSession.currentSectionIndex
-        });
-
-        // Move to next section
-        this.practiceSession.currentSectionIndex++;
-
-        // Check if we have more sections
-        if (this.practiceSession.currentSectionIndex < this.practiceSession.config.sections.length) {
-            const nextSection = this.practiceSession.config.sections[this.practiceSession.currentSectionIndex];
-            
-            this.logger.info('Practice Session Starter: Moving to next section', {
-                sectionIndex: this.practiceSession.currentSectionIndex,
-                targetTime: nextSection.targetTime
-            });
-
-            // Start timer for next section
-            if (this.practiceSessionTimer) {
-                this.practiceSessionTimer.startTimer(nextSection.targetTime);
-            }
-
-            // Update section counter display
-            this.updateSectionCounter();
-
-            // Focus on next section
-            await this.focusOnPracticeSection(nextSection.highlightId);
-        } else {
-            // Session complete
-            this.handleSessionComplete();
-        }
-    }
-
-    /**
-     * Handle session completion
-     */
-    handleSessionComplete() {
-        this.logger.info('Practice Session Starter: Session completed');
-
-        // Dispatch session complete event
-        const event = new CustomEvent('playtime:practice-session-complete', {
-            detail: {
-                scoreId: this.practiceSession.scoreId,
-                sessionConfig: this.practiceSession.config,
-                duration: Date.now() - this.practiceSession.startTime,
-                sectionNotes: this.practiceSession.sectionNotes
-            }
-        });
-        window.dispatchEvent(event);
-
-        // Exit focus mode if active
-        this._exitFocusMode();
-
-        // Hide the timer UI (same as exit button behavior)
-        this._hideTimer();
-
-        // Clean up by calling endSession to ensure all cleanup happens consistently
-        this.endSession();
     }
 
     /**
@@ -484,95 +255,6 @@ class PracticeSessionStarter {
         } catch (error) {
             this.logger.warn('Practice Session Starter: Error hiding timer', { error: error.message });
         }
-    }
-
-    /**
-     * Handle timer tick
-     */
-    handleTimerTick(timeLeft) {
-        // Optional: Custom handling for timer ticks
-        this.logger.debug?.('Practice Session Starter: Timer tick', { timeLeft });
-    }
-
-    /**
-     * Handle pause toggle
-     */
-    handlePauseToggle(isPaused) {
-        this.logger.info('Practice Session Starter: Timer pause toggled', { isPaused });
-    }
-
-    /**
-     * Handle manual next
-     */
-    handleManualNext() {
-        this.logger.info('Practice Session Starter: Manual next triggered');
-        this.handleTimerComplete();
-    }
-
-    /**
-     * Handle timer exit
-     */
-    handleTimerExit() {
-        this.logger.info('Practice Session Starter: Timer exit triggered');
-        
-        // Dispatch session exit event
-        const event = new CustomEvent('playtime:practice-session-exit', {
-            detail: {
-                scoreId: this.practiceSession?.scoreId
-            }
-        });
-        window.dispatchEvent(event);
-
-        // Exit focus mode if active
-        this._exitFocusMode();
-
-        // Hide the timer UI (same as exit button behavior)
-        this._hideTimer();
-
-        // Clean up by calling endSession to ensure all cleanup happens consistently
-        this.endSession();
-    }
-
-    /**
-     * Get the current practice session state
-     */
-    getCurrentSession() {
-        return this.practiceSession;
-    }
-
-    /**
-     * End the current practice session
-     */
-    endSession() {
-        // Release screen wake lock
-        this.releaseWakeLock();
-
-        // Re-enable highlight selection
-        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
-            window.PlayTimeHighlighting.enableSelection();
-            this.logger.info('Practice Session Starter: Highlight selection re-enabled');
-            
-            // Remove visual indicator
-            this._hideSelectionDisabledIndicator();
-        }
-
-        // Optimize DOM cleanup for better performance on iPad
-        // Use requestAnimationFrame to defer heavy DOM operations
-        const scheduleCleanup = (typeof requestAnimationFrame !== 'undefined') 
-            ? requestAnimationFrame 
-            : (callback) => setTimeout(callback, 0);
-            
-        scheduleCleanup(() => {
-            this._performDOMCleanup();
-        });
-        
-        // Clean up session state immediately
-        if (this.practiceSessionTimer) {
-            this.practiceSessionTimer.stop();
-            this.practiceSessionTimer = null;
-        }
-        
-        this.practiceSession = null;
     }
 
     /**
@@ -626,13 +308,6 @@ class PracticeSessionStarter {
     }
 
     /**
-     * Check if a practice session is currently active
-     */
-    isSessionActive() {
-        return this.practiceSession !== null;
-    }
-
-    /**
      * Show visual indicator that selection is disabled
      * @private
      */
@@ -645,7 +320,7 @@ class PracticeSessionStarter {
             viewerContainer.classList.add('show-indicator');
             setTimeout(() => {
                 viewerContainer.classList.remove('show-indicator');
-            }, 3000); // Hide after 3 seconds
+            }, 3000).unref?.(); // Hide after 3 seconds
             
             this.logger.debug?.('Practice Session Starter: Selection disabled indicator shown');
         } catch (error) {
@@ -671,8 +346,8 @@ class PracticeSessionStarter {
 
 // Factory function for creating practice session starter instances (browser only)
 if (typeof window !== 'undefined') {
-    window.createPracticeSessionStarter = function(logger, database, practicePlanPersistenceService, options) {
-        return new PracticeSessionStarter(logger, database, practicePlanPersistenceService, options);
+    window.createPracticeSessionStarter = function(logger, options) {
+        return new PracticeSessionStarter(logger, options);
     };
 }
 

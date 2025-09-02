@@ -38,6 +38,9 @@ class PracticePlanner {
         // Initialize practice session starter module
         this.practiceSessionStarter = null;
         
+        // Initialize practice session manager module
+        this.practiceSessionManager = null;
+        
         // DOM elements - will be populated by init()
         this.setupButton = null;
         this.startPracticeSessionButton = null;
@@ -99,13 +102,26 @@ class PracticePlanner {
         // Initialize practice session starter module
         if (typeof window.createPracticeSessionStarter === 'function') {
             this.practiceSessionStarter = window.createPracticeSessionStarter(
-                this.logger,
-                this.database,
-                this.practicePlanPersistenceService
+                this.logger
             );
             this.logger.info('Practice Planner: Practice session starter initialized');
         } else {
             this.logger.warn('Practice Planner: Practice session starter not available');
+        }
+
+        // Initialize practice session manager module
+        if (typeof window.createPracticeSessionManager === 'function') {
+            this.practiceSessionManager = window.createPracticeSessionManager(
+                this.logger,
+                window.PlayTimeHighlighting,
+                window.PracticeSessionTimer,
+                this.practiceSessionStarter,
+                this.practicePlanPersistenceService,
+                this.database
+            );
+            this.logger.info('Practice Planner: Practice session manager initialized');
+        } else {
+            this.logger.warn('Practice Planner: Practice session manager not available');
         }
 
         this.logger.info('Practice Planner event handlers attached');
@@ -765,7 +781,7 @@ class PracticePlanner {
             });
 
             // Start session from the saved plan
-            const success = await this.practiceSessionStarter.startFromPlan(tempPlanId, this.currentScoreId);
+            const success = await this.practiceSessionManager.startFromPlan(tempPlanId, this.currentScoreId);
             
             if (!success) {
                 this.logger.error('Practice Planner: Failed to start session from temporary plan');
@@ -792,9 +808,9 @@ class PracticePlanner {
             return;
         }
 
-        if (!this.practiceSessionStarter) {
-            this.logger.error('Practice Planner: Practice session starter not available');
-            alert('Practice session starter not available');
+        if (!this.practiceSessionManager) {
+            this.logger.error('Practice Planner: Practice session manager not available');
+            alert('Practice session manager not available');
             return;
         }
 
@@ -805,7 +821,7 @@ class PracticePlanner {
         });
 
         try {
-            const success = await this.practiceSessionStarter.startFromPlan(this.currentPracticePlan.id, this.currentScoreId);
+            const success = await this.practiceSessionManager.startFromPlan(this.currentPracticePlan.id, this.currentScoreId);
             
             if (!success) {
                 this.logger.error('Practice Planner: Failed to start session from saved plan');
