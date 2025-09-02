@@ -500,6 +500,16 @@ describe('PlayTime Music Practice App', () => {
                 const HL_CONFIG = global.window.PlayTimeHighlighting?.CONFIG || { SELECTORS: { CANVAS: '[data-role="pdf-canvas"]', SELECTION_OVERLAY: '[data-role="selection-overlay"]' } };
                 const canvas = document.querySelector(HL_CONFIG.SELECTORS.CANVAS) || document.getElementById('pdf-canvas');
 
+                // First activate highlighting mode by clicking the toggle button
+                const highlightToggle = document.querySelector('#highlighting-toggle');
+                expect(highlightToggle).toBeTruthy();
+                highlightToggle.click();
+                
+                // Verify confidence panel is now visible
+                const confidencePanel = document.querySelector('#confidence-panel');
+                expect(confidencePanel).toBeTruthy();
+                expect(confidencePanel.style.display).not.toBe('none');
+
                 //set color code
                 const colorCode = 'green'; // example color code
                 const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN);
@@ -535,6 +545,11 @@ describe('PlayTime Music Practice App', () => {
 
         describe('User Story 4.2: Persist Highlights', () => {
             test('As a musician, I want highlighted sections (practice sections) to persist when I switch away and back to the score', async () => {
+                // First activate highlighting mode
+                const highlightToggle = document.querySelector('#highlighting-toggle');
+                expect(highlightToggle).toBeTruthy();
+                highlightToggle.click();
+                
                 // Arrange - choose a confidence (was color) BEFORE drawing (domain rule)
                 const amberBtn = document.querySelector('#color-amber');
                 expect(amberBtn).toBeTruthy();
@@ -584,6 +599,11 @@ describe('PlayTime Music Practice App', () => {
 
             test('Green confidence highlight is created in DOM and stored when drawn', async () => {
                 // Arrange
+                // First activate highlighting mode
+                const highlightToggle = document.querySelector('#highlighting-toggle');
+                expect(highlightToggle).toBeTruthy();
+                highlightToggle.click();
+                
                 const greenBtn = document.querySelector('#color-green');
                 expect(greenBtn).toBeTruthy();
                 greenBtn.click();
@@ -613,6 +633,11 @@ describe('PlayTime Music Practice App', () => {
                 const viewer = document.querySelector(SELECTORS.VIEWER);
                 expect(canvas).toBeTruthy();
                 expect(viewer).toBeTruthy();
+
+                // First activate highlighting mode
+                const highlightToggle = document.querySelector('#highlighting-toggle');
+                expect(highlightToggle).toBeTruthy();
+                highlightToggle.click();
 
                 // Choose a confidence color to enable drawing
                 const greenBtn = document.querySelector(SELECTORS.COLOR_GREEN);
@@ -656,6 +681,11 @@ describe('PlayTime Music Practice App', () => {
                 const viewer = document.querySelector(SELECTORS.VIEWER);
                 expect(canvas).toBeTruthy();
                 expect(viewer).toBeTruthy();
+
+                // First activate highlighting mode
+                const highlightToggle = document.querySelector('#highlighting-toggle');
+                expect(highlightToggle).toBeTruthy();
+                highlightToggle.click();
 
                 // Prepare highlight (draw amber)
                 const amberBtn = document.querySelector(SELECTORS.COLOR_AMBER);

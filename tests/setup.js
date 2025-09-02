@@ -264,7 +264,36 @@ beforeEach(() => {
                         </div>
                     </div>
                 </div>
-                <div class="highlight-controls">
+                
+                <!-- Highlighting Toggle -->
+                <div class="flex items-center justify-center mb-2">
+                    <button data-role="toggle-highlighting" id="highlighting-toggle" class="btn btn-outline w-full text-xs" aria-pressed="false">
+                        <i data-lucide="pen-tool" class="w-4 h-4 mr-1"></i>
+                        <span>Highlight Sections</span>
+                    </button>
+                </div>
+                
+                <!-- Confidence Panel (hidden by default) -->
+                <div id="confidence-panel" class="p-4 border-b border-border" style="display: none;">
+                    <div class="text-sm font-medium mb-3 text-foreground">Mark Section Confidence:</div>
+                    <div class="flex flex-col gap-2" id="confidence-controls">
+                        <button id="color-green" data-role="color-green" data-color="green" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-pressed="false">
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span>Confident</span>
+                        </button>
+                        <button id="color-amber" data-role="color-amber" data-color="amber" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-pressed="false">
+                            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                            <span>Unsure</span>
+                        </button>
+                        <button id="color-red" data-role="color-red" data-color="red" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-pressed="false">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <span>Needs Work</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="highlight-controls" style="display: none;">
+                    <!-- Legacy confidence buttons for backward compatibility -->
                     <button id="color-green" data-role="color-green" data-color="green">●</button>
                     <button id="color-amber" data-role="color-amber" data-color="amber">●</button>
                     <button id="color-red" data-role="color-red" data-color="red">●</button>

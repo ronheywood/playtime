@@ -96,6 +96,10 @@ test.describe('Working Multipage PDF Visual Tests', () => {
   test('creates highlight with drag gesture on page 1', async ({ page }) => {
     await setupMultipagePDFTest(page);
     
+    // Activate highlighting mode first
+    await page.click('#highlighting-toggle');
+    await page.waitForSelector('#confidence-panel', { state: 'visible' });
+    
     // Select green confidence color
     await page.click('[data-role="color-green"]');
     
@@ -149,6 +153,10 @@ test.describe('Working Multipage PDF Visual Tests', () => {
 
   test('creates multiple highlights with different colors', async ({ page }) => {
     await setupMultipagePDFTest(page);
+    
+    // Activate highlighting mode first
+    await page.click('#highlighting-toggle');
+    await page.waitForSelector('#confidence-panel', { state: 'visible' });
     
     const canvas = page.locator('#pdf-canvas');
     

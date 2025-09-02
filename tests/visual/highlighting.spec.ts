@@ -134,6 +134,11 @@ test.describe('Highlighting Visual (rehydration + focus + resize)', () => {
     await page.waitForSelector('#app');
     // Wait for highlighting init
     await page.waitForFunction(() => (window as any).PlayTimeHighlighting && (window as any).PlayTimeHighlighting._state?.canvas);
+    
+    // Activate highlighting mode first
+    await page.click('#highlighting-toggle');
+    await page.waitForSelector('#confidence-panel', { state: 'visible' });
+    
     // Activate green confidence (simulate user click)
     await page.click('[data-role="color-green"]');
     // Draw highlight via mouse drag inside canvas

@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
+// Import test helpers for highlighting activation
+const TestHelpers = require('../helpers/test-helpers.js');
+
 async function gotoTheme(page, theme: 'light' | 'dark', size: {w:number; h:number}) {
   await page.setViewportSize({ width: size.w, height: size.h });
   const url = theme === 'dark' ? '/?theme=dark' : '/';
@@ -34,6 +37,9 @@ for (const [label, size] of Object.entries(sizes)) {
     ]) {
       test(`${label} ${theme} - ${s.suffix} pressed`, async ({ page }) => {
         await gotoTheme(page, theme, size);
+        // Activate highlighting first to make confidence panel visible
+        await TestHelpers.activateHighlighting(page);
+        // Now click the confidence button
         await page.locator(s.id).first().click();
         await expect(page).toHaveScreenshot(`${label}-${theme}-${s.suffix}.png`, {
           maxDiffPixelRatio: 0.02, // Increased tolerance for CI font/rendering differences

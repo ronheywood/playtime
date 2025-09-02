@@ -6,7 +6,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 
 ## Implementation Timeline
 
-### Sprint 1: Core Practice Mode Experience (Priority: Critical)
+### Sprint 1: Core Practice Mode Experience (Priority: Critical) ✅ COMPLETED
 **Duration**: 1-2 weeks  
 **Goal**: Fix fundamental issues that break practice sessions
 
@@ -112,10 +112,25 @@ This plan addresses critical usability issues in practice mode, particularly on 
 #### Task 2.3: Practice Plan Dialog Flow
 - **Files**: `scripts/practice/practice-planner.js`
 - **Implementation**: Auto-hide edit dialog before starting session
-- **Testing**: Smooth transition from edit to practice mode
-- **Effort**: 4 hours
+- **Testing**: ✅ Smooth transition from edit to practice mode
+- **Effort**: 4 hours ✅ COMPLETED
 
-**Sprint 2 Total**: 22 hours
+#### Task 2.4: Highlighting Toggle Control ✅ COMPLETED (URGENT USER FEEDBACK)
+- **Files**: `index.html`, `scripts/main.js`
+- **User Problem**: "highlighting is always on unless in practice mode; no way to disable without entering practice mode; confidence panel should only show when highlighting is activated"
+- **Implementation**:
+  - ✅ Added "Toggle Highlighting" button in sidebar with pen-tool icon
+  - ✅ Highlighting starts **disabled by default** (no accidental highlights)
+  - ✅ Confidence panel hidden by default, only appears when highlighting is activated
+  - ✅ Added `initializeHighlightingToggle()` function with proper state management
+  - ✅ Confidence buttons only work when highlighting is active
+  - ✅ Visual feedback: toggle button shows pressed/active state
+  - ✅ Clearing active confidence when highlighting is deactivated
+- **Testing**: ✅ Toggle button shows/hides confidence panel, prevents accidental highlighting on touch devices
+- **User Validation**: ✅ "my experience was much improved already" - user testing confirmed on iPad
+- **Effort**: 3 hours ✅ COMPLETED
+
+**Sprint 2 Total**: 25 hours
 
 ### Sprint 3: Advanced Practice Features (Priority: Medium)
 **Duration**: 1 week  
@@ -129,14 +144,14 @@ This plan addresses critical usability issues in practice mode, particularly on 
 
 #### Task 3.2: Practice Plan Management
 - **Files**: `scripts/practice/practice-planner.js`, templates
-- **Implementation**: Remove sections, reorder, bulk actions
+- **Implementation**: Remove sections, append newly created sections, filter for confidence, reorder, bulk actions
 - **Testing**: Full CRUD operations on practice plan
 - **Effort**: 16 hours
 
 #### Task 3.3: Highlight Database Management
 - **Files**: Multiple highlighting files
 - **Implementation**: Delete highlights with confirmation
-- **Testing**: Safe deletion with undo capability
+- **Testing**: Safe deletion with confirm/cancel capability
 - **Effort**: 12 hours
 
 **Sprint 3 Total**: 36 hours

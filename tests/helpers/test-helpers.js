@@ -224,6 +224,33 @@ const TestHelpers = {
                 <span id="page-info" data-role="page-info">Page 1 of 1</span>
                 <button id="next-page-btn" data-role="next-page" aria-label="Next page">▶</button>
             </div>
+            
+            <!-- Highlighting Toggle -->
+            <div class="flex items-center justify-center mb-2">
+                <button data-role="toggle-highlighting" id="highlighting-toggle" class="btn btn-outline w-full text-xs" aria-pressed="false">
+                    <i data-lucide="pen-tool" class="w-4 h-4 mr-1"></i>
+                    <span>Highlight Sections</span>
+                </button>
+            </div>
+            
+            <!-- Confidence Panel (hidden by default) -->
+            <div id="confidence-panel" class="p-4 border-b border-border" style="display: none;">
+                <div class="text-sm font-medium mb-3 text-foreground">Mark Section Confidence:</div>
+                <div class="flex flex-col gap-2" id="confidence-controls">
+                    <button id="color-green" data-role="color-green" data-color="green" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-pressed="false">
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span>Confident</span>
+                    </button>
+                    <button id="color-amber" data-role="color-amber" data-color="amber" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-pressed="false">
+                        <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                        <span>Unsure</span>
+                    </button>
+                    <button id="color-red" data-role="color-red" data-color="red" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-pressed="false">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span>Needs Work</span>
+                    </button>
+                </div>
+            </div>
         `;
     },
 
@@ -318,10 +345,59 @@ const TestHelpers = {
                 delete: jest.fn().mockResolvedValue(true)
             };
         };
+        
+        // Mock PDF viewer factory
+        global.window.createPlayTimePDFViewer = (logger = console) => {
+            return {
+                init: jest.fn().mockResolvedValue(true),
+                loadPDF: jest.fn().mockResolvedValue(true),
+                renderPage: jest.fn().mockResolvedValue(true),
+                getCurrentPage: jest.fn().mockReturnValue(1),
+                getTotalPages: jest.fn().mockReturnValue(1)
+            };
+        };
+        
+        // Mock score list factory
+        global.window.createPlayTimeScoreList = (db = null, logger = console) => {
+            return {
+                init: jest.fn().mockResolvedValue(true),
+                setDatabase: jest.fn(),
+                render: jest.fn(),
+                refresh: jest.fn()
+            };
+        };
+        
         global.window.PlayTimeHighlighting = { 
             init: jest.fn().mockResolvedValue(true),
             highlightText: jest.fn(),
-            clearHighlights: jest.fn()
+            clearHighlights: jest.fn(),
+            enableSelection: jest.fn(),
+            disableSelection: jest.fn(),
+            _state: {
+                activeConfidence: null
+            }
+        };
+        
+        // Mock confidence module
+        global.window.PlayTimeConfidence = {
+            init: jest.fn(),
+            setActiveConfidence: jest.fn(),
+            clearActiveConfidence: jest.fn()
+        };
+        
+        // Mock constants module
+        global.window.PlayTimeConstants = {
+            EVENTS: {
+                CONFIDENCE_CHANGED: 'confidence-changed',
+                PAGE_CHANGED: 'page-changed',
+                SCORE_SELECTED: 'score-selected'
+            },
+            SELECTORS: {
+                CANVAS: '#pdf-canvas',
+                COLOR_GREEN: '[data-role="color-green"]',
+                COLOR_AMBER: '[data-role="color-amber"]',
+                COLOR_RED: '[data-role="color-red"]'
+            }
         };
     },
 
@@ -577,4 +653,39 @@ TestHelpers.createIndexedDBDatabase = async (logger = console) => {
     } else {
         throw new Error('IndexedDBDatabase module does not export a usable factory or class');
     }
+};
+
+// Visual Test Helpers for Playwright
+
+/**
+ * Activate highlighting mode in visual tests
+ * Required since highlighting is now disabled by default
+ * @param {Page} page - Playwright page object
+ */
+TestHelpers.activateHighlighting = async (page) => {
+    // Click the "Highlight Sections" button to activate highlighting
+    await page.click('#highlighting-toggle');
+    
+    // Wait for the confidence panel to become visible
+    await page.waitForSelector('#confidence-panel', { state: 'visible' });
+    
+    // Give a brief moment for the UI to settle
+    await page.waitForTimeout(100);
+};
+
+/**
+ * Setup common visual test environment with highlighting activated
+ * @param {Page} page - Playwright page object
+ * @param {string} theme - 'light' or 'dark'
+ * @param {Object} size - {w: number, h: number}
+ */
+TestHelpers.setupVisualTestWithHighlighting = async (page, theme = 'light', size = { w: 1440, h: 900 }) => {
+    await page.setViewportSize({ width: size.w, height: size.h });
+    const url = theme === 'dark' ? '/?theme=dark' : '/';
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#app');
+    // Allow lucide + theme to settle
+    await page.waitForTimeout(150);
+    // Activate highlighting for tests that need it
+    await TestHelpers.activateHighlighting(page);
 };

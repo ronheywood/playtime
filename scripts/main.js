@@ -7,7 +7,7 @@
  * 🔧 REFACTORING OPPORTUNITIES:
  * 1. Magic numbers and hardcoded values scattered throughout
  * 2. DOM selectors are hardcoded - should be configurable
- * 3. ✅ Error handling inconsistency (console.warn vs console.error) - Now using centralized logger
+ * 3. ✅ Error handling inconsistency (appLogger.warn vs appLogger.error) - Now using centralized logger
  * 4. Functions violate Single Responsibility Principle
  * 5. Missing input validation and type documentation
  * 6. Inline CSS styles mixed with JavaScript logic
@@ -233,6 +233,15 @@ function initializeConfidenceControls() {
     
     buttons.forEach(btn => {
         btn.addEventListener('click', () => {
+            // Only allow confidence selection if highlighting is active
+            const highlightingToggle = document.getElementById('highlighting-toggle');
+            const isHighlightingActive = highlightingToggle?.getAttribute('aria-pressed') === 'true';
+            
+            if (!isHighlightingActive) {
+                appLogger.info('Confidence selection ignored - highlighting is not active');
+                return;
+            }
+            
             setPressed(btn);
             const color = btn.getAttribute('data-color');
             
@@ -259,6 +268,98 @@ function initializeConfidenceControls() {
     });
 }
 
+// Initialize highlighting toggle controls
+function initializeHighlightingToggle(logger = console) {
+    const toggleButton = document.getElementById('highlighting-toggle');
+    const confidencePanel = document.getElementById('confidence-panel');
+    
+    if (!toggleButton) {
+        logger.warn('Highlighting toggle button not found');
+        return;
+    }
+    
+    let isHighlightingActive = false;
+    
+    const updateToggleState = (active) => {
+        isHighlightingActive = active;
+        toggleButton.setAttribute('aria-pressed', String(active));
+        toggleButton.classList.toggle('selected', active);
+        
+        // Update button text based on state
+        const buttonText = toggleButton.querySelector('span');
+        if (buttonText) {
+            buttonText.textContent = active ? 'Exit Highlighting' : 'Highlight Sections';
+        }
+        
+        // Show/hide confidence panel
+        if (confidencePanel) {
+            confidencePanel.style.display = active ? 'block' : 'none';
+        }
+        
+        // Enable/disable highlighting in the highlighting module
+        if (window.PlayTimeHighlighting) {
+            if (active) {
+                window.PlayTimeHighlighting.enableSelection();
+                // Auto-select the first confidence option (Confident/Green)
+                setInitialConfidence();
+                logger.info('Highlighting activated');
+            } else {
+                window.PlayTimeHighlighting.disableSelection();
+                // Clear any active confidence when deactivating
+                clearActiveConfidence();
+                logger.info('Highlighting deactivated');
+            }
+        }
+    };
+    
+    const clearActiveConfidence = () => {
+        // Reset all confidence buttons
+        const confidenceButtons = document.querySelectorAll('[data-role^="color-"]');
+        confidenceButtons.forEach(btn => {
+            btn.setAttribute('aria-pressed', 'false');
+            btn.classList.remove('selected');
+        });
+        
+        // Clear active confidence in highlighting module
+        if (window.PlayTimeHighlighting && window.PlayTimeHighlighting._state) {
+            window.PlayTimeHighlighting._state.activeConfidence = null;
+        }
+    };
+    
+    const setInitialConfidence = () => {
+        // Auto-select the first confidence option (Confident/Green)
+        const greenButton = document.getElementById('color-green');
+        if (greenButton) {
+            greenButton.setAttribute('aria-pressed', 'true');
+            greenButton.classList.add('selected');
+            
+            // Dispatch confidence change event
+            const color = greenButton.getAttribute('data-color');
+            if (color) {
+                try {
+                    const CONST = (typeof window !== 'undefined' && window.PlayTimeConstants) ? 
+                        window.PlayTimeConstants : 
+                        { EVENTS: { CONFIDENCE_CHANGED: 'playtime:confidence-changed' } };
+                    
+                    const eventDetail = { detail: { color } };
+                    const ev = new CustomEvent(CONST.EVENTS.CONFIDENCE_CHANGED, eventDetail);
+                    window.dispatchEvent(ev);
+                } catch (error) {
+                    appLogger.warn('Failed to dispatch initial confidence event:', error.message);
+                }
+            }
+        }
+    };
+    
+    // Handle toggle button click
+    toggleButton.addEventListener('click', () => {
+        updateToggleState(!isHighlightingActive);
+    });
+    
+    // Initialize in disabled state
+    updateToggleState(false);
+}
+
 // Initialize the application when DOM is ready
 // ISSUE: This function also does too much - initialization AND UI creation
 // TODO: Split into initializeApplication() and createDevStatusElement()
@@ -272,7 +373,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const appLogger = window.logger || console;
         
         if (!window.logger) {
-            console.warn('PlayTimeLogger not available, falling back to console logging');
+            // Use the appLogger for consistency, even if it falls back to console
+            appLogger.warn('PlayTimeLogger not available, falling back to console logging');
         }
         
         // Create module instances with injected functions
@@ -356,6 +458,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (window.PlayTimeHighlighting) {
             try {
                 await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants);
+                // Start with highlighting disabled - user must explicitly activate it
+                window.PlayTimeHighlighting.disableSelection();
+                appLogger.info('Highlighting initialized in disabled state');
             } catch (highlightingError) {
                 appLogger.error('Failed to initialize highlighting module:', highlightingError.message);
                 throw new Error(`Highlighting initialization failed: ${highlightingError.message}`);
@@ -517,6 +622,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialize confidence controls
     initializeConfidenceControls();
+    
+    // Initialize highlighting toggle
+    initializeHighlightingToggle(appLogger);
 
     // Initialize focus mode with command architecture (replaces procedural approach)
         if (typeof window.createPlayTimeFocusModeCommands === 'function') {
@@ -528,6 +636,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Application ready
     } catch (error) {
+        const appLogger = window.logger || console;
         appLogger.error('Failed to initialize PlayTime application:', error.message);
         // Show user-friendly error message
         const errorContainer = document.querySelector('.error-container') || document.body;
@@ -535,10 +644,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             const errorMessage = document.createElement('div');
             errorMessage.className = 'application-error';
             errorMessage.style.cssText = 'background: #ffebee; color: #c62828; padding: 12px; margin: 8px; border-radius: 4px; border: 1px solid #e57373;';
-            errorMessage.textContent = `Application failed to start: ${error.message}. Please refresh the page or check the console for details.`;
+            errorMessage.textContent = `Application failed to start: ${error.message}. Please refresh the page or check the appLogger for details.`;
             errorContainer.appendChild(errorMessage);
         }
-        throw error; // Re-throw so it's visible in console
+        throw error; // Re-throw so it's visible in appLogger
     }
 });
 }

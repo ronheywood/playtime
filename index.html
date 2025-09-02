@@ -79,10 +79,18 @@
                         <span>Toggle Focus Mode</span>
                     </button>
                 </div>
+                
+                <!-- Highlighting Toggle -->
+                <div class="flex items-center justify-center mb-2">
+                    <button data-role="toggle-highlighting" id="highlighting-toggle" class="btn btn-outline w-full text-xs" aria-pressed="false">
+                        <i data-lucide="pen-tool" class="w-4 h-4 mr-1"></i>
+                        <span>Highlight Sections</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Mark Section Confidence -->
-            <div class="p-4 border-b border-border">
+            <div id="confidence-panel" class="p-4 border-b border-border" style="display: none;">
                 <div class="text-sm font-medium mb-3 text-foreground">Mark Section Confidence:</div>
                 <div class="flex flex-col gap-2" id="confidence-controls">
                     <button id="color-green" data-role="color-green" data-color="green" type="button" aria-pressed="false" class="confidence-btn btn btn-outline w-full flex items-center gap-3 justify-start" aria-label="Mark section as Confident">
@@ -187,7 +195,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                 </div>
             </div>
         </div>

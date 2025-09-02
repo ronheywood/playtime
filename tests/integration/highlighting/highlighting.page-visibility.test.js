@@ -10,6 +10,8 @@ describe('Highlighting Page Visibility Integration', () => {
     const logger = require('../../../scripts/logger.js');
     logger.setSilent(true);
     global.logger = logger;
+    // Ensure window.logger is also set for main.js
+    global.window.logger = logger;
 
     // Provide PDF viewer stub with paging + events
     global.window.createPlayTimePDFViewer = (logger) => {
@@ -59,6 +61,11 @@ describe('Highlighting Page Visibility Integration', () => {
   test('highlight visibility toggles across page navigation', async () => {
     const canvas = document.querySelector(PT_CONSTANTS.SELECTORS.CANVAS);
     expect(canvas).toBeTruthy();
+
+    // Activate highlighting first
+    const highlightToggle = document.querySelector('#highlighting-toggle');
+    expect(highlightToggle).toBeTruthy();
+    highlightToggle.click();
 
     const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN);
     expect(greenBtn).toBeTruthy();

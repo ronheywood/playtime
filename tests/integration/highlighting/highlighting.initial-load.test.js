@@ -7,6 +7,8 @@ describe('Highlighting initial load rehydration', () => {
     const logger = require('../../../scripts/logger.js');
     logger.setSilent(true);
     global.logger = logger;
+    // Ensure window.logger is also set for main.js
+    global.window.logger = logger;
 
     // Minimal DB with persistence across reload simulation (in-memory variable)
     if (!global.__dbStore) global.__dbStore = { pdfs: [], sections: [] };
@@ -58,6 +60,11 @@ describe('Highlighting initial load rehydration', () => {
       if (window.PlayTimeCurrentScoreId != null) break;
       await new Promise(r => setTimeout(r,10));
     }
+
+    // Activate highlighting first
+    const highlightToggle = document.querySelector('#highlighting-toggle');
+    expect(highlightToggle).toBeTruthy();
+    highlightToggle.click();
 
     // Select confidence & draw highlight
     const greenBtn = document.querySelector(PT_CONSTANTS.SELECTORS.COLOR_GREEN) || document.getElementById('color-green');
