@@ -150,8 +150,20 @@ This plan addresses critical usability issues in practice mode, particularly on 
 
 #### Task 3.3: Highlight Database Management
 - **Files**: Multiple highlighting files
-- **Implementation**: Delete highlights with confirmation
+- **Implementation**: Delete selected highlight using "delete" key on pc after confirmation, and cascade delete to remove sections from practice plans. include a delete icon near the update notes button - for touch device support
 - **Testing**: Safe deletion with confirm/cancel capability
+- **Effort**: 12 hours
+
+#### Task 3.4: Highlight Confidence upate
+- **Files**: Multiple highlighting files
+- **Implementation**: While editing notes, the user can also change the confidence value on a highlight
+- **Testing**: User can edit highlight notes and change highlight confidence
+- **Effort**: 12 hours
+
+#### Task 3.5: Pinch Zoom timer position
+- **Files**: Start Practice timer, layout events and css
+- **Implementation**: In practice mode if the user used pinch zoom to tighten the device focus on a section, the timer remains visible
+- **Testing**: User can pinch zoom in practice and still see/interact with the timer
 - **Effort**: 12 hours
 
 **Sprint 3 Total**: 36 hours
