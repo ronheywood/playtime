@@ -253,76 +253,45 @@ class PracticeSessionManager {
             // Create dialog overlay
             const overlay = document.createElement('div');
             overlay.className = 'practice-completion-overlay';
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.7);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-            `;
 
             // Create dialog content
             const dialog = document.createElement('div');
             dialog.className = 'practice-completion-dialog';
-            dialog.style.cssText = `
-                background: var(--theme-background, white);
-                color: var(--theme-text, black);
-                border-radius: 8px;
-                padding: 24px;
-                max-width: 400px;
-                width: 90%;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-                text-align: center;
-            `;
 
             // Get current confidence level for this section
             const currentConfidence = this.getCurrentSectionConfidence(currentSection.highlightId);
 
             dialog.innerHTML = `
-                <h3 style="margin: 0 0 16px 0; color: var(--theme-text, black);">Section Complete!</h3>
-                <p style="margin: 0 0 20px 0; color: var(--theme-text-secondary, #666);">
+                <h3>Section Complete!</h3>
+                <p>
                     How did this practice session go?
                 </p>
                 
-                <div class="confidence-update" style="margin: 0 0 24px 0;">
-                    <p style="margin: 0 0 12px 0; font-size: 14px; color: var(--theme-text-secondary, #666);">
+                <div class="confidence-update">
+                    <p>
                         Update confidence level:
                     </p>
-                    <div class="confidence-buttons" style="display: flex; gap: 8px; justify-content: center;">
-                        <button data-confidence="red" class="confidence-btn ${currentConfidence === 'red' ? 'active' : ''}"
-                                style="padding: 8px 16px; border: 2px solid #dc3545; background: ${currentConfidence === 'red' ? '#dc3545' : 'transparent'}; 
-                                       color: ${currentConfidence === 'red' ? 'white' : '#dc3545'}; border-radius: 4px; cursor: pointer;">
+                    <div class="confidence-buttons">
+                        <button data-confidence="red" class="confidence-btn ${currentConfidence === 'red' ? 'active' : ''}">
                             Needs Work
                         </button>
-                        <button data-confidence="amber" class="confidence-btn ${currentConfidence === 'amber' ? 'active' : ''}"
-                                style="padding: 8px 16px; border: 2px solid #ffc107; background: ${currentConfidence === 'amber' ? '#ffc107' : 'transparent'}; 
-                                       color: ${currentConfidence === 'amber' ? 'black' : '#ffc107'}; border-radius: 4px; cursor: pointer;">
+                        <button data-confidence="amber" class="confidence-btn ${currentConfidence === 'amber' ? 'active' : ''}">
                             Getting There
                         </button>
-                        <button data-confidence="green" class="confidence-btn ${currentConfidence === 'green' ? 'active' : ''}"
-                                style="padding: 8px 16px; border: 2px solid #28a745; background: ${currentConfidence === 'green' ? '#28a745' : 'transparent'}; 
-                                       color: ${currentConfidence === 'green' ? 'white' : '#28a745'}; border-radius: 4px; cursor: pointer;">
+                        <button data-confidence="green" class="confidence-btn ${currentConfidence === 'green' ? 'active' : ''}">
                             Confident
                         </button>
                     </div>
                 </div>
 
-                <div class="action-buttons" style="display: flex; gap: 12px; justify-content: center;">
-                    <button id="repeat-section" style="padding: 12px 24px; background: var(--theme-secondary, #6c757d); 
-                                                      color: white; border: none; border-radius: 4px; cursor: pointer;">
+                <div class="action-buttons">
+                    <button id="repeat-section">
                         Repeat Section
                     </button>
-                    <button id="continue-session" style="padding: 12px 24px; background: var(--theme-primary, #007bff); 
-                                                        color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <button id="continue-session">
                         Continue
                     </button>
-                    <button id="end-session" style="padding: 12px 24px; background: var(--theme-danger, #dc3545); 
-                                                   color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <button id="end-session">
                         End Session
                     </button>
                 </div>
@@ -398,16 +367,11 @@ class PracticeSessionManager {
      * @param {boolean} isActive - Whether the button is active
      */
     updateConfidenceButtonStyle(button, confidence, isActive) {
-        const colors = {
-            red: { border: '#dc3545', bg: '#dc3545', text: 'white', textInactive: '#dc3545' },
-            amber: { border: '#ffc107', bg: '#ffc107', text: 'black', textInactive: '#ffc107' },
-            green: { border: '#28a745', bg: '#28a745', text: 'white', textInactive: '#28a745' }
-        };
-
-        const color = colors[confidence];
-        button.style.background = isActive ? color.bg : 'transparent';
-        button.style.color = isActive ? color.text : color.textInactive;
-        button.style.borderColor = color.border;
+        if (isActive) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
     }
 
     /**
@@ -451,6 +415,8 @@ class PracticeSessionManager {
             if (highlightElement) {
                 // Store the enum value in dataset for database consistency
                 highlightElement.dataset.confidence = confidenceEnum.toString();
+                // Store the color for UI reload consistency
+                highlightElement.dataset.color = newConfidenceColor;
                 
                 // Update visual styling
                 highlightElement.classList.remove('confidence-red', 'confidence-amber', 'confidence-green');

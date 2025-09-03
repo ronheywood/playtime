@@ -667,3 +667,126 @@ body {
         }
     }
 }
+
+/* Practice Completion Dialog */
+.practice-completion-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.practice-completion-dialog {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.practice-completion-dialog h3 {
+    margin: 0 0 16px 0;
+    color: hsl(var(--foreground));
+}
+
+.practice-completion-dialog p {
+    margin: 0 0 20px 0;
+    color: hsl(var(--muted-foreground));
+}
+
+.practice-completion-overlay .confidence-update {
+    margin: 0 0 24px 0;
+}
+
+.practice-completion-overlay .confidence-update p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: hsl(var(--muted-foreground));
+}
+
+.practice-completion-overlay .confidence-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.practice-completion-overlay .confidence-btn {
+    padding: 8px 16px;
+    border: 2px solid;
+    border-radius: 4px;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.practice-completion-overlay .confidence-btn[data-confidence="red"] {
+    border-color: hsl(var(--practice-needs-work));
+    color: hsl(var(--practice-needs-work));
+}
+
+.practice-completion-overlay .confidence-btn[data-confidence="red"].active {
+    background: hsl(var(--practice-needs-work));
+    color: white;
+}
+
+.practice-completion-overlay .confidence-btn[data-confidence="amber"] {
+    border-color: hsl(var(--practice-unsure));
+    color: hsl(var(--practice-unsure));
+}
+
+.practice-completion-overlay .confidence-btn[data-confidence="amber"].active {
+    background: hsl(var(--practice-unsure));
+    color: black;
+}
+
+.practice-completion-overlay .confidence-btn[data-confidence="green"] {
+    border-color: hsl(var(--practice-confident));
+    color: hsl(var(--practice-confident));
+}
+
+.practice-completion-overlay .confidence-btn[data-confidence="green"].active {
+    background: hsl(var(--practice-confident));
+    color: white;
+}
+
+.practice-completion-overlay .action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.practice-completion-overlay .action-buttons button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.practice-completion-overlay .action-buttons button:hover {
+    opacity: 0.8;
+}
+
+.practice-completion-overlay #repeat-section {
+    background: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+}
+
+.practice-completion-overlay #continue-session {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.practice-completion-overlay #end-session {
+    background: hsl(var(--practice-needs-work));
+    color: white;
+}
