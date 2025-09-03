@@ -335,6 +335,65 @@
             }
         },
 
+        async updateHighlightConfidence(highlightId, newConfidenceColor) {
+            try {
+                this._state.logger.info?.('Highlighting: Updating highlight confidence', {
+                    highlightId,
+                    newConfidenceColor
+                });
+
+                // Convert color to confidence enum
+                const confidenceEnum = this._components.ConfidenceMapperClass.colorToConfidence(newConfidenceColor);
+                if (confidenceEnum === null) {
+                    this._state.logger.warn?.('Highlighting: Invalid confidence color', { color: newConfidenceColor });
+                    return;
+                }
+
+                // Find the highlight element
+                const highlightElement = this._state.viewer?.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
+                if (!highlightElement) {
+                    this._state.logger.warn?.('Highlighting: Highlight element not found', { highlightId });
+                    return;
+                }
+
+                // Update DOM element
+                highlightElement.dataset.confidence = confidenceEnum.toString();
+                
+                // Update visual styling
+                highlightElement.classList.remove('confidence-red', 'confidence-amber', 'confidence-green');
+                highlightElement.classList.add(`confidence-${newConfidenceColor}`);
+
+                // Update in database through persistence service
+                if (this._components.persistenceService && typeof this._components.persistenceService.updateHighlight === 'function') {
+                    try {
+                        await this._components.persistenceService.updateHighlight(
+                            parseInt(highlightId, 10), 
+                            { confidence: confidenceEnum }
+                        );
+                        this._state.logger.info?.('Highlighting: Database updated successfully', {
+                            highlightId,
+                            confidenceEnum
+                        });
+                    } catch (dbError) {
+                        this._state.logger.error?.('Highlighting: Failed to update database', {
+                            highlightId,
+                            confidenceEnum,
+                            error: dbError
+                        });
+                    }
+                }
+
+                this._state.logger.info?.('Highlighting: Confidence updated successfully');
+                
+            } catch (error) {
+                this._state.logger.error?.('Highlighting: Error updating highlight confidence', {
+                    highlightId,
+                    newConfidenceColor,
+                    error
+                });
+            }
+        },
+
         // Private Implementation Methods
 
         _mergeConfig(userConfig) {

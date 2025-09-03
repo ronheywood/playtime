@@ -17,6 +17,12 @@ class PracticeSessionManager {
         this.practiceSessionTimer = null;
         this.wakeLock = null; // Screen wake lock instance
         
+        // Initialize ConfidenceMapper with confidence module
+        this.confidenceMapper = null;
+        if (typeof window !== 'undefined' && window.ConfidenceMapper && window.PlayTimeConfidence) {
+            this.confidenceMapper = new window.ConfidenceMapper(window.PlayTimeConfidence);
+        }
+        
         // Configurable timeouts for testing
         this.pageRenderTimeout = options.pageRenderTimeout ?? 500;
         this.elementCheckInterval = options.elementCheckInterval ?? 100;
@@ -413,8 +419,20 @@ class PracticeSessionManager {
         // Try to get from the DOM element first
         const highlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
         if (highlightElement) {
-            const confidence = highlightElement.dataset.confidence || 'amber';
-            return confidence;
+            const confidenceData = highlightElement.dataset.confidence;
+            
+            // Handle both enum values ("0", "1", "2") and color strings
+            if (confidenceData && this.confidenceMapper) {
+                // If it's a numeric string, convert to color
+                const numericConfidence = parseInt(confidenceData, 10);
+                if (!isNaN(numericConfidence)) {
+                    return this.confidenceMapper.confidenceToColor(numericConfidence);
+                }
+                // If it's already a color string, return as-is
+                if (['red', 'amber', 'green'].includes(confidenceData.toLowerCase())) {
+                    return confidenceData.toLowerCase();
+                }
+            }
         }
         
         // Default to amber if not found
@@ -424,28 +442,72 @@ class PracticeSessionManager {
     /**
      * Update highlight confidence level
      * @param {string} highlightId - The highlight ID
-     * @param {string} newConfidence - The new confidence level
+     * @param {string} newConfidenceColor - The new confidence color (red, amber, green)
      */
-    async updateHighlightConfidence(highlightId, newConfidence) {
+    async updateHighlightConfidence(highlightId, newConfidenceColor) {
         try {
             this.logger.info('Practice Session Manager: Updating highlight confidence', {
                 highlightId,
-                newConfidence
+                newConfidenceColor
             });
 
-            // Update the DOM element
+            // Convert color to enum value using ConfidenceMapper
+            let confidenceEnum = null;
+            if (this.confidenceMapper) {
+                confidenceEnum = this.confidenceMapper.colorToConfidence(newConfidenceColor);
+            } else {
+                // Fallback if ConfidenceMapper is not available
+                const colorToEnum = { 'red': 0, 'amber': 1, 'green': 2 };
+                confidenceEnum = colorToEnum[newConfidenceColor.toLowerCase()] ?? 1;
+            }
+
+            // Update the DOM element with both color and enum
             const highlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
             if (highlightElement) {
-                highlightElement.dataset.confidence = newConfidence;
+                // Store the enum value in dataset for database consistency
+                highlightElement.dataset.confidence = confidenceEnum.toString();
                 
                 // Update visual styling
                 highlightElement.classList.remove('confidence-red', 'confidence-amber', 'confidence-green');
-                highlightElement.classList.add(`confidence-${newConfidence}`);
+                highlightElement.classList.add(`confidence-${newConfidenceColor}`);
+            }
+
+            // Update in database using the enum value
+            try {
+                if (this.database && typeof this.database.updateHighlight === 'function') {
+                    await this.database.updateHighlight(parseInt(highlightId, 10), {
+                        confidence: confidenceEnum
+                    });
+                    this.logger.info('Practice Session Manager: Database updated with confidence enum', {
+                        highlightId,
+                        confidenceEnum
+                    });
+                }
+            } catch (dbError) {
+                this.logger.warn('Practice Session Manager: Failed to update database', {
+                    highlightId,
+                    confidenceEnum,
+                    error: dbError
+                });
+                // Continue with DOM update even if database update fails
             }
 
             // Update via highlighting system if available
             if (this.highlighting && this.highlighting.updateHighlightConfidence) {
-                await this.highlighting.updateHighlightConfidence(highlightId, newConfidence);
+                await this.highlighting.updateHighlightConfidence(highlightId, newConfidenceColor);
+            } else if (this.highlighting && this.highlighting._components?.persistenceService) {
+                // Try to update via persistence service
+                try {
+                    await this.highlighting._components.persistenceService.updateHighlight(
+                        parseInt(highlightId, 10), 
+                        { confidence: confidenceEnum }
+                    );
+                } catch (persistenceError) {
+                    this.logger.warn('Practice Session Manager: Persistence service update failed', {
+                        highlightId,
+                        error: persistenceError
+                    });
+                }
             }
 
             this.logger.info('Practice Session Manager: Highlight confidence updated successfully');
@@ -453,7 +515,7 @@ class PracticeSessionManager {
         } catch (error) {
             this.logger.error('Practice Session Manager: Error updating highlight confidence', {
                 highlightId,
-                newConfidence,
+                newConfidenceColor,
                 error
             });
         }

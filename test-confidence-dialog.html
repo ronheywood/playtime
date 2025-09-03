@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice Session Confidence Dialog Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { margin: 10px; padding: 10px 15px; }
+        .highlight-mock {
+            position: absolute;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid red;
+            width: 100px;
+            height: 20px;
+            top: 200px;
+            left: 20px;
+        }
+        .confidence-red { background: rgba(255, 0, 0, 0.3); border-color: #dc3545; }
+        .confidence-amber { background: rgba(255, 165, 0, 0.3); border-color: #ffc107; }
+        .confidence-green { background: rgba(0, 255, 0, 0.3); border-color: #28a745; }
+    </style>
+</head>
+<body>
+    <h1>Practice Session Confidence Dialog Test</h1>
+    
+    <div class="test-section">
+        <h2>Mock Practice Session</h2>
+        <p>This test simulates a practice session ending and showing the confidence update dialog.</p>
+        
+        <!-- Mock highlight element -->
+        <div class="highlight-mock confidence-amber" 
+             data-role="highlight" 
+             data-hl-id="test-highlight-123"
+             data-confidence="1">
+            Mock Highlight Section
+        </div>
+        
+        <button id="trigger-dialog">Trigger Practice Session Completion Dialog</button>
+        <button id="check-confidence">Check Current Confidence</button>
+        
+        <div id="output"></div>
+    </div>
+
+    <!-- Include required dependencies -->
+    <script src="scripts/confidence.js"></script>
+    <script src="scripts/highlighting/ConfidenceMapper.js"></script>
+    <script src="scripts/practice/practice-session-manager.js"></script>
+
+    <script>
+        // Setup mock environment
+        window.PracticeSessionTimer = function() {};
+        
+        // Mock logger
+        const logger = {
+            info: (...args) => console.log('INFO:', ...args),
+            warn: (...args) => console.warn('WARN:', ...args),
+            error: (...args) => console.error('ERROR:', ...args),
+            debug: (...args) => console.log('DEBUG:', ...args)
+        };
+
+        // Mock highlighting system
+        const mockHighlighting = {
+            updateHighlightConfidence: async (id, color) => {
+                console.log('Mock highlighting.updateHighlightConfidence called:', id, color);
+                return Promise.resolve();
+            }
+        };
+
+        // Mock database
+        const mockDatabase = {
+            updateHighlight: async (id, updates) => {
+                console.log('Mock database.updateHighlight called:', id, updates);
+                return Promise.resolve();
+            }
+        };
+
+        // Create practice session manager
+        const manager = new PracticeSessionManager(
+            logger,
+            mockHighlighting,
+            null, // timer
+            null, // starter
+            null, // persistence service
+            mockDatabase
+        );
+
+        // Mock practice session for testing
+        manager.practiceSession = {
+            config: {
+                sections: [
+                    { highlightId: 'test-highlight-123', targetTime: 60 }
+                ]
+            },
+            currentSectionIndex: 0,
+            startTime: Date.now(),
+            sectionNotes: {},
+            scoreId: 'test-score'
+        };
+
+        // Event handlers
+        document.getElementById('trigger-dialog').addEventListener('click', async () => {
+            console.log('Triggering completion dialog...');
+            await manager.handleTimerComplete();
+        });
+
+        document.getElementById('check-confidence').addEventListener('click', () => {
+            const confidence = manager.getCurrentSectionConfidence('test-highlight-123');
+            const output = document.getElementById('output');
+            output.innerHTML = `<p><strong>Current confidence:</strong> ${confidence}</p>`;
+            
+            // Also check the DOM element directly
+            const element = document.querySelector('[data-role="highlight"][data-hl-id="test-highlight-123"]');
+            if (element) {
+                output.innerHTML += `<p><strong>DOM dataset.confidence:</strong> ${element.dataset.confidence}</p>`;
+                output.innerHTML += `<p><strong>DOM classes:</strong> ${element.className}</p>`;
+            }
+        });
+
+        console.log('Test page loaded. Practice Session Manager initialized.');
+        console.log('ConfidenceMapper available:', !!manager.confidenceMapper);
+    </script>
+</body>
+</html>

@@ -44,7 +44,8 @@ describe('PracticeSessionManager', () => {
         mockDatabase = {
             get: jest.fn(),
             set: jest.fn(),
-            delete: jest.fn()
+            delete: jest.fn(),
+            updateHighlight: jest.fn().mockResolvedValue()
         };
 
         // Setup DOM
@@ -52,7 +53,29 @@ describe('PracticeSessionManager', () => {
             dispatchEvent: jest.fn(),
             addEventListener: jest.fn(),
             removeEventListener: jest.fn(),
-            PracticeSessionTimer: jest.fn().mockImplementation((config) => mockTimer)
+            PracticeSessionTimer: jest.fn().mockImplementation((config) => mockTimer),
+            // Mock ConfidenceMapper and PlayTimeConfidence
+            ConfidenceMapper: jest.fn().mockImplementation((confidenceModule) => ({
+                confidenceToColor: jest.fn((level) => {
+                    const colors = { 0: 'red', 1: 'amber', 2: 'green' };
+                    return colors[level] || 'red';
+                }),
+                colorToConfidence: jest.fn((color) => {
+                    const confidences = { 'red': 0, 'amber': 1, 'green': 2 };
+                    return confidences[color?.toLowerCase()] ?? null;
+                })
+            })),
+            PlayTimeConfidence: {
+                ConfidenceLevel: { RED: 0, AMBER: 1, GREEN: 2 },
+                confidenceToColor: jest.fn((level) => {
+                    const colors = { 0: 'red', 1: 'amber', 2: 'green' };
+                    return colors[level] || 'red';
+                }),
+                colorToConfidence: jest.fn((color) => {
+                    const confidences = { 'red': 0, 'amber': 1, 'green': 2 };
+                    return confidences[color?.toLowerCase()] ?? 0;
+                })
+            }
         };
 
         global.document = {
@@ -86,6 +109,19 @@ describe('PracticeSessionManager', () => {
             mockPersistenceService,
             mockDatabase
         );
+
+        // Manually set up confidenceMapper since the automatic initialization might not work in tests
+        const mockConfidenceMapper = {
+            confidenceToColor: jest.fn((level) => {
+                const colors = { 0: 'red', 1: 'amber', 2: 'green' };
+                return colors[level] || 'red';
+            }),
+            colorToConfidence: jest.fn((color) => {
+                const confidences = { 'red': 0, 'amber': 1, 'green': 2 };
+                return confidences[color?.toLowerCase()] ?? null;
+            })
+        };
+        manager.confidenceMapper = mockConfidenceMapper;
     });
 
     afterEach(() => {
@@ -241,10 +277,30 @@ describe('PracticeSessionManager', () => {
 
             await manager.updateHighlightConfidence(highlightId, newConfidence);
 
-            expect(mockElement.dataset.confidence).toBe(newConfidence);
+            // Should store confidence as enum value (2 for green)
+            expect(mockElement.dataset.confidence).toBe('2');
             expect(mockElement.classList.remove).toHaveBeenCalledWith('confidence-red', 'confidence-amber', 'confidence-green');
             expect(mockElement.classList.add).toHaveBeenCalledWith('confidence-green');
             expect(mockHighlighting.updateHighlightConfidence).toHaveBeenCalledWith(highlightId, newConfidence);
+        });
+
+        test('should update database with confidence enum value', async () => {
+            const highlightId = '789';
+            const newConfidence = 'amber';
+            
+            const mockElement = {
+                dataset: {},
+                classList: {
+                    remove: jest.fn(),
+                    add: jest.fn()
+                }
+            };
+            jest.spyOn(document, 'querySelector').mockReturnValue(mockElement);
+
+            await manager.updateHighlightConfidence(highlightId, newConfidence);
+
+            // Should call database update with enum value (1 for amber)
+            expect(mockDatabase.updateHighlight).toHaveBeenCalledWith(789, { confidence: 1 });
         });
     });
 
@@ -252,14 +308,26 @@ describe('PracticeSessionManager', () => {
         test('should return confidence from DOM element', () => {
             const highlightId = 'highlight-123';
             const mockElement = {
-                dataset: { confidence: 'red' }
+                dataset: { confidence: '0' } // Store enum value for red
             };
             jest.spyOn(document, 'querySelector').mockReturnValue(mockElement);
 
             const confidence = manager.getCurrentSectionConfidence(highlightId);
 
-            expect(confidence).toBe('red');
+            expect(confidence).toBe('red'); // Should convert enum 0 to 'red'
             expect(document.querySelector).toHaveBeenCalledWith(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
+        });
+
+        test('should handle color string in dataset (backward compatibility)', () => {
+            const highlightId = 'highlight-456';
+            const mockElement = {
+                dataset: { confidence: 'green' } // Already a color string
+            };
+            jest.spyOn(document, 'querySelector').mockReturnValue(mockElement);
+
+            const confidence = manager.getCurrentSectionConfidence(highlightId);
+
+            expect(confidence).toBe('green'); // Should return the color as-is
         });
 
         test('should return default confidence when element not found', () => {

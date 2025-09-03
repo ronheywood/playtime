@@ -1,5 +1,16 @@
 # PlayTime TODO List
 
+## 🏗️ Architecture & Technical Debt
+
+- [ ] **Implement IoC Container for Dependency Injection**
+  - [ ] Replace manual factory functions and global `window.` object lookups 
+  - [ ] Create a proper dependency injection container to manage component lifecycle
+  - [ ] Eliminate messy dependency resolution patterns like `if (typeof window !== 'undefined' && window.ConfidenceMapper)`
+  - [ ] Improve testability by enabling clean constructor injection
+  - [ ] Consider lightweight solutions like a simple service locator or registry pattern
+  - [ ] Update PracticeSessionManager, highlighting system, and other components to use proper DI
+  - [ ] **Priority**: Medium (will improve code maintainability and testability significantly)
+
 ## 🚀 Implementation Priority Queue
 
 2. **Color Coding** - Implement highlight color assignment
