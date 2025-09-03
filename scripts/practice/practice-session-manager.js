@@ -605,7 +605,14 @@ class PracticeSessionManager {
 
         // Clean up session state
         if (this.practiceSessionTimer) {
+            // Temporarily remove the onExit callback to prevent circular calls
+            const originalOnExit = this.practiceSessionTimer.onExit;
+            this.practiceSessionTimer.onExit = () => {}; // No-op
+            
             this.practiceSessionTimer.stop();
+            
+            // Restore the original callback for future use
+            this.practiceSessionTimer.onExit = originalOnExit;
             this.practiceSessionTimer = null;
         }
         

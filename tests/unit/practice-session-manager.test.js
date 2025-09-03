@@ -294,6 +294,29 @@ describe('PracticeSessionManager', () => {
             expect(manager.practiceSessionTimer).toBeNull();
             expect(manager.practiceSession).toBeNull();
         });
+        
+        test('should prevent circular calls when timer onExit callback is triggered', () => {
+            // Set up timer with onExit callback that would normally cause circular calls
+            const mockTimerWithCallback = {
+                ...mockTimer,
+                onExit: jest.fn()
+            };
+            manager.practiceSessionTimer = mockTimerWithCallback;
+            manager.practiceSession = { config: { name: 'Test' } };
+            
+            // Spy on endSession to detect if it gets called recursively
+            const endSessionSpy = jest.spyOn(manager, 'endSession');
+
+            manager.endSession();
+
+            // Should only be called once (not recursively)
+            expect(endSessionSpy).toHaveBeenCalledTimes(1);
+            expect(mockTimerWithCallback.stop).toHaveBeenCalled();
+            expect(manager.practiceSessionTimer).toBeNull();
+            expect(manager.practiceSession).toBeNull();
+            
+            endSessionSpy.mockRestore();
+        });
     });
 
     describe('Factory function', () => {
