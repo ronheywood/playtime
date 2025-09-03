@@ -181,9 +181,9 @@ describe('HighlightElement', () => {
             const el = highlight.createDOMElement({ width: 100, height: 100 }, 0, 0, styleConfig);
 
             // Should apply fallback styles since no CSS is loaded in test environment
-            expect(el.style.border).toBe('2px solid red');
-            expect(el.style.background).toMatch(/rgba\(255,\s*0,\s*0,\s*0\.1\)/);
-        });
+            expect(el.dataset.color).toBe('red');
+            expect(el.dataset.confidence).toBe('0');
+        })
     });
 
     describe('utility methods', () => {

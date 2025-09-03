@@ -189,6 +189,16 @@ class HighlightElement {
             const win = el.ownerDocument?.defaultView || window;
             const cs = win?.getComputedStyle?.(el);
             
+            // Check if CSS is working by looking for the data-color attribute styling
+            // If the element has proper CSS styling based on data-color, don't override with inline styles
+            const hasDataColorStyling = el.hasAttribute('data-color') && cs && 
+                cs.borderStyle !== 'none' && cs.borderWidth !== '0px';
+            
+            if (hasDataColorStyling) {
+                // CSS is working, don't apply inline style fallbacks
+                return;
+            }
+            
             // In test environment, computed styles may not be available or may be default values
             const hasComputedStyles = cs && cs.borderStyle && cs.borderStyle !== 'none';
             const noBorder = !hasComputedStyles || cs.borderStyle === 'none' || cs.borderWidth === '0px';
@@ -202,11 +212,14 @@ class HighlightElement {
                 }
             }
         } catch (_) {
-            // Safe fallback if getComputedStyle unavailable - always apply in test environment
-            const colorStyle = styleConfig.colorStyles?.[this.color] || styleConfig.colorStyles?.red;
-            if (colorStyle) {
-                if (colorStyle.border) el.style.border = colorStyle.border;
-                if (colorStyle.background) el.style.background = colorStyle.background;
+            // Safe fallback if getComputedStyle unavailable - only apply in test environment
+            // Check if we're likely in a test environment (no proper CSS loaded)
+            if (typeof document !== 'undefined' && !el.hasAttribute('data-color')) {
+                const colorStyle = styleConfig.colorStyles?.[this.color] || styleConfig.colorStyles?.red;
+                if (colorStyle) {
+                    if (colorStyle.border) el.style.border = colorStyle.border;
+                    if (colorStyle.background) el.style.background = colorStyle.background;
+                }
             }
         }
     }

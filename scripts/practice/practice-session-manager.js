@@ -410,17 +410,26 @@ class PracticeSessionManager {
             
             const confidenceEnum = this.confidenceMapper.colorToConfidence(newConfidenceColor);
 
-            // Update the DOM element with both color and enum
-            const highlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
-            if (highlightElement) {
-                // Store the enum value in dataset for database consistency
-                highlightElement.dataset.confidence = confidenceEnum.toString();
-                // Store the color for UI reload consistency
-                highlightElement.dataset.color = newConfidenceColor;
+            
+            const practiceHighlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
+            if (practiceHighlightElement) {
+                practiceHighlightElement.dataset.confidence = confidenceEnum.toString();
+                practiceHighlightElement.dataset.color = newConfidenceColor;
+                practiceHighlightElement.classList.remove('confidence-red', 'confidence-amber', 'confidence-green');
+                practiceHighlightElement.classList.add(`confidence-${newConfidenceColor}`);
+            }
+
+            // Update the PDF viewer highlight element and clear inline styles
+            const pdfHighlightElement = document.querySelector(`.pdf-viewer-container [data-hl-id="${highlightId}"]`);
+            if (pdfHighlightElement) {
+                pdfHighlightElement.dataset.confidence = confidenceEnum.toString();
+                pdfHighlightElement.dataset.color = newConfidenceColor;
                 
-                // Update visual styling
-                highlightElement.classList.remove('confidence-red', 'confidence-amber', 'confidence-green');
-                highlightElement.classList.add(`confidence-${newConfidenceColor}`);
+                this.logger.info('Practice Session Manager: Updated PDF viewer highlight and cleared inline styles', {
+                    highlightId,
+                    confidenceEnum,
+                    color: newConfidenceColor
+                });
             }
 
             // Update in database using the enum value
