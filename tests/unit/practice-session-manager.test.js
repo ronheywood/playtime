@@ -299,8 +299,11 @@ describe('PracticeSessionManager', () => {
 
             await manager.updateHighlightConfidence(highlightId, newConfidence);
 
-            // Should call database update with enum value (1 for amber)
-            expect(mockDatabase.updateHighlight).toHaveBeenCalledWith(789, { confidence: 1 });
+            // Should call database update with enum value (1 for amber) and color
+            expect(mockDatabase.updateHighlight).toHaveBeenCalledWith(789, { 
+                confidence: 1,
+                color: 'amber'
+            });
         });
     });
 
@@ -316,26 +319,6 @@ describe('PracticeSessionManager', () => {
 
             expect(confidence).toBe('red'); // Should convert enum 0 to 'red'
             expect(document.querySelector).toHaveBeenCalledWith(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
-        });
-
-        test('should handle color string in dataset (backward compatibility)', () => {
-            const highlightId = 'highlight-456';
-            const mockElement = {
-                dataset: { confidence: 'green' } // Already a color string
-            };
-            jest.spyOn(document, 'querySelector').mockReturnValue(mockElement);
-
-            const confidence = manager.getCurrentSectionConfidence(highlightId);
-
-            expect(confidence).toBe('green'); // Should return the color as-is
-        });
-
-        test('should return default confidence when element not found', () => {
-            jest.spyOn(document, 'querySelector').mockReturnValue(null);
-
-            const confidence = manager.getCurrentSectionConfidence('missing-highlight');
-
-            expect(confidence).toBe('amber');
         });
     });
 

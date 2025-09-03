@@ -368,16 +368,21 @@
                     try {
                         await this._components.persistenceService.updateHighlight(
                             parseInt(highlightId, 10), 
-                            { confidence: confidenceEnum }
+                            { 
+                                confidence: confidenceEnum,
+                                color: newConfidenceColor  // Also update the color field
+                            }
                         );
                         this._state.logger.info?.('Highlighting: Database updated successfully', {
                             highlightId,
-                            confidenceEnum
+                            confidenceEnum,
+                            color: newConfidenceColor
                         });
                     } catch (dbError) {
                         this._state.logger.error?.('Highlighting: Failed to update database', {
                             highlightId,
                             confidenceEnum,
+                            color: newConfidenceColor,
                             error: dbError
                         });
                     }

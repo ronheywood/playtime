@@ -416,27 +416,15 @@ class PracticeSessionManager {
      * @returns {string} - The confidence level (red, amber, green)
      */
     getCurrentSectionConfidence(highlightId) {
-        // Try to get from the DOM element first
         const highlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
         if (highlightElement) {
             const confidenceData = highlightElement.dataset.confidence;
-            
-            // Handle both enum values ("0", "1", "2") and color strings
-            if (confidenceData && this.confidenceMapper) {
-                // If it's a numeric string, convert to color
-                const numericConfidence = parseInt(confidenceData, 10);
-                if (!isNaN(numericConfidence)) {
-                    return this.confidenceMapper.confidenceToColor(numericConfidence);
-                }
-                // If it's already a color string, return as-is
-                if (['red', 'amber', 'green'].includes(confidenceData.toLowerCase())) {
-                    return confidenceData.toLowerCase();
-                }
-            }
+            const numericConfidence = parseInt(confidenceData, 10);
+            if(isNaN(numericConfidence)) throw new Error('Invalid confidence value', numericConfidence);
+            return this.confidenceMapper.confidenceToColor(numericConfidence);
         }
         
-        // Default to amber if not found
-        return 'amber';
+        throw new Error('Could not find highlight element', highlightId);
     }
 
     /**
@@ -452,14 +440,11 @@ class PracticeSessionManager {
             });
 
             // Convert color to enum value using ConfidenceMapper
-            let confidenceEnum = null;
-            if (this.confidenceMapper) {
-                confidenceEnum = this.confidenceMapper.colorToConfidence(newConfidenceColor);
-            } else {
-                // Fallback if ConfidenceMapper is not available
-                const colorToEnum = { 'red': 0, 'amber': 1, 'green': 2 };
-                confidenceEnum = colorToEnum[newConfidenceColor.toLowerCase()] ?? 1;
+            if (!this.confidenceMapper) {
+                throw new Error('ConfidenceMapper dependency is required but not available. Check initialization.');
             }
+            
+            const confidenceEnum = this.confidenceMapper.colorToConfidence(newConfidenceColor);
 
             // Update the DOM element with both color and enum
             const highlightElement = document.querySelector(`[data-role="highlight"][data-hl-id="${highlightId}"]`);
@@ -476,17 +461,20 @@ class PracticeSessionManager {
             try {
                 if (this.database && typeof this.database.updateHighlight === 'function') {
                     await this.database.updateHighlight(parseInt(highlightId, 10), {
-                        confidence: confidenceEnum
+                        confidence: confidenceEnum,
+                        color: newConfidenceColor  // Also update the color field to keep them in sync
                     });
-                    this.logger.info('Practice Session Manager: Database updated with confidence enum', {
+                    this.logger.info('Practice Session Manager: Database updated with confidence enum and color', {
                         highlightId,
-                        confidenceEnum
+                        confidenceEnum,
+                        color: newConfidenceColor
                     });
                 }
             } catch (dbError) {
                 this.logger.warn('Practice Session Manager: Failed to update database', {
                     highlightId,
                     confidenceEnum,
+                    color: newConfidenceColor,
                     error: dbError
                 });
                 // Continue with DOM update even if database update fails
@@ -518,6 +506,7 @@ class PracticeSessionManager {
                 newConfidenceColor,
                 error
             });
+            throw error; // Re-throw to make failures visible
         }
     }
 

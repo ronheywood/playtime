@@ -52,13 +52,37 @@ class HighlightElement {
             throw new Error('fromDatabaseRecord requires a valid record object');
         }
 
-        // Import ConfidenceMapper for color conversion if needed
+        // Import ConfidenceMapper for color conversion
         const ConfidenceMapper = (typeof require !== 'undefined') ? 
             require('./ConfidenceMapper') : window.ConfidenceMapper;
-        const mapper = new ConfidenceMapper();
         
-        // Derive color from confidence if not present
-        const color = record.color || mapper.confidenceToColor(record.confidence);
+        let color = record.color;
+        
+        // If confidence exists, derive color from it (prioritize confidence over potentially stale color field)
+        if (Number.isFinite(record.confidence)) {
+            if (ConfidenceMapper) {
+                try {
+                    // Try to create mapper with confidence module if available
+                    const confidenceModule = (typeof require !== 'undefined') ? 
+                        require('../confidence') : window.PlayTimeConfidence;
+                    const mapper = new ConfidenceMapper(confidenceModule);
+                    color = mapper.confidenceToColor(record.confidence);
+                } catch (e) {
+                    // Fallback to basic enum-to-color mapping
+                    const fallbackColors = { 0: 'red', 1: 'amber', 2: 'green' };
+                    color = fallbackColors[record.confidence] || record.color || 'amber';
+                }
+            } else {
+                // Fallback without ConfidenceMapper
+                const fallbackColors = { 0: 'red', 1: 'amber', 2: 'green' };
+                color = fallbackColors[record.confidence] || record.color || 'amber';
+            }
+        }
+        
+        // Ensure we have a valid color
+        if (!color || !['red', 'amber', 'green'].includes(color)) {
+            color = 'amber';
+        }
 
         return new HighlightElement({
             xPct: record.xPct,
