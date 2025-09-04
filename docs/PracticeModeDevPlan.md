@@ -132,6 +132,35 @@ This plan addresses critical usability issues in practice mode, particularly on 
 
 **Sprint 2 Total**: 25 hours
 
+## 🚨 **CRITICAL DEPENDENCY: Architecture Sprint Required**
+
+> **⚠️ DEVELOPMENT HALT**: Sprint 3 advanced features are **BLOCKED** by critical architectural technical debt. The current codebase has reached complexity threshold where new features will be significantly slower to implement and harder to maintain.
+>
+> **Required Action**: Complete Architecture Refactoring Sprint before proceeding with Sprint 3.
+> **Reference**: See `docs/ArchitectureRefactoringPlan.md` for detailed analysis and implementation plan.
+>
+> **Impact**: Without architecture refactoring, Sprint 3 features will:
+> - Take 100% longer to implement due to architectural coupling  
+> - Introduce more bugs due to unclear component boundaries
+> - Block future development due to accumulated technical debt
+> - Make testing 3x more difficult due to global dependencies
+
+### **Sprint 2.5: Architecture Foundation (REQUIRED - 80 hours)**
+**Duration**: 2 weeks  
+**Goal**: Establish clean architectural foundation for sustainable feature development
+
+- [ ] **Service Container & Dependency Injection** (16 hours)
+- [ ] **Business Service Layer Extraction** (20 hours)  
+- [ ] **Centralized State Management** (12 hours)
+- [ ] **Component Refactoring** (24 hours)
+- [ ] **Event System Cleanup** (8 hours)
+
+**Architecture Sprint Benefits**:
+- Sprint 3 development will be 40% faster
+- Bug fixing will be 60% more efficient  
+- Testing will be 70% faster
+- Future features will be 50% faster to implement
+
 ### Sprint 3: Advanced Practice Features (Priority: Medium)
 **Duration**: 1 week  
 **Goal**: Enhanced practice session management and real-world usability improvements
@@ -153,6 +182,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
   - [ ] **Extract Highlighted Section as PNG**: Render only the highlighted section to prevent "cheating"
   - [ ] Enhance "Chunking" strategy to truly isolate practice sections
   - [ ] Remove visual distractions in focus mode
+  - [ ] Experiment with other practice strategies - Should app behavior change according to the chosen strategy?
 - **User Impact**: Addresses real practice session issue where users could see/play non-target measures
 - **Testing**: Strategy modes provide true section isolation
 - **Effort**: 20 hours

@@ -1,32 +1,63 @@
 # PlayTime TODO List
 
-## 🏗️ Architecture & Technical Debt
+## 🚨 **CRITICAL: Architecture Sprint Required Before Advanced Features**
 
-- [ ] * - [ ] **Practice Session Enhancements** ⭐ NEW - Based on Real Piano Practice Feedback
-   - [ ] **Section Completion Dialog Improvements**
-     - [ ] Change "rate this session" to "rate this section" 
-     - [ ] Display section name in completion dialog
-     - [ ] Enable editing/updating section notes during completion
-   - [ ] **Strategy Implementation Enhancement** 
-     - [ ] True section isolation for "Chunking" strategy (prevent playing non-target measures)
-     - [ ] Investigate visual barriers or stronger focus techniques
-   - [ ] **Mobile Practice Optimization**
-     - [ ] Timer positioning that survives pinch zoom operations
-     - [ ] Extend screen wake lock to focus mode (not just practice sessions)
-     - [ ] Consistent touch scroll/pinch zoom availability unless highlighting active
-   - [ ] **Focus Mode UI Refinement**
-     - [ ] Remove additional distracting UI elements during focus
-     - [ ] Enhanced visual isolation techniquesImplement IoC Container for Dependency Injection**
-  - [ ] Replace manual factory functions and global `window.` object lookups 
-  - [ ] Create a proper dependency injection container to manage component lifecycle
-  - [ ] Eliminate messy dependency resolution patterns like `if (typeof window !== 'undefined' && window.ConfidenceMapper)`
-  - [ ] Improve testability by enabling clean constructor injection
-  - [ ] Consider lightweight solutions like a simple service locator or registry pattern
-  - [ ] Update PracticeSessionManager, highlighting system, and other components to use proper DI
-  - [ ] **Priority**: Medium (will improve code maintainability and testability significantly)
+> **⚠️ DEVELOPMENT HALT RECOMMENDATION**: The current architectural technical debt has reached a critical threshold. Advanced features should be postponed until core architectural issues are resolved. See `docs/ArchitectureRefactoringPlan.md` for detailed analysis.
 
-## 🚀 Implementation Priority Queue
+## 🏗️ Architecture & Technical Debt (PRIORITY 1 - BLOCKING)
 
+- [ ] **🔥 CRITICAL: Implement Service Container & Dependency Injection** 
+  - [ ] Replace all `window.*` global dependencies with proper constructor injection
+  - [ ] Create lightweight service container to manage component lifecycle  
+  - [ ] Eliminate fragile patterns like `if (typeof window !== 'undefined' && window.ConfidenceMapper)`
+  - [ ] Enable clean, testable component initialization
+  - [ ] **Impact**: Currently blocking advanced feature development and making testing 3x harder
+  - [ ] **Effort**: 16 hours
+  - [ ] **Files**: `scripts/core/ServiceContainer.js`, update all major components
+
+- [ ] **🔥 CRITICAL: Extract Business Service Layer**
+  - [ ] Move domain logic out of UI components into pure service classes
+  - [ ] Create `HighlightingService`, `PracticeSessionService`, `ScoreManagementService`
+  - [ ] Eliminate DOM dependencies from business logic
+  - [ ] **Impact**: Will make advanced features 50% faster to implement and test
+  - [ ] **Effort**: 20 hours  
+  - [ ] **Files**: `scripts/services/*.js`
+
+- [ ] **🔥 CRITICAL: Implement Centralized State Management**
+  - [ ] Replace scattered state with single source of truth
+  - [ ] Stop using DOM attributes as primary state storage
+  - [ ] Add state change notifications and proper data flow
+  - [ ] **Impact**: Required for complex features like PNG extraction and mobile timer positioning
+  - [ ] **Effort**: 12 hours
+  - [ ] **Files**: `scripts/core/AppState.js`, `scripts/core/StateManager.js`
+
+**Total Architecture Sprint**: 80 hours (2 weeks) - **MUST COMPLETE BEFORE SPRINT 3**
+
+## 🚀 Implementation Priority Queue (AFTER Architecture Sprint)
+
+### **🎹 Practice Session Enhancements** - Based on Real Piano Practice Feedback
+> **Note**: These advanced features require the architecture sprint to be completed first for sustainable implementation.
+
+- [ ] **Section Completion Dialog Improvements**
+  - [ ] Change "rate this session" to "rate this section" 
+  - [ ] Display section name in completion dialog
+  - [ ] Enable editing/updating section notes during completion
+
+- [ ] **Strategy Implementation Enhancement** 
+  - [ ] True section isolation for "Chunking" strategy (prevent playing non-target measures)
+  - [ ] Extract highlighted section as PNG for complete visual isolation
+  - [ ] Investigate visual barriers or stronger focus techniques
+
+- [ ] **Mobile Practice Optimization**
+  - [ ] Timer positioning that survives pinch zoom operations
+  - [ ] Extend screen wake lock to focus mode (not just practice sessions)
+  - [ ] Consistent touch scroll/pinch zoom availability unless highlighting active
+
+- [ ] **Focus Mode UI Refinement**
+  - [ ] Remove additional distracting UI elements during focus
+  - [ ] Enhanced visual isolation techniques
+
+### **Remaining Core Features**
 2. **Color Coding** - Implement highlight color assignment
 3. **Highlight Persistence** - Save/load highlights to IndexedDB
 4. **Section Selection** - Make highlights clickable/selectable
