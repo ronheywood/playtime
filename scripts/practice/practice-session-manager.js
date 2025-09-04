@@ -264,7 +264,7 @@ class PracticeSessionManager {
             dialog.innerHTML = `
                 <h3>Section Complete!</h3>
                 <p>
-                    How did this practice session go?
+                    How confident were you in this section?
                 </p>
                 
                 <div class="confidence-update">
