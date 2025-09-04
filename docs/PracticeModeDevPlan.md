@@ -134,39 +134,74 @@ This plan addresses critical usability issues in practice mode, particularly on 
 
 ### Sprint 3: Advanced Practice Features (Priority: Medium)
 **Duration**: 1 week  
-**Goal**: Enhanced practice session management
+**Goal**: Enhanced practice session management and real-world usability improvements
 
-#### Task 3.1: Timer Completion Dialog
-- **Files**: `scripts/practice/practice-session-timer.js`
-- **Implementation**: Modal with continue/repeat options
-- **Testing**: User can control section progression
+#### Task 3.1: Section Completion Dialog Enhancements ⭐ UPDATED
+- [ ] **Files**: `scripts/practice/practice-session-manager.js`
+- [ ] **Implementation**: 
+  - [x] Change "How did this practice section go" to "How confident were you in this section?"
+  - [ ] Display section name in completion dialog
+  - [ ] Enable editing/updating section notes during completion
+  - [ ] Modal with continue/repeat options
+- **User Impact**: Based on real practice session feedback - users need section-specific context
+- **Testing**: User can control section progression and update notes inline
+- **Effort**: 12 hours (increased due to note editing feature)
+
+#### Task 3.2: Strategy Implementation & Focus Enhancement ⭐ NEW
+- [ ] **Files**: `scripts/practice/practice-session-starter.js`, `scripts/pdf-viewer.js`
+- [ ] **Implementation**: 
+  - [ ] **Extract Highlighted Section as PNG**: Render only the highlighted section to prevent "cheating"
+  - [ ] Enhance "Chunking" strategy to truly isolate practice sections
+  - [ ] Remove visual distractions in focus mode
+- **User Impact**: Addresses real practice session issue where users could see/play non-target measures
+- **Testing**: Strategy modes provide true section isolation
+- **Effort**: 20 hours
+
+#### Task 3.3: Mobile Timer Positioning & Zoom Handling ⭐ UPDATED
+- [ ] **Files**: `scripts/practice/practice-session-timer.js`, `styles/practice-mode.css`
+- [ ] **Implementation**: 
+  - [ ] Pinch zoom-aware timer positioning
+  - [ ] Timer remains visible and accessible during zoom operations
+  - [ ] Enhanced mobile viewport detection and positioning
+- **User Impact**: Critical for iPad practice sessions with zoom
+- **Testing**: User can pinch zoom and still see/interact with the timer
+- **Effort**: 16 hours (increased complexity for zoom handling)
+
+#### Task 3.4: Focus Mode Wake Lock Extension ⭐ NEW
+- [ ] **Files**: `scripts/layout/focus-mode-handler.js`
+- [ ] **Implementation**: Extend screen wake lock functionality to focus mode
+- **User Impact**: Prevents screen timeout during focused practice outside of timed sessions
+- **Testing**: Screen stays awake in both practice sessions and focus mode
+- **Effort**: 6 hours
+
+#### Task 3.5: Touch Interaction Consistency ⭐ NEW
+- [ ] **Files**: `scripts/highlighting/MouseSelectionHandler.js`, touch event handlers
+- [ ] **Implementation**: 
+  - [ ] Touch scroll and pinch zoom always available unless highlight mode specifically activated
+  - [ ] Clear mode switching indicators for users
+- **User Impact**: Consistent mobile interaction expectations
+- **Testing**: Predictable touch behavior across all modes
 - **Effort**: 8 hours
 
-#### Task 3.2: Practice Plan Management
-- **Files**: `scripts/practice/practice-planner.js`, templates
+#### Task 3.6: Practice Plan Management
+- [ ] **Files**: `scripts/practice/practice-planner.js`, templates
 - **Implementation**: Remove sections, append newly created sections, filter for confidence, reorder, bulk actions
 - **Testing**: Full CRUD operations on practice plan
 - **Effort**: 16 hours
 
-#### Task 3.3: Highlight Database Management
-- **Files**: Multiple highlighting files
+#### Task 3.7: Highlight Database Management
+- [ ] **Files**: Multiple highlighting files
 - **Implementation**: Delete selected highlight using "delete" key on pc after confirmation, and cascade delete to remove sections from practice plans. include a delete icon near the update notes button - for touch device support
 - **Testing**: Safe deletion with confirm/cancel capability
 - **Effort**: 12 hours
 
-#### Task 3.4: Highlight Confidence upate
-- **Files**: Multiple highlighting files
+#### Task 3.8: Highlight Confidence Update
+- [ ] **Files**: Multiple highlighting files
 - **Implementation**: While editing notes, the user can also change the confidence value on a highlight
 - **Testing**: User can edit highlight notes and change highlight confidence
 - **Effort**: 12 hours
 
-#### Task 3.5: Pinch Zoom timer position
-- **Files**: Start Practice timer, layout events and css
-- **Implementation**: In practice mode if the user used pinch zoom to tighten the device focus on a section, the timer remains visible
-- **Testing**: User can pinch zoom in practice and still see/interact with the timer
-- **Effort**: 12 hours
-
-**Sprint 3 Total**: 36 hours
+**Sprint 3 Total**: 102 hours (significantly expanded based on real-world practice feedback)
 
 ## Technical Architecture
 

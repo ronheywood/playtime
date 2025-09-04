@@ -2,7 +2,21 @@
 
 ## 🏗️ Architecture & Technical Debt
 
-- [ ] **Implement IoC Container for Dependency Injection**
+- [ ] * - [ ] **Practice Session Enhancements** ⭐ NEW - Based on Real Piano Practice Feedback
+   - [ ] **Section Completion Dialog Improvements**
+     - [ ] Change "rate this session" to "rate this section" 
+     - [ ] Display section name in completion dialog
+     - [ ] Enable editing/updating section notes during completion
+   - [ ] **Strategy Implementation Enhancement** 
+     - [ ] True section isolation for "Chunking" strategy (prevent playing non-target measures)
+     - [ ] Investigate visual barriers or stronger focus techniques
+   - [ ] **Mobile Practice Optimization**
+     - [ ] Timer positioning that survives pinch zoom operations
+     - [ ] Extend screen wake lock to focus mode (not just practice sessions)
+     - [ ] Consistent touch scroll/pinch zoom availability unless highlighting active
+   - [ ] **Focus Mode UI Refinement**
+     - [ ] Remove additional distracting UI elements during focus
+     - [ ] Enhanced visual isolation techniquesImplement IoC Container for Dependency Injection**
   - [ ] Replace manual factory functions and global `window.` object lookups 
   - [ ] Create a proper dependency injection container to manage component lifecycle
   - [ ] Eliminate messy dependency resolution patterns like `if (typeof window !== 'undefined' && window.ConfidenceMapper)`
@@ -50,14 +64,20 @@
 - [x] **Highlight Persistence**
   - [x] Save highlights to IndexedDB with PDF reference
   - [x] Load and display saved highlights
-  - [ ] Add description and notes to highlight
+  - [x] Add description and notes to highlight
   - [ ] Edit/delete existing highlights
 
 ### Phase 4: Practice Features
   - [x] Focus whole score (See todo-focus-mode.html for an example)
   - [x] Zoom/crop view to highlighted section
   - [x] Exit focus mode back to full view
-  - [ ] Section navigation (next/previous)
+  - [x] Section navigation next
+  - [x] **Practice Session Timer & Manager** ✅ COMPLETED
+    - [x] Timer completion with dialog options (continue/repeat/end)
+    - [x] Session orchestration and state management
+    - [x] Confidence update dialogs at section completion
+    - [x] Screen wake lock functionality for uninterrupted practice
+    - [x] Practice session timer with mobile-optimized positioning
 
 - [ ] **Extract Highlighted Section as PNG**
   - [ ] Module to extract selected rectangle from PDF canvas and convert to PNG
@@ -76,15 +96,15 @@
    - [ ] The Mark Section Confidence tool should show details of the practice plan
    - [ ] There should be an edit practice plan call to action in this component, allowing new highlights to be added to the score, or the setup UI to be launched
 
- - [ ] **Practice Session Planning & Progress Tracking**
+ - [x] **Practice Session Planning & Progress Tracking** ✅ COMPLETED
    - [x] Practice session configuration UI (replacing score canvas)
    - [x] Floating action button for highlight annotation (notebook icon)
    - [x] Annotation dialog/modal for adding titles and notes to highlights
    - [ ] Select sections, reorder, remove, set method, duration, notes
-  - [ ] Save/load/delete practice plans (IndexedDB)
-  - [ ] Start session: timer, section navigation, progress indicator
+  - [x] Save/load/delete practice plans (IndexedDB)
+  - [x] Start session: timer, section navigation, progress indicator
   - [ ] Record practice notes per section
-  - [ ] Update confidence after each section
+  - [x] Update confidence after each section
   - [ ] Track session history and progress
   - [ ] Alternate sidebar control set
   - [ ] Acceptance: See docs/practice-session-guide.html for workflow and criteria
@@ -106,7 +126,7 @@
 - [x] Responsive design improvements for tablet use
 - [x] Touch-friendly controls and gestures
 - [ ] Accessibility improvements (ARIA labels, keyboard nav)
-- [ ] Visual polish and modern design
+- [ ] Visual polish and light mode design should not look like "generic twitter boostrap"
 
 ## 🧪 Testing Strategy
 - [x] **Outside in TDD Methods**

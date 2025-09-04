@@ -1,5 +1,37 @@
 # User Feedback: PlayTime Practice Sessions
 
+## Latest Session Feedback (Piano Practice)
+
+### Positive Outcomes
+- Practice session was very effective at making tricky passages accessible
+- Screen wake lock functionality worked well on iPad to prevent timeout during practice
+
+### Areas for Improvement
+
+#### 1. Strategy Implementation & Focus ("Chunking" Strategy)
+- **Issue**: Even with highlight visible, other measures on score are still visible, leading to "cheating" by playing through to non-target sections
+- **Suggested Solution**: Extract highlighted section as PNG for true isolation (see **Extract Highlighted Section as PNG** feature)
+
+#### 2. Mobile UI & Navigation
+- **Issue**: When using pinch zoom on iPad to focus on highlighted section, timer disappears from view
+- **Impact**: Loses track of practice timing
+
+#### 3. Section Completion Dialog Improvements
+- **Issue**: End dialog says "rate this session" instead of "rate this section"
+- **Missing**: Section name not shown in completion dialog
+- **Missing**: Cannot edit/update notes made on that section during completion
+
+#### 4. Focus Mode Wake Lock
+- **Issue**: Screen wake lock should also be active during focus mode, not just practice sessions
+- **Current**: Only works in practice sessions
+
+#### 5. Touch Interaction Consistency
+- **Issue**: Touch scroll and pinch zoom should always be available unless highlight mode is specifically activated
+- **Current**: Inconsistent behavior between modes
+
+#### 6. Focus Mode UI Distraction
+- **Issue**: May need to remove additional UI elements that are distracting during focus
+
 ## IPad experience
 - The timer does not appear fixed at the top of the page on an iPad
 - It is hard to scroll the score on iPad in focus mode as dragging on the canvas is intercepted by highlighting mode
