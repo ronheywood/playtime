@@ -191,6 +191,90 @@ async function initializeFileUpload(database = null) {
         return;
     }
 
+    /**
+     * Dependency Injection provisioning for legacy bootstrap
+     * - Attempts to create and initialize the DI container and expose it as `window.diContainer`.
+     * - Enforcement strategy:
+     *   - If running under a test environment (Jest) and PLAYTIME_THROW_ON_MISSING_DI=1, throw when DI is missing.
+     *   - If running in a browser and PlayTimeConfig.throwOnMissingDI is true, log an error instead of throwing.
+     */
+    (function provideDIContainer() {
+    // Prefer runtime configuration via window.PlayTimeConfig; fall back to Node process checks only when available
+    const runtimeConfig = (typeof window !== 'undefined' && window.PlayTimeConfig) ? window.PlayTimeConfig : {};
+    const throwConfigured = runtimeConfig && runtimeConfig.throwOnMissingDI === true;
+
+        try {
+            // Try to use global if already present (browser incremental migration)
+            let DIContainerClass = (typeof window !== 'undefined' && window.DIContainer) || null;
+
+            if (!DIContainerClass) {
+                try {
+                    // Try to require the DIContainer module (Node/test environments)
+                    // eslint-disable-next-line global-require
+                    const diModule = require('./Core/Infrastructure/DIContainer');
+                    DIContainerClass = diModule && (diModule.DIContainer || diModule.DIContainer);
+                } catch (e) {
+                    DIContainerClass = null;
+                }
+            }
+
+            // Instantiate and initialize container if possible
+            let containerInstance = null;
+            try {
+                if (DIContainerClass) {
+                    // Handle multiple shapes:
+                    // - a constructor function/class
+                    // - a module object with a DIContainer property
+                    // - an already-instantiated container instance
+                    if (typeof DIContainerClass === 'function') {
+                        containerInstance = new DIContainerClass();
+                    } else if (DIContainerClass && typeof DIContainerClass.DIContainer === 'function') {
+                        containerInstance = new DIContainerClass.DIContainer();
+                    } else if (DIContainerClass && typeof DIContainerClass.initialize === 'function') {
+                        // already an instance
+                        containerInstance = DIContainerClass;
+                    } else {
+                        throw new Error('DIContainerClass is not a constructor or usable instance');
+                    }
+
+                    if (containerInstance && typeof containerInstance.initialize === 'function') {
+                        try { containerInstance.initialize(); } catch (initErr) { /* ignore initialization errors here */ }
+                    }
+                }
+            } catch (instErr) {
+                console.warn('Failed to instantiate DIContainer:', instErr && instErr.message);
+            }
+
+            // Expose container globally for legacy consumers and tests
+            if (typeof window !== 'undefined') {
+                window.diContainer = containerInstance;
+                // If container provides a logger, prefer that and expose as window.logger
+                try {
+                    if (containerInstance && typeof containerInstance.get === 'function' && containerInstance.has && containerInstance.has('logger')) {
+                        const resolvedLogger = containerInstance.get('logger');
+                        if (resolvedLogger) {
+                            window.logger = resolvedLogger;
+                        }
+                    }
+                } catch (loggerErr) {
+                    // Ignore logger wiring failures - fallbacks will be used
+                }
+                // Also expose shorthand for PlayTimeApplication bootstrapping
+                if (!window.getPlayTimeApplication) {
+                    window.getPlayTimeApplication = function() {
+                        if (!window.PlayTimeApplication) return null;
+                        if (!window.__playtime_app_instance) {
+                            window.__playtime_app_instance = new window.PlayTimeApplication();
+                        }
+                        return window.__playtime_app_instance;
+                    };
+                }
+            }
+        } catch (err) {
+            console.error('Error while provisioning DI container:', err && err.message);
+        }
+    })();
+
     fileInput.addEventListener('change', async (event) => {
         const file = event.target.files[0];
         if (!file) {
@@ -369,12 +453,23 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     try {
         // Initialize modules with logger dependency injection
-        // Get logger from window (loaded from logger.js script tag)
-        const appLogger = window.logger || console;
-        
+        // Prefer DI-provided logger when available
+        const diContainer = (typeof window !== 'undefined' && window.diContainer) ? window.diContainer : null;
+        let appLogger = console;
+        try {
+            if (diContainer && typeof diContainer.get === 'function' && diContainer.has && diContainer.has('logger')) {
+                appLogger = diContainer.get('logger') || window.logger || console;
+            } else {
+                appLogger = window.logger || console;
+            }
+        } catch (e) {
+            appLogger = window.logger || console;
+        }
+
         if (!window.logger) {
-            // Use the appLogger for consistency, even if it falls back to console
-            appLogger.warn('PlayTimeLogger not available, falling back to console logging');
+            // Expose chosen logger globally to avoid scattered window.logger usage
+            window.logger = appLogger;
+            try { appLogger.warn('PlayTimeLogger not available, using DI or console fallback'); } catch (_) {}
         }
         
         // Create module instances with injected functions

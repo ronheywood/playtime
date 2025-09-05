@@ -2,7 +2,10 @@
  * @jest-environment jsdom
  */
 
-const PracticeSessionManager = require('../../scripts/Practice/practice-session-manager.js');
+// Use adapter during migration so tests can incrementally adopt the persistence facade
+const PracticeSessionManager = require('../../scripts/Practice/Adapters/PracticeSessionManagerAdapter.js');
+// Also load legacy constructor to assert instanceof against the original class
+const LegacyPracticeSessionManager = require('../../scripts/practice/practice-session-manager.js');
 
 describe('PracticeSessionManager', () => {
     let manager;
@@ -386,7 +389,8 @@ describe('PracticeSessionManager', () => {
                 mockDatabase
             );
 
-            expect(instance).toBeInstanceOf(PracticeSessionManager);
+            // Adapter returns the legacy instance; assert against the original class
+            expect(instance).toBeInstanceOf(LegacyPracticeSessionManager);
             expect(instance.logger).toBe(mockLogger);
             expect(instance.highlighting).toBe(mockHighlighting);
             expect(instance.practiceSessionStarter).toBe(mockStarter);

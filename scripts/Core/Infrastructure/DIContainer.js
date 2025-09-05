@@ -2,7 +2,22 @@
  * Application Dependency Injection Container
  * Configures and provides all application services
  */
-import ServiceContainer from './ServiceContainer.js';
+// Resolve ServiceContainer in a dual-mode way so this file can be required
+// from CommonJS test environments as well as imported by browser bundles.
+let ServiceContainer;
+try {
+    if (typeof require === 'function' && typeof module !== 'undefined' && module.exports) {
+        // CommonJS environment (Node/Jest)
+        // eslint-disable-next-line global-require
+        const mod = require('./ServiceContainer.js');
+        ServiceContainer = mod && (mod.default || mod);
+    } else {
+        // Browser environment - expect a global
+        ServiceContainer = (typeof window !== 'undefined' && window.ServiceContainer) || null;
+    }
+} catch (e) {
+    ServiceContainer = (typeof window !== 'undefined' && window.ServiceContainer) || null;
+}
 
 class DIContainer {
     constructor() {

@@ -5,9 +5,13 @@
 
 class Logger {
     constructor() {
+        // Determine test/dev environment safely:
+        // Prefer runtime PlayTimeConfig when present (browser-friendly), fall back to Node process checks when available
+        const runtimeCfg = (typeof window !== 'undefined' && window.PlayTimeConfig) ? window.PlayTimeConfig : null;
         this.isTestEnvironment = (
-            typeof jest !== 'undefined' ||
+            (typeof jest !== 'undefined') ||
             (typeof global !== 'undefined' && global.isTestEnvironment) ||
+            (runtimeCfg && runtimeCfg.isTest === true) ||
             (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')
         );
     this.isSilent = false; // Ensure logger is non-silent in tests
@@ -71,13 +75,10 @@ class Logger {
      * @param {...any} args - Additional arguments
      */
     debug(message, ...args) {
-        if (
-            !this.isSilent &&
-            !this.isTestEnvironment &&
-            typeof process !== 'undefined' &&
-            process.env &&
-            process.env.NODE_ENV === 'development'
-        ) {
+        // Only debug in dev mode. Prefer PlayTimeConfig.env in browser, fall back to process.env when available.
+        const runtimeCfg = (typeof window !== 'undefined' && window.PlayTimeConfig) ? window.PlayTimeConfig : null;
+        const isDev = (runtimeCfg && runtimeCfg.env === 'development') || (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development');
+        if (!this.isSilent && !this.isTestEnvironment && isDev) {
             console.log('🐛', message, ...args);
         }
     }

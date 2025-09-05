@@ -21,6 +21,56 @@ if (typeof global.CustomEvent !== 'function') {
     } catch (_) { /* noop - tests will fail loudly if this breaks */ }
 }
 
+// --- Test DI provisioning -------------------------------------------------
+// Provide DIContainer class and an initialized container instance to the JSDOM
+// environment so application bootstrap code can discover and use it during tests.
+try {
+    // Attempt to load the app DI container module
+    // eslint-disable-next-line global-require
+    const diModule = require('../scripts/Core/Infrastructure/DIContainer');
+    if (typeof global.window !== 'undefined' && diModule) {
+        // Support module shapes: constructor, { DIContainer }, or instance
+        try {
+            if (typeof diModule === 'function') {
+                global.window.DIContainer = diModule;
+                try { global.window.diContainer = new diModule(); } catch(_) { /* ignore */ }
+            } else if (diModule && typeof diModule.DIContainer === 'function') {
+                global.window.DIContainer = diModule.DIContainer;
+                try { global.window.diContainer = new diModule.DIContainer(); } catch(_) { /* ignore */ }
+            } else if (diModule && typeof diModule.initialize === 'function') {
+                // Already an initialized instance
+                global.window.diContainer = diModule;
+            }
+
+            // Initialize instance if available
+            if (global.window.diContainer && typeof global.window.diContainer.initialize === 'function') {
+                try { global.window.diContainer.initialize(); } catch (_) { /* ignore */ }
+            }
+
+            // If instance exposes logger, wire it
+            try {
+                const instance = global.window.diContainer;
+                if (instance && typeof instance.has === 'function' && instance.has('logger')) {
+                    const logger = instance.get('logger');
+                    if (logger) global.window.logger = logger;
+                }
+            } catch (_) { /* ignore */ }
+        } catch (err) {
+            // Ignore instantiation errors - tests continue to run in legacy mode
+        }
+    }
+} catch (e) {
+    // Non-fatal: continue without DI in test environments where module cannot be required
+}
+
+// Ensure PlayTimeConfig exists in the test window so bootstrap can read runtime flags
+try {
+    if (typeof global.window !== 'undefined') {
+        global.window.PlayTimeConfig = global.window.PlayTimeConfig || { throwOnMissingDI: false };
+    }
+} catch (_) { /* ignore */ }
+
+
 // Mock IndexedDB for testing
 global.indexedDB = {
     open: jest.fn(() => {
