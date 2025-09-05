@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const PracticeSessionManager = require('../../scripts/practice/practice-session-manager.js');
+const PracticeSessionManager = require('../../scripts/Practice/practice-session-manager.js');
 
 describe('PracticeSessionManager', () => {
     let manager;

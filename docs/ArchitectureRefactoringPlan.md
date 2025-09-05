@@ -10,8 +10,617 @@
 3. **No Service Layer** - Domain logic scattered across components
 4. **Brittle Event System** - Events used for everything, including synchronous operations
 5. **State Management Chaos** - No single source of truth
+6. **Template Complexity** - String concatenation HTML with embedded logic
+7. **Event Binding Nightmare** - Manual DOM event management everywhere
+8. **Component Reuse** - No component abstraction or reusability
 
-## 🏗️ **Architecture Sprint: Foundation First**
+## 🔧 **Framework Evaluation: Minimal Solutions for Maximum Impact**
+
+### **Complexity Areas Requiring Framework Support**:
+
+#### **1. Templating & Partials**
+**Current Pain**: String concatenation with embedded logic
+```javascript
+// Current nightmare in practice-session-manager.js
+dialog.innerHTML = `
+    <h3>Section Complete!</h3>
+    <div class="confidence-buttons">
+        <button data-confidence="red" class="confidence-btn ${currentConfidence === 'red' ? 'active' : ''}">
+            Needs Work
+        </button>
+        <!-- More template hell... -->
+    </div>
+`;
+```
+
+#### **2. Event Binding & DOM Management**  
+**Current Pain**: Manual event listeners everywhere
+```javascript
+// Current approach - brittle and verbose
+confidenceBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Complex state management...
+    });
+});
+```
+
+#### **3. State/Data Binding**
+**Current Pain**: Manual DOM updates and state synchronization
+```javascript
+// Current approach - error-prone
+highlightElement.dataset.confidence = confidenceEnum.toString();
+highlightElement.dataset.color = newConfidenceColor;
+// ... manual class management
+```
+
+### **� Framework Recommendations: Minimal & Focused**
+
+#### **Option A: Alpine.js (RECOMMENDED)**
+**Size**: 15KB gzipped | **Learning Curve**: Minimal | **Disruption**: Low
+
+**Why Alpine.js Fits Perfectly**:
+- **Drop-in Enhancement**: Works with existing HTML, no build step required
+- **Minimal API**: Only 15 directives to learn
+- **No Virtual DOM**: Direct DOM manipulation (fits our PDF.js needs)
+- **Component System**: Reusable components without framework overhead
+- **Event Handling**: Declarative event binding
+- **State Management**: Built-in reactive state
+
+**Implementation Example**:
+```html
+<!-- Before: String concatenation hell -->
+<div class="confidence-buttons">
+    <!-- Manual template building... -->
+</div>
+
+<!-- After: Alpine.js declarative -->
+<div class="confidence-buttons" x-data="confidenceButtons">
+    <template x-for="level in confidenceLevels">
+        <button 
+            x-bind:class="buttonClass(level)"
+            x-on:click="selectConfidence(level)"
+            x-text="level.label">
+        </button>
+    </template>
+</div>
+```
+
+**Alpine.js Benefits for PlayTime**:
+- ✅ **PDF.js Compatible**: No virtual DOM conflicts
+- ✅ **Minimal Learning**: Team can be productive in 2 hours  
+- ✅ **Progressive Enhancement**: Can adopt incrementally
+- ✅ **No Build Step**: Fits current vanilla JS approach
+- ✅ **Small Bundle**: 15KB won't impact performance
+- ✅ **Event Handling**: Declarative `x-on:click` instead of manual listeners
+- ✅ **State Binding**: `x-model` for form inputs, `x-show` for conditional display
+
+#### **Option B: Lit (HTML Web Components)**
+**Size**: 5KB gzipped | **Learning Curve**: Low | **Disruption**: Medium
+
+**Why Lit Could Work**:
+- **Web Standards**: True web components
+- **Minimal**: Just templating + reactivity
+- **Future-Proof**: Based on web standards
+- **TypeScript Ready**: If we decide to migrate
+
+**Concerns**:
+- **Shadow DOM**: May complicate PDF.js integration
+- **Learning Curve**: Requires understanding web components
+- **Browser Support**: Polyfills needed for older browsers
+
+#### **Option C: Petite-Vue (Vue 3 Subset)**
+**Size**: 6KB gzipped | **Learning Curve**: Low | **Disruption**: Low
+
+**Why Petite-Vue Could Work**:
+- **Vue-like**: Familiar API for those who know Vue
+- **Progressive**: Can adopt incrementally
+- **No Build Step**: Script tag inclusion
+
+**Concerns**:
+- **Less Mature**: Newer project, smaller ecosystem
+- **Limited Features**: Subset of Vue 3
+
+### **🏆 RECOMMENDATION: Alpine.js**
+
+**Rationale**:
+1. **Perfect Size/Feature Balance**: Solves our exact problems without bloat
+2. **Zero Disruption**: Works with existing codebase immediately  
+3. **PDF.js Compatible**: No virtual DOM to conflict with canvas operations
+4. **Team Velocity**: Minimal learning curve, immediate productivity
+5. **Future-Friendly**: Can coexist with other solutions as we grow
+
+---
+
+## 📋 **Detailed Framework Research Results**
+
+### **Alpine.js Deep Dive**
+**Bundle Size**: ~10KB gzipped | **Trust Score**: 6.6/10 | **Code Examples**: 364
+
+**Key Features Addressing Our Complexity**:
+- **Reactive Data Binding**: `x-data="{ confidence: 'medium' }"` eliminates manual state management
+- **Declarative Events**: `@click="updateConfidence()"` replaces `addEventListener` patterns  
+- **Template Directives**: `x-text`, `x-show`, `x-if`, `x-for` eliminate `innerHTML` manipulation
+- **Component System**: `Alpine.data()` provides reusable component definitions
+- **Progressive Enhancement**: Works with existing HTML structure
+
+**Alpine vs Current Manual Approach**:
+```html
+<!-- Current: Manual DOM manipulation -->
+<div id="practice-dialog">
+  <span id="confidence-display"></span>
+  <button onclick="updateConfidence()">Update</button>
+</div>
+<script>
+function updateConfidence() {
+  const display = document.getElementById('confidence-display');
+  display.textContent = newValue; // Manual DOM update
+}
+</script>
+
+<!-- Alpine: Declarative and reactive -->
+<div x-data="{ confidence: 'medium', showDialog: false }">
+  <span x-text="confidence"></span>
+  <button @click="confidence = 'high'">Update</button>
+  <div x-show="showDialog" x-transition>Dialog content</div>
+</div>
+```
+
+### **Lit Analysis**
+**Bundle Size**: 5KB gzipped | **Trust Score**: 7.8/10 | **Code Examples**: 350
+
+**Strengths**:
+- Web Components standard
+- Excellent TypeScript support
+- Scoped CSS with shadow DOM
+- Reactive properties system
+
+**Concerns for PlayTime**:
+- Requires component architecture refactoring
+- Shadow DOM may complicate PDF.js canvas integration
+- Higher learning curve for web components
+
+### **Stimulus Analysis**  
+**Bundle Size**: ~8KB gzipped | **Trust Score**: 7.6/10 | **Code Examples**: 138
+
+**Strengths**:
+- Progressive enhancement philosophy
+- Controller-based organization
+- Excellent for server-rendered apps
+
+**Concerns for PlayTime**:
+- Less declarative than Alpine
+- Requires more JavaScript structure
+- Manual DOM updates still needed
+
+### **Alpine.js Implementation Strategy**
+
+#### **Phase 1: Practice Session Dialogs (Sprint 3.1)**
+Replace manual DOM manipulation in practice completion dialogs:
+
+```javascript
+// Current: scripts/practice/practice-session-manager.js
+showSectionCompletionDialog(section) {
+  const dialog = document.createElement('div');
+  dialog.innerHTML = this.generateDialogHTML(section);
+  // ... manual event binding, state management
+}
+
+// Alpine: Component definition
+Alpine.data('practiceDialog', () => ({
+  section: null,
+  confidence: 'medium',
+  showDialog: false,
+  
+  openDialog(sectionData) {
+    this.section = sectionData;
+    this.confidence = sectionData.confidence || 'medium';
+    this.showDialog = true;
+  },
+  
+  setConfidence(level) {
+    this.confidence = level;
+  },
+  
+  completeSection() {
+    // Dispatch completion event with data
+    this.$dispatch('section-completed', {
+      section: this.section,
+      confidence: this.confidence
+    });
+    this.showDialog = false;
+  }
+}));
+```
+
+# Current Structure Analysis
+
+## What We Have Now:
+```
+/scripts/
+├── practice/
+│   ├── practice-session-manager.js    # 400+ lines of mixed concerns
+│   ├── practice-session-starter.js
+│   └── practice-plan-persistence-service.js
+├── highlighting/
+│   ├── highlighting.js                # DOM + business logic mixed
+│   ├── HighlightElement.js
+│   └── ConfidenceMapper.js
+├── layout/
+│   ├── pdf-viewer.js
+│   └── focus-mode.js
+├── score/
+│   └── score-management.js
+└── core/
+    ├── main.js                        # Bootstrap script
+    ├── logger.js
+    └── database.js
+```
+
+## What We Want (Domain-Driven):
+```
+/scripts/
+├── Practice/
+│   ├── UI/                           # Alpine.js components
+│   │   ├── PracticeSessionComponent.js
+│   │   ├── ConfidenceDialogComponent.js
+│   │   └── TimerComponent.js
+│   ├── Application/                  # Use cases & orchestration
+│   │   ├── PracticeSessionService.js
+│   │   └── PracticeSessionManager.js
+│   ├── Domain/                       # Business logic & entities
+│   │   ├── PracticeSession.js
+│   │   ├── PracticeSection.js
+│   │   └── ConfidenceLevel.js
+│   └── Infrastructure/               # Database & external services
+│       ├── PracticePersistence.js
+│       └── PracticeDatabase.js
+├── Highlighting/
+│   ├── UI/
+│   ├── Application/
+│   ├── Domain/
+│   └── Infrastructure/
+├── Score/
+│   ├── UI/
+│   ├── Application/
+│   ├── Domain/
+│   └── Infrastructure/
+├── Layout/
+│   ├── UI/
+│   ├── Application/
+│   ├── Domain/
+│   └── Infrastructure/
+└── Core/
+    ├── Infrastructure/
+    │   ├── ServiceContainer.js
+    │   ├── StateManager.js
+    │   ├── AppState.js
+    │   └── EventSystem.js
+    └── PlayTimeApplication.js        # Replaces main.js
+```
+
+# Architecture Migration Strategy
+
+## Migration Phases
+
+### Phase 1: Domain-Driven Structure Setup (Week 1)
+**Goal**: Create new folder structure and move files without breaking functionality
+
+#### Step 1.1: Create New Domain Structure ✅
+```bash
+mkdir -p scripts/Practice/{UI,Application,Domain,Infrastructure}
+mkdir -p scripts/Highlighting/{UI,Application,Domain,Infrastructure}  
+mkdir -p scripts/Score/{UI,Application,Domain,Infrastructure}
+mkdir -p scripts/Layout/{UI,Application,Domain,Infrastructure}
+mkdir -p scripts/Core/Infrastructure
+```
+
+#### Step 1.2: Move Core Infrastructure ✅
+```bash
+# Move our new architecture files
+mv scripts/core/ServiceContainer.js scripts/Core/Infrastructure/
+mv scripts/core/DIContainer.js scripts/Core/Infrastructure/
+mv scripts/services/AppState.js scripts/Core/Infrastructure/
+mv scripts/services/StateManager.js scripts/Core/Infrastructure/
+mv scripts/services/EventSystemManager.js scripts/Core/Infrastructure/
+mv scripts/PlayTimeApplication.js scripts/Core/
+```
+
+#### Step 1.3: Extract Practice Domain (Replace practice-session-manager.js)
+```javascript
+// scripts/Practice/Domain/PracticeSession.js
+class PracticeSession {
+    constructor(id, planId, scoreId, sections) {
+        this.id = id;
+        this.planId = planId;
+        this.scoreId = scoreId;
+        this.sections = sections;
+        this.currentSection = 0;
+        this.startTime = new Date();
+        this.status = 'active';
+    }
+    
+    moveToNextSection() {
+        if (this.currentSection < this.sections.length - 1) {
+            this.currentSection++;
+            return true;
+        }
+        this.status = 'completed';
+        return false;
+    }
+    
+    getCurrentSection() {
+        return this.sections[this.currentSection];
+    }
+    
+    isComplete() {
+        return this.status === 'completed';
+    }
+}
+
+// scripts/Practice/Domain/PracticeSection.js  
+class PracticeSection {
+    constructor(highlightId, page, strategy, targetTime) {
+        this.highlightId = highlightId;
+        this.page = page;
+        this.strategy = strategy;
+        this.targetTime = targetTime;
+        this.confidence = null;
+        this.actualTime = null;
+        this.notes = '';
+    }
+    
+    complete(confidence, actualTime, notes = '') {
+        this.confidence = confidence;
+        this.actualTime = actualTime;
+        this.notes = notes;
+    }
+}
+
+// scripts/Practice/Application/PracticeSessionService.js
+// Move business logic from practice-session-manager.js here
+
+// scripts/Practice/Infrastructure/PracticePersistence.js  
+// Move database operations from practice-session-manager.js here
+
+// scripts/Practice/UI/PracticeSessionComponent.js
+// Already created - this replaces the UI parts of practice-session-manager.js
+```
+
+### Phase 2: Migration Execution (Week 2)
+**Goal**: Replace old files with new architecture one domain at a time
+
+#### Step 2.1: Practice Domain Migration
+1. **Extract from practice-session-manager.js**:
+   - Business logic → `Practice/Application/PracticeSessionService.js`
+   - Database operations → `Practice/Infrastructure/PracticePersistence.js`
+   - Domain entities → `Practice/Domain/`
+   - UI operations → `Practice/UI/PracticeSessionComponent.js`
+
+2. **Update imports in dependent files**
+3. **Create compatibility layer** for gradual migration
+4. **Delete practice-session-manager.js** once fully migrated
+
+#### Step 2.2: Update main.js → PlayTimeApplication.js
+```javascript
+// scripts/Core/PlayTimeApplication.js
+class PlayTimeApplication {
+    constructor() {
+        this.container = new ServiceContainer();
+        this.setupServices();
+        this.initializeModules();
+    }
+    
+    setupServices() {
+        // Register all services with container
+        this.container.register('practiceSessionService', PracticeSessionService);
+        this.container.register('highlightingService', HighlightingService);
+        // ... other services
+    }
+    
+    initializeModules() {
+        // Initialize each domain module
+        this.practiceModule = new PracticeModule(this.container);
+        this.highlightingModule = new HighlightingModule(this.container);
+        this.scoreModule = new ScoreModule(this.container);
+        this.layoutModule = new LayoutModule(this.container);
+    }
+    
+    start() {
+        // Start the application
+        this.practiceModule.initialize();
+        this.highlightingModule.initialize();
+        this.scoreModule.initialize();
+        this.layoutModule.initialize();
+    }
+}
+
+// Update main.js to just bootstrap:
+// main.js
+import PlayTimeApplication from './Core/PlayTimeApplication.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const app = new PlayTimeApplication();
+    app.start();
+});
+```
+
+### Phase 3: Alpine.js Integration (Week 3-4)
+**Goal**: Replace manual DOM manipulation with Alpine.js in UI layer only
+
+## File Deletion Checklist
+
+### Files to Delete After Migration:
+- [ ] `scripts/practice/practice-session-manager.js` → Replaced by Practice domain
+- [ ] `scripts/practice/practice-session-starter.js` → Logic moved to PracticeSessionService
+- [ ] `scripts/highlighting/highlighting.js` → Split into Highlighting domain
+- [ ] `scripts/components/PracticeSessionComponent.js` → Moved to Practice/UI/
+- [ ] `scripts/services/` folder → Moved to domain-specific Application layers
+- [ ] `scripts/core/main.js` → Replaced by PlayTimeApplication.js
+
+### Compatibility During Migration:
+```javascript
+// scripts/compatibility/legacy-exports.js
+// Temporary compatibility layer during migration
+window.PracticeSessionManager = function(logger, highlighting, timer, starter, persistence, database) {
+    // Delegate to new architecture
+    const container = window.app.container;
+    return container.get('practiceSessionComponent');
+};
+```
+
+## Boundary Enforcement Strategy
+
+### Clear Dependency Rules:
+1. **UI** can only import from **Application** layer (never Domain/Infrastructure)
+2. **Application** can import **Domain** and **Infrastructure** 
+3. **Domain** can only import other **Domain** entities (no external dependencies)
+4. **Infrastructure** can import **Domain** for implementing interfaces
+
+### Boundary Validation:
+```javascript
+// scripts/tools/boundary-check.js
+// Tool to validate no cross-boundary imports
+const validateBoundaries = (filePath, imports) => {
+    const layer = getLayer(filePath);
+    const invalidImports = imports.filter(imp => !isValidImport(layer, imp));
+    if (invalidImports.length > 0) {
+        throw new Error(`Boundary violation in ${filePath}: ${invalidImports}`);
+    }
+};
+```
+
+## Migration Execution Plan
+
+### Week 1: Structure + Core
+- [ ] Create folder structure
+- [ ] Move Core infrastructure files  
+- [ ] Update imports for Core files
+- [ ] Test that application still boots
+
+### Week 2: Practice Domain Migration  
+- [ ] Extract Practice entities from practice-session-manager.js
+- [ ] Create Practice/Application/PracticeSessionService.js
+- [ ] Create Practice/Infrastructure/PracticePersistence.js
+- [ ] Move Practice/UI/PracticeSessionComponent.js
+- [ ] Update DI container to use new Practice services
+- [ ] Delete practice-session-manager.js
+- [ ] Test practice functionality
+
+### Week 3: Other Domains
+- [ ] Migrate Highlighting domain
+- [ ] Migrate Score domain  
+- [ ] Migrate Layout domain
+- [ ] Delete old files
+
+### Week 4: Alpine.js Integration
+- [ ] Add Alpine.js to UI components
+- [ ] Remove manual DOM manipulation
+- [ ] Final cleanup and testing
+
+This provides a concrete path from current messy architecture to clean domain-driven design with clear deletion checkpoints.
+
+#### **Phase 2: Highlighting System (Sprint 3.2)**
+Replace data-attribute state management with reactive properties:
+
+```html
+<div x-data="highlightManager()" class="pdf-container">
+  <!-- Highlight overlay -->
+  <div class="highlight-overlay">
+    <template x-for="highlight in highlights" :key="highlight.id">
+      <div :class="`highlight highlight--${highlight.confidence}`"
+           :style="positionStyles(highlight.coords)"
+           @click="selectHighlight(highlight)"
+           x-show="highlight.visible"></div>
+    </template>
+  </div>
+  
+  <!-- Highlight editor -->
+  <div x-show="selectedHighlight" x-transition class="highlight-editor">
+    <div class="confidence-selector">
+      <template x-for="level in ['low', 'medium', 'high']" :key="level">
+        <button @click="updateHighlightConfidence(level)"
+                :class="{ active: selectedHighlight.confidence === level }"
+                x-text="level"></button>
+      </template>
+    </div>
+  </div>
+</div>
+```
+
+#### **Phase 3: PDF Viewer Integration (Sprint 3.3)**
+Progressive enhancement of existing PDF.js integration:
+
+```javascript
+Alpine.data('pdfViewer', () => ({
+  pages: [],
+  currentPage: 1,
+  loading: true,
+  highlights: [],
+  
+  async initializePdfJs() {
+    // Existing PDF.js initialization
+    this.loading = false;
+  },
+  
+  addHighlight(pageNumber, coords, confidence = 'medium') {
+    this.highlights.push({
+      id: Date.now(),
+      pageNumber,
+      coords,
+      confidence,
+      visible: true
+    });
+  },
+  
+  positionStyles(coords) {
+    return {
+      left: `${coords.x}px`,
+      top: `${coords.y}px`,
+      width: `${coords.width}px`,
+      height: `${coords.height}px`
+    };
+  }
+}));
+```
+
+### **Migration Benefits**
+
+1. **Eliminates Manual DOM Manipulation**: 
+   - No more `innerHTML` patterns (found 15+ instances)
+   - No more manual `addEventListener` calls (found 25+ instances)
+
+2. **Reactive State Management**: 
+   - Automatic UI updates when data changes
+   - Eliminates manual data-attribute synchronization
+
+3. **Declarative Event Handling**: 
+   - `@click` replaces manual event binding
+   - Built-in event modifiers (`.prevent`, `.stop`, `.outside`)
+
+4. **Component Organization**: 
+   - `Alpine.data()` provides clean component boundaries
+   - Reusable dialog and highlight components
+
+5. **Maintains Performance**: 
+   - 10KB bundle size is negligible
+   - No virtual DOM overhead
+
+6. **Progressive Enhancement**: 
+   - Can be introduced incrementally
+   - Existing functionality remains intact during migration
+
+### **Implementation Timeline**
+
+- **Sprint 3.1 (Week 1-2)**: Practice dialog Alpine migration
+- **Sprint 3.2 (Week 3-4)**: Highlighting system reactive conversion  
+- **Sprint 3.3 (Week 5-6)**: PDF viewer Alpine integration
+- **Sprint 3.4 (Week 7-8)**: Cleanup remaining manual DOM patterns
+
+This addresses the core complexity issues identified in the architecture analysis while maintaining PlayTime's lightweight philosophy and enabling sustainable development of advanced features.
+
+---
+
+## 🏗️ **Revised Architecture Sprint: Foundation + Framework**
 
 ### **Sprint 2.5: Architecture Refactoring (Priority: CRITICAL)**
 **Duration**: 1 week
