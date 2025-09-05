@@ -3,9 +3,14 @@
  * Pure business logic for managing practice sessions
  * No DOM dependencies - fully testable
  */
+const PracticeSession = (typeof window !== 'undefined' && window.PracticeSession) || require('../Domain/PracticeSession');
+const PracticeSection = (typeof window !== 'undefined' && window.PracticeSection) || require('../Domain/PracticeSection');
+const PracticePersistence = (typeof window !== 'undefined' && window.PracticePersistence) || require('../Infrastructure/PracticePersistence');
+
 class PracticeSessionService {
-    constructor(database, logger, confidenceMapper) {
-        this.database = database;
+    constructor(persistence, logger, confidenceMapper) {
+        // persistence should implement savePracticeSession, getPracticeSession, getHighlightsBySection, saveHighlight, updateHighlight
+        this.persistence = persistence instanceof PracticePersistence ? persistence : new PracticePersistence(persistence, logger);
         this.logger = logger;
         this.confidenceMapper = confidenceMapper;
     }
@@ -19,21 +24,20 @@ class PracticeSessionService {
     async startPracticeSession(scoreData, options = {}) {
         this.logger.info('Starting practice session', { scoreId: scoreData.id, options });
 
-        const session = {
-            id: `session_${Date.now()}`,
+        const sections = this.initializeSections(scoreData).map(s => new PracticeSection(s));
+
+        const session = new PracticeSession({
             scoreId: scoreData.id,
-            startTime: new Date().toISOString(),
-            sections: this.initializeSections(scoreData),
+            sections,
             options: {
-                timerDuration: options.timerDuration || 30000, // 30 seconds default
+                timerDuration: options.timerDuration || 30000,
                 showConfidenceDialog: options.showConfidenceDialog !== false,
                 ...options
-            },
-            completed: false
-        };
+            }
+        });
 
         try {
-            await this.database.savePracticeSession(session);
+            await this.persistence.savePracticeSession(session.toJSON ? session.toJSON() : session);
             this.logger.info('Practice session started successfully', { sessionId: session.id });
             return session;
         } catch (error) {
@@ -59,7 +63,8 @@ class PracticeSessionService {
 
         try {
             // Get current session
-            const session = await this.database.getPracticeSession(sessionId);
+            const raw = await this.persistence.getPracticeSession(sessionId);
+            const session = raw ? new PracticeSession(raw) : null;
             if (!session) {
                 throw new Error(`Practice session not found: ${sessionId}`);
             }
@@ -76,7 +81,7 @@ class PracticeSessionService {
             section.completed = true;
 
             // Update session
-            await this.database.savePracticeSession(session);
+            await this.persistence.savePracticeSession(session.toJSON ? session.toJSON() : session);
 
             // Update any highlights for this section
             await this.updateSectionHighlights(sectionId, confidence);
@@ -194,13 +199,13 @@ class PracticeSessionService {
     async updateSectionHighlights(sectionId, confidence) {
         try {
             // Get highlights for this section
-            const highlights = await this.database.getHighlightsBySection(sectionId);
+            const highlights = await this.persistence.getHighlightsBySection(sectionId);
             
             // Update each highlight's confidence
             for (const highlight of highlights) {
                 highlight.confidence = confidence;
                 highlight.color = this.confidenceMapper.confidenceToColor(confidence);
-                await this.database.saveHighlight(highlight);
+                await this.persistence.saveHighlight(highlight);
             }
 
             this.logger.info(`Updated ${highlights.length} highlights for section ${sectionId}`);

@@ -86,14 +86,29 @@ class DIContainer {
      * Register business logic services
      */
     registerBusinessServices() {
+        // Practice Persistence - wraps raw database with a persistence facade
+        this.container.singleton('practicePersistence', (database, logger) => {
+            const PracticePersistence = window.PracticePersistence;
+            if (!PracticePersistence) {
+                // Fallback to requiring the module in environments that use CommonJS
+                // Note: require is available in Node/test environments
+                // eslint-disable-next-line global-require
+                const Module = require('../../Practice/Infrastructure/PracticePersistence');
+                return new Module(database, logger);
+            }
+            return new PracticePersistence(database, logger);
+        }, ['database', 'logger']);
+
         // Practice Session Service - manages practice session business logic
-        this.container.singleton('practiceSessionService', (database, logger, confidenceMapper) => {
+        // Inject PracticePersistence instead of raw database so the service
+        // always receives the persistence facade.
+        this.container.singleton('practiceSessionService', (practicePersistence, logger, confidenceMapper) => {
             const PracticeSessionService = window.PracticeSessionService;
             if (!PracticeSessionService) {
                 throw new Error('PracticeSessionService class not loaded');
             }
-            return new PracticeSessionService(database, logger, confidenceMapper);
-        }, ['database', 'logger', 'confidenceMapper']);
+            return new PracticeSessionService(practicePersistence, logger, confidenceMapper);
+        }, ['practicePersistence', 'logger', 'confidenceMapper']);
 
         // Highlighting Service - manages highlight business logic
         this.container.singleton('highlightingService', (database, logger, confidenceMapper, coordinateMapper) => {
