@@ -127,9 +127,17 @@ async function saveFileWithMeta(database, file, pagesMeta) {
     try {
     const id = await database.save(file, { pages: pagesMeta });
     if (typeof window !== 'undefined') { window.PlayTimeCurrentScoreId = id; }
-        if (window.PlayTimeScoreList && typeof window.PlayTimeScoreList.refresh === 'function') {
-            await window.PlayTimeScoreList.refresh();
-        }
+        // Prefer DI-provided score list when available
+        try {
+            let scoreList = null;
+            if (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has('playTimeScoreList')) {
+                scoreList = window.diContainer.get('playTimeScoreList');
+            }
+            scoreList = scoreList || window.PlayTimeScoreList;
+            if (scoreList && typeof scoreList.refresh === 'function') {
+                await scoreList.refresh();
+            }
+        } catch (_) {}
         // Publish SCORE_SELECTED for newly saved score so dependent modules (highlighting) clear previous highlights
         try {
             const EV = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS) || {};
@@ -432,15 +440,6 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
             appLogger.error('Failed to create PDF viewer:', pdfViewerError.message);
         }
         
-        try {
-            if (typeof window.createPlayTimeScoreList === 'function') {
-                window.PlayTimeScoreList = window.createPlayTimeScoreList(null, appLogger); // Database will be set after initialization
-            } else {
-                appLogger.warn('PlayTimeScoreList factory not available');
-            }
-        } catch (scoreListError) {
-            appLogger.error('Failed to create score list:', scoreListError.message);
-        }
         // Practice planner will be initialized after highlighting module is ready
         
         // Initialize file upload handler first (driven by failing tests)
@@ -575,10 +574,26 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
 
         // Initialize score list component after database, viewer & highlighting are ready
         try {
-            if (window.PlayTimeScoreList) { 
-                window.PlayTimeScoreList.setDatabase(window.PlayTimeDB); 
-                await window.PlayTimeScoreList.init(); 
-                await window.PlayTimeScoreList.refresh(); 
+            // Prefer DI-provided instance when available
+            let scoreListInstance = null;
+            try {
+                if (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has('playTimeScoreList')) {
+                    scoreListInstance = window.diContainer.get('playTimeScoreList');
+                }
+            } catch (_) {
+                // ignore DI resolution errors here; fall back below
+            }
+
+            // Fallback to legacy global if DI wasn't available
+            scoreListInstance = scoreListInstance || window.PlayTimeScoreList;
+
+            if (scoreListInstance) {
+                // Ensure database is wired
+                if (typeof scoreListInstance.setDatabase === 'function') {
+                    scoreListInstance.setDatabase(window.PlayTimeDB);
+                }
+                if (typeof scoreListInstance.init === 'function') await scoreListInstance.init();
+                if (typeof scoreListInstance.refresh === 'function') await scoreListInstance.refresh();
             } else {
                 appLogger.warn('PlayTimeScoreList not available for initialization');
             }

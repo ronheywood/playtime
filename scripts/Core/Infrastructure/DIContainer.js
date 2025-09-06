@@ -270,7 +270,28 @@ class DIContainer {
             }
             if (typeof window !== 'undefined') window.PlayTimeHighlighting = highlightingInstance;
             return highlightingInstance;
-        }, ['logger']);
+            }, ['logger']);
+
+            // Score List - create and provide the PlayTime score list via DI
+            // Keep this simple: require the local score-list factory in CommonJS/tests,
+            // or use the global factory in browser bundles if present.
+            this.container.singleton('playTimeScoreList', (database, logger) => {
+                let createFn = null;
+                if (typeof window !== 'undefined' && typeof window.createPlayTimeScoreList === 'function') {
+                    createFn = window.createPlayTimeScoreList;
+                } else {
+                    try {
+                        // eslint-disable-next-line global-require
+                        const mod = require('../../score-list');
+                        createFn = mod && (mod.createPlayTimeScoreList || mod.default || mod);
+                    } catch (e) {
+                        throw new Error('PlayTimeScoreList factory not available');
+                    }
+                }
+
+                const instance = createFn(database, logger);
+                return instance;
+            }, ['database', 'logger']);
         // Note: 'database' intentionally omitted from dependency list here to
         // avoid forcing resolution of the database during container initialization.
         // Consumers can request the 'playTimeHighlighting' service after the

@@ -122,8 +122,8 @@ describe('PlayTime Music Practice App', () => {
         // Setup logger for main.js
         const logger = require('../../scripts/logger');
         global.logger = logger;
-        // Set logger to silent for tests
-        logger.setSilent(true);
+    // Set logger to silent for tests
+    logger.setSilent(true);
         
     // Require main.js once; it registers a DOMContentLoaded handler
         // Removed duplicate inner requires for SELECTORS
@@ -132,7 +132,22 @@ describe('PlayTime Music Practice App', () => {
         // Trigger DOMContentLoaded event to initialize the app
         const domContentLoadedEvent = new Event('DOMContentLoaded');
         document.dispatchEvent(domContentLoadedEvent);
-        
+
+        // Inject a score list instance into the DI container for cleaner wiring
+        try {
+            const scoreListInstance = createPlayTimeScoreList(null, global.logger);
+            if (window.diContainer && window.diContainer.container && window.diContainer.container.instances) {
+                // Place the instance directly into the ServiceContainer instances map
+                window.diContainer.container.instances.set('playTimeScoreList', scoreListInstance);
+            } else if (window.diContainer && window.diContainer.container && typeof window.diContainer.container.singleton === 'function') {
+                // Register as a singleton factory that returns the instance
+                try { window.diContainer.container.singleton('playTimeScoreList', () => scoreListInstance, ['database','logger']); } catch (_) {}
+            } else {
+                // final fallback for older bootstraps
+                window.PlayTimeScoreList = scoreListInstance;
+            }
+        } catch (_) {}
+
         // Wait for initialization to complete
         
     // Verify elements still exist AFTER app initialization
