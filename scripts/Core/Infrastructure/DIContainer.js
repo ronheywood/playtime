@@ -5,7 +5,6 @@
 // Resolve ServiceContainer in a dual-mode way so this file can be required
 
 import PlayTimeHighlighting from '../../highlighting/highlighting';
-
 // from CommonJS test environments as well as imported by browser bundles.
 let ServiceContainer;
 try {
@@ -63,6 +62,12 @@ class DIContainer {
             }
             throw new Error('Database not initialized');
         }, ['logger']);
+        
+        this.container.singleton('highlightPersistenceService', (database, logger) => {
+            const service = new HighlightPersistenceService(database, logger);
+            logger.info('HighlightPersistenceService initialized', service);
+            return service;
+        }, ['database', 'logger']);
 
         // Event coordinator - singleton for event management
         this.container.singleton('eventCoordinator', () => {

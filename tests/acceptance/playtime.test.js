@@ -65,6 +65,39 @@ describe('PlayTime Music Practice App', () => {
     // Use real highlighting capability (data-role driven)
     const Highlighting = require('../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
+    // Provide a minimal Mock DIContainer so main.js can resolve highlightPersistenceService
+    // This proxy lazily forwards calls to the real persistence service once highlighting initializes.
+    class MockDIContainer {
+        constructor() {
+            this._services = new Map();
+        }
+        initialize() { /* noop for tests */ }
+        has(name) {
+            // advertise common names main.js queries
+            return ['logger', 'database', 'playTimeHighlighting', 'highlightPersistenceService'].includes(name);
+        }
+        get(name) {
+            if (name === 'logger') return global.logger || console;
+            if (name === 'database') return global.window.PlayTimeDB;
+            if (name === 'playTimeHighlighting') return global.window.PlayTimeHighlighting;
+            if (name === 'highlightPersistenceService') {
+                // Return a proxy that forwards method calls to the real persistence service when available
+                return new Proxy({}, {
+                    get: (_target, prop) => {
+                        return (...args) => {
+                            const svc = global.window.PlayTimeHighlighting && global.window.PlayTimeHighlighting._components && global.window.PlayTimeHighlighting._components.persistenceService;
+                            if (!svc) throw new Error('HighlightPersistenceService not initialized yet');
+                            const fn = svc[prop];
+                            if (typeof fn === 'function') return fn.apply(svc, args);
+                            return fn;
+                        };
+                    }
+                });
+            }
+            throw new Error('MockDIContainer: unknown service ' + name);
+        }
+    }
+    global.window.DIContainer = MockDIContainer;
         
     // Setup score list component
     const { createPlayTimeScoreList } = require('../../scripts/score-list');

@@ -579,9 +579,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Initialize practice planner after highlighting is ready
-        if (typeof window.createPlayTimePracticePlanner === 'function') {
-            // Pass the persistence service from the highlighting module for highlight retrieval
-            const highlightPersistenceService = window.PlayTimeHighlighting?._components?.persistenceService;
+            if (typeof window.createPlayTimePracticePlanner === 'function') {
+            // Prefer DI-provided highlight persistence service, fall back to PlayTimeHighlighting components
+            let highlightPersistenceService = null;
+
+            if (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has('highlightPersistenceService')) {
+                highlightPersistenceService = window.diContainer.get('highlightPersistenceService');
+            }
+            if (!highlightPersistenceService) {
+                highlightPersistenceService = window.PlayTimeHighlighting?._components?.persistenceService;
+            }
             
             // Initialize practice plan persistence service
             let practicePlanPersistenceService = null;
