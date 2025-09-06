@@ -203,13 +203,17 @@
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <script src="scripts/Core/Infrastructure/ServiceContainer.js"></script>
+    <script type="module" src="scripts/db/AbstractDatabase.js"></script>
+    <script type="module" src="scripts/db/IndexedDBDatabase.js"></script>
+    <script type="module" src="scripts/Core/Infrastructure/DIContainer.js"></script>
+
     <script src="scripts/logger.js"></script>
     <script src="scripts/theme.js"></script>
     <script src="scripts/constants.js"></script>
     <script src="scripts/confidence.js"></script>
     <script src="scripts/score.js"></script>
-    <script type="module" src="scripts/db/AbstractDatabase.js"></script>
-    <script type="module" src="scripts/db/IndexedDBDatabase.js"></script>
     <script src="scripts/pdf-viewer.js"></script>
     <script src="scripts/score-list.js"></script>
     <!-- Refactored highlighting architecture -->

@@ -485,9 +485,7 @@
                 .onComplete((selection) => this._handleSelectionComplete(selection));
 
             // Setup persistence service
-            if (window.PlayTimeDB) {
-                this._components.persistenceService.setDatabase(window.PlayTimeDB);
-            }
+            this._components.persistenceService.setDatabase(window.PlayTimeDB);
 
             // Initialize event coordinator
             this._components.eventCoordinator

@@ -256,6 +256,37 @@ Alpine.data('practiceDialog', () => ({
     └── database.js
 ```
 
+## ✅ Update: DI Container & Database Provisioning (2025-09-06)
+
+Status: Done (verified by tests and bootstrap)
+
+Summary:
+- The application now initializes a Service/DI container (`scripts/Core/Infrastructure/ServiceContainer.js` + `DIContainer.js`).
+- The database is provided by the DI container as a registered singleton named `database`.
+  - In the browser build the IndexedDB-backed implementation is used.
+  - In the test environment the in-memory implementation (`scripts/db/MemoryDatabase.js`) is injected by tests via the DI container.
+- `scripts/main.js` was refactored to create/initialize the database, initialize DI, then obtain the `database` from DI and pass it to modules instead of directly reading `window.PlayTimeDB`.
+
+Why this matters:
+- Avoids dynamic ES module imports in the Node/Jest test environment.
+- Makes tests deterministic and fast by using an injected in-memory DB.
+- Provides a clear migration path to remove global `window.PlayTimeDB` / `window.db` usages.
+
+Quick checklist (current coverage):
+- [x] DI container available at runtime (bootstrapped in `main.js`).
+- [x] `database` registered in DI and returned by `diContainer.get('database')`.
+- [x] Tests configured to inject `createMemoryDatabase` into the DI container (no dynamic imports during tests).
+- [x] `main.js` uses DI-provided `database` locally and only exposes globals as a temporary compatibility layer.
+
+Next immediate steps:
+1. Replace remaining direct reads of `window.PlayTimeDB` and `window.db` across modules with constructor injection from DI (priority: high, small PRs).
+2. Convert UI/global factory singletons (PDF viewer, score list, highlighting, layout commands) to DI registrations and constructor parameters.
+3. Remove global fallbacks (`window.PlayTimeDB` / `window.db`) once all consumers accept DI-provided `database`.
+4. Add a short migration guide in this document showing how to convert a component to accept a `database` via DI (example + test).
+
+Verification: full test suite passed after the DI/database refactor (39 suites / 399 tests as of 2025-09-06).
+
+
 ## What We Want (Domain-Driven):
 ```
 /scripts/

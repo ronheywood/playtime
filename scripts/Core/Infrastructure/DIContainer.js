@@ -55,8 +55,8 @@ class DIContainer {
 
         // Database - singleton for data persistence
         this.container.singleton('database', () => {
-            if (window.db) {
-                return window.db;
+            if (window.PlayTimeDB) {
+                return window.PlayTimeDB;
             }
             throw new Error('Database not initialized');
         }, ['logger']);
