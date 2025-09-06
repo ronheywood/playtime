@@ -43,8 +43,10 @@ describe('Highlighting multi score page 2 reselect', () => {
       getCurrentPage: () => currentPage,
       getTotalPages: () => 3
     });
-  // Create global instance for tests
-  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
+  // Do NOT create the PlayTimePDFViewer global here. Prefer DI-registration
+  // via the test factory `createPlayTimePDFViewer`. Main.js will initialize
+  // the DI container and create the instance during DOMContentLoaded. Tests
+  // should resolve the viewer from DI when needed.
 
     // Base DOM
     document.body.innerHTML = `
@@ -88,7 +90,9 @@ describe('Highlighting multi score page 2 reselect', () => {
 
   test('page2 highlight survives score switch and back', async () => {
     // Navigate to page 2 (simulate page change)
-    const viewer = window.PlayTimePDFViewer;
+    const viewer = (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has && window.diContainer.has('playTimePDFViewer'))
+      ? window.diContainer.get('playTimePDFViewer')
+      : window.PlayTimePDFViewer;
     await viewer.renderPage(2);
     await new Promise(r=>setTimeout(r,50));
 
@@ -109,7 +113,8 @@ describe('Highlighting multi score page 2 reselect', () => {
     const second = Array.from(document.querySelectorAll('.score-item')).find(el=>/score2/i.test(el.textContent));
     second && second.click();
     // simulate first page render for score2
-    await window.PlayTimePDFViewer.renderPage(1);
+  // resolve viewer from DI or fallback to legacy global
+  (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has && window.diContainer.has('playTimePDFViewer') ? window.diContainer.get('playTimePDFViewer') : window.PlayTimePDFViewer).renderPage(1);
     await new Promise(r=>setTimeout(r,80));
 
     // No highlights for score2 (cleared list)
@@ -122,7 +127,7 @@ describe('Highlighting multi score page 2 reselect', () => {
     await new Promise(r=>setTimeout(r,60));
 
     // Navigate to page2 again
-    await window.PlayTimePDFViewer.renderPage(2);
+  (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has && window.diContainer.has('playTimePDFViewer') ? window.diContainer.get('playTimePDFViewer') : window.PlayTimePDFViewer).renderPage(2);
   // Poll again after returning
   const backAppeared = await waitForOne();
   expect(backAppeared).toBe(true);

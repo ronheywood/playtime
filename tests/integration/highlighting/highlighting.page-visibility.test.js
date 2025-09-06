@@ -39,8 +39,15 @@ describe('Highlighting Page Visibility Integration', () => {
         prevPage: async function() { if (currentPage > 1) { currentPage -= 1; dispatchPageChanged(); } }
       };
     };
-  // Expose a test instance globally so tests can call nextPage/prevPage
-  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console);
+  // Register test factory into DI if present and keep legacy global fallback
+  try {
+    if (typeof global.window.createPlayTimePDFViewer === 'function') {
+      try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
+        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
+      } } catch(_) {}
+      if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch(_) {} }
+    }
+  } catch(_) {}
 
     // In-memory DB stub (minimal)
     global.window.createPlayTimeDB = () => ({ init: jest.fn().mockResolvedValue(true), save: jest.fn().mockResolvedValue(true), getAll: jest.fn().mockResolvedValue([]) });
@@ -85,8 +92,9 @@ describe('Highlighting Page Visibility Integration', () => {
     // Initially visible (display not forced to none)
     expect(h1.style.display).not.toBe('none');
 
-    // Go to page 2
-    await window.PlayTimePDFViewer.nextPage();
+  // Go to page 2 (resolve viewer via DI if available)
+  const _viewerNext = (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has && window.diContainer.has('playTimePDFViewer')) ? window.diContainer.get('playTimePDFViewer') : window.PlayTimePDFViewer;
+  await (_viewerNext && typeof _viewerNext.nextPage === 'function' ? _viewerNext.nextPage() : Promise.resolve());
     await new Promise(r => setTimeout(r, 5));
     expect(h1.style.display).toBe('none');
 
@@ -103,8 +111,9 @@ describe('Highlighting Page Visibility Integration', () => {
     // First still hidden
     expect(h1.style.display).toBe('none');
 
-    // Navigate back to page 1
-    await window.PlayTimePDFViewer.prevPage();
+  // Navigate back to page 1 (resolve via DI if available)
+  const _viewerPrev = (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has && window.diContainer.has('playTimePDFViewer')) ? window.diContainer.get('playTimePDFViewer') : window.PlayTimePDFViewer;
+  await (_viewerPrev && typeof _viewerPrev.prevPage === 'function' ? _viewerPrev.prevPage() : Promise.resolve());
     await new Promise(r => setTimeout(r, 5));
     expect(h1.style.display).not.toBe('none');
     expect(h2.style.display).toBe('none');

@@ -422,8 +422,21 @@ const TestHelpers = {
         // from the test factory `createPlayTimePDFViewer` so we don't reintroduce
         // the legacy global in production code.
         try {
-            if (!global.window.PlayTimePDFViewer && typeof global.window.createPlayTimePDFViewer === 'function') {
-                global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console);
+            if (typeof global.window.createPlayTimePDFViewer === 'function') {
+                // If DI container is present in the test run, register the test
+                // factory into it so tests can resolve the viewer via DI.
+                try {
+                    if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
+                        try {
+                            global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
+                        } catch (_) {}
+                    }
+                } catch (_) {}
+
+                // Maintain backward compatibility for tests that still expect the global
+                if (!global.window.PlayTimePDFViewer) {
+                    try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch (_) {}
+                }
             }
         } catch (e) {
             // swallow errors - tests can still provide their own global if needed

@@ -35,8 +35,16 @@ describe('Highlighting initial load rehydration', () => {
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
-  // Create the actual global viewer instance for tests so DI fallback isn't required
-  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
+  // Register the test factory into the DI container when available and
+  // fallback to a global instance for legacy test paths.
+  try {
+    if (typeof global.window.createPlayTimePDFViewer === 'function') {
+      try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
+        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
+      } } catch(_) {}
+      if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
+    }
+  } catch(_) {}
 
     const Highlighting = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;

@@ -30,8 +30,15 @@ describe('Highlighting re-select score', () => {
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
-  // Create global instance for tests
-  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
+  // Register test factory into DI if present; fallback to legacy global instance
+  try {
+    if (typeof global.window.createPlayTimePDFViewer === 'function') {
+      try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
+        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
+      } } catch(_) {}
+      if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
+    }
+  } catch(_) {}
     document.body.innerHTML = `
       <main>
         <section id="upload-section"><input type="file" id="pdf-upload" accept="application/pdf"></section>

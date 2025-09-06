@@ -56,9 +56,21 @@ describe('PlayTime Music Practice App', () => {
             viewer.zoomOut = jest.fn(() => viewer.setZoom(zoom - ZOOM.STEP));
             return viewer;
         };
-        // Create a global instance for tests so code paths that expect the legacy
-        // global have a concrete viewer to operate against.
-        global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console);
+        // Prefer registering the test factory into the DI container when
+        // available so the app can resolve the viewer via DI. Keep a global
+        // fallback for legacy test paths.
+        try {
+            if (typeof global.window.createPlayTimePDFViewer === 'function') {
+                try {
+                    if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
+                        try { global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger)); } catch(_) {}
+                    }
+                } catch (_) {}
+                if (!global.window.PlayTimePDFViewer) {
+                    try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch(_) {}
+                }
+            }
+        } catch (_) {}
         
     // Setup dependencies for highlighting module (required after dependency injection refactoring)
     const confidence = require('../../scripts/confidence');
