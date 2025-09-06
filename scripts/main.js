@@ -449,16 +449,25 @@ function initializeHighlightingToggle(logger = console) {
 // TODO: Split into initializeApplication() and createDevStatusElement()
 if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
 document.addEventListener('DOMContentLoaded', async function() {
-    // Application starting
+    // Application starting - import DIContainer module (browser ESM path with .js)
+    // createDiContainer() is exported to allow tests to create containers without side-effects
     
-    try {
-        // Initialize modules with logger dependency injection
-        // Prefer DI-provided logger when available
-        const diContainer = (typeof window !== 'undefined' && window.diContainer) ? window.diContainer : null;
+        try {
+            const diModule = await import('./Core/Infrastructure/DIContainer.js');
+            if (diModule && typeof diModule.createDiContainer === 'function') {
+                window.diContainer = diModule.createDiContainer();
+                window.diContainer.initialize();
+            }
+        } catch (_) {}
+        
+        try {
+            // Initialize modules with logger dependency injection
+            // Prefer DI-provided logger when available
+            const diContainerInstance = (typeof window !== 'undefined' && window.diContainer) ? window.diContainer : null;
         let appLogger = console;
         try {
-            if (diContainer && typeof diContainer.get === 'function' && diContainer.has && diContainer.has('logger')) {
-                appLogger = diContainer.get('logger') || window.logger || console;
+                if (diContainerInstance && typeof diContainerInstance.get === 'function' && diContainerInstance.has && diContainerInstance.has('logger')) {
+                    appLogger = diContainerInstance.get('logger') || window.logger || console;
             } else {
                 appLogger = window.logger || console;
             }

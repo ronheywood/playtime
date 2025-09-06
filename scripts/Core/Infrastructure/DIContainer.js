@@ -3,8 +3,9 @@
  * Configures and provides all application services
  */
 // Resolve ServiceContainer in a dual-mode way so this file can be required
-
-import PlayTimeHighlighting from '../../highlighting/highlighting';
+// Note: Avoid importing UI modules at top-level to keep this file usable
+// as an ES module in browsers and as CommonJS in tests. UI modules are
+// resolved lazily from globals or via require when needed.
 // from CommonJS test environments as well as imported by browser bundles.
 let ServiceContainer;
 try {
@@ -64,7 +65,20 @@ class DIContainer {
         }, ['logger']);
         
         this.container.singleton('highlightPersistenceService', (database, logger) => {
-            const service = new HighlightPersistenceService(database, logger);
+            // Try to use a global implementation first (browser bundles may expose it)
+            let HighlightPersistenceServiceImpl = (typeof window !== 'undefined' && window.HighlightPersistenceService) ? window.HighlightPersistenceService : null;
+            if (!HighlightPersistenceServiceImpl) {
+                try {
+                    // Fallback to requiring the module in CommonJS environments (Node/tests)
+                    // eslint-disable-next-line global-require
+                    const mod = require('../../highlighting/HighlightPersistenceService');
+                    HighlightPersistenceServiceImpl = mod && (mod.default || mod);
+                } catch (e) {
+                    throw new Error('HighlightPersistenceService implementation not available');
+                }
+            }
+
+            const service = new HighlightPersistenceServiceImpl(database, logger);
             logger.info('HighlightPersistenceService initialized', service);
             return service;
         }, ['database', 'logger']);
@@ -187,10 +201,26 @@ class DIContainer {
         // Resolve the module directly from source in CommonJS/test environments.
         // Note: removing reliance on globals makes the service resolution explicit.
         this.container.singleton('playTimeHighlighting', (logger) => {
-            const highlighting = new PlayTimeHighlighting();
+            // Resolve the PlayTimeHighlighting implementation lazily so this
+            // DI container can be used both in browser bundles (where the
+            // module may be loaded as a global) and in CommonJS test runs.
+            let HighlightingImpl = (typeof window !== 'undefined' && window.PlayTimeHighlighting) ? window.PlayTimeHighlighting : null;
+            if (!HighlightingImpl) {
+                try {
+                    // eslint-disable-next-line global-require
+                    const mod = require('../../highlighting/highlighting');
+                    HighlightingImpl = mod && (mod.default || mod);
+                } catch (e) {
+                    throw new Error('PlayTimeHighlighting implementation not available');
+                }
+            }
+
+            const highlighting = new HighlightingImpl();
             const config = {};
+            // Initialize using DI-provided database when available
             highlighting.init(config, logger, window.PlayTimeConfidence, window.PlayTimeConstants, this.get('database'));
-            window.PlayTimeHighlighting = highlighting; // Ensure global for legacy code
+            // Preserve global for legacy consumers
+            if (typeof window !== 'undefined') window.PlayTimeHighlighting = highlighting;
             return highlighting;
         }, ['logger']);
     }
