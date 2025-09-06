@@ -3,6 +3,9 @@
  * Configures and provides all application services
  */
 // Resolve ServiceContainer in a dual-mode way so this file can be required
+
+import PlayTimeHighlighting from '../../highlighting/highlighting';
+
 // from CommonJS test environments as well as imported by browser bundles.
 let ServiceContainer;
 try {
@@ -174,6 +177,17 @@ class DIContainer {
             }
             return new ComponentFactory(container, logger);
         }, ['container', 'logger']);
+
+        // UI Highlighting - expose the PlayTimeHighlighting UI module via DI
+        // Resolve the module directly from source in CommonJS/test environments.
+        // Note: removing reliance on globals makes the service resolution explicit.
+        this.container.singleton('playTimeHighlighting', (logger) => {
+            const highlighting = new PlayTimeHighlighting();
+            const config = {};
+            highlighting.init(config, logger, window.PlayTimeConfidence, window.PlayTimeConstants, this.get('database'));
+            window.PlayTimeHighlighting = highlighting; // Ensure global for legacy code
+            return highlighting;
+        }, ['logger']);
     }
 
     /**

@@ -550,28 +550,32 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
         // Initialize refactored highlighting with dependency injection
-        if (window.PlayTimeHighlighting) {
-            try {
-                // Build deps object and pass explicit database to highlighting
+        try {
+            
+            if (window.diContainer && typeof window.diContainer.get === 'function') {
+                window.PlayTimeHighlighting = window.diContainer.get('playTimeHighlighting');
+            }
+
+            if (window.PlayTimeHighlighting) {
+                // Build deps object using DI-provided database when available
                 const deps = {};
                 try {
-                    if (window.diContainer && typeof window.diContainer.get === 'function') {
+                    if (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has('database')) {
                         deps.database = window.diContainer.get('database');
                     }
                 } catch (_) {}
-                // Fallback to legacy global DB if DI not present
                 deps.database = deps.database || window.PlayTimeDB;
 
                 await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants, deps);
                 // Start with highlighting disabled - user must explicitly activate it
                 window.PlayTimeHighlighting.disableSelection();
                 appLogger.info('Highlighting initialized in disabled state');
-            } catch (highlightingError) {
-                appLogger.error('Failed to initialize highlighting module:', highlightingError.message);
-                throw new Error(`Highlighting initialization failed: ${highlightingError.message}`);
+            } else {
+                appLogger.warn('PlayTimeHighlighting module not available');
             }
-        } else {
-            appLogger.warn('PlayTimeHighlighting module not available');
+        } catch (highlightingError) {
+            appLogger.error('Failed to initialize highlighting module:', highlightingError && highlightingError.message);
+            throw new Error(`Highlighting initialization failed: ${highlightingError && highlightingError.message}`);
         }
         
         // Initialize practice planner after highlighting is ready
