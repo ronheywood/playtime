@@ -5,7 +5,7 @@
 // Use adapter during migration so tests can incrementally adopt the persistence facade
 const PracticeSessionManager = require('../../scripts/Practice/Adapters/PracticeSessionManagerAdapter.js');
 // Also load legacy constructor to assert instanceof against the original class
-const LegacyPracticeSessionManager = require('../../scripts/practice/practice-session-manager.js');
+const LegacyPracticeSessionManager = require('../../scripts/Practice/practice-session-manager.js');
 
 describe('PracticeSessionManager', () => {
     let manager;

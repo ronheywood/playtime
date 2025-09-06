@@ -17,7 +17,7 @@ global.window.requestAnimationFrame = jest.fn(callback => {
 });
 
 // Import the module using require for CommonJS compatibility
-const PracticeSessionStarter = require('../../scripts/practice/practice-session-starter');
+const PracticeSessionStarter = require('../../scripts/Practice/practice-session-starter');
 
 describe('PracticeSessionStarter', () => {
     let practiceSessionStarter;

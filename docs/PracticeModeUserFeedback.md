@@ -62,19 +62,19 @@ button in the left panel should hide the "edit practice plan" diaglog - before s
 **Complexity**: Medium (CSS positioning + mobile detection)
 **Benefit**: High (core functionality broken on popular platform)
 **Technical Details**: Current timer uses relative positioning which breaks on mobile Safari. Need `position: fixed` with proper z-index and viewport detection.
-**Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-timer.js`
+**Files**: `styles/practice-mode.css`, `scripts/Practice/practice-session-timer.js`
 
 #### 2. Highlight Selection Disabled in Practice Mode
 **Complexity**: Low (disable existing functionality)
 **Benefit**: Very High (prevents accidental disruption of practice)
 **Technical Details**: `MouseSelectionHandler` already has `destroy()` method. Need to call this when entering practice mode and restore when exiting.
-**Files**: `scripts/highlighting/highlighting.js`, `scripts/practice/practice-session-starter.js`
+**Files**: `scripts/highlighting/highlighting.js`, `scripts/Practice/practice-session-starter.js`
 
 #### 3. Practice Mode Highlight Visibility
 **Complexity**: Medium (selective display + styling)
 **Benefit**: High (focus enhancement, core UX)
 **Technical Details**: Add CSS class for practice mode that hides non-active highlights and reduces opacity. Current highlighting system tracks highlight IDs.
-**Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-starter.js`
+**Files**: `styles/practice-mode.css`, `scripts/Practice/practice-session-starter.js`
 
 #### 4. iPad Touch Scrolling Issues
 **Complexity**: High (touch event handling + focus mode interaction)
@@ -86,7 +86,7 @@ button in the left panel should hide the "edit practice plan" diaglog - before s
 **Complexity**: Low (UI state management)
 **Benefit**: Medium (workflow improvement)
 **Technical Details**: Practice planner needs to hide edit dialog before starting session.
-**Files**: `scripts/practice/practice-planner.js`
+**Files**: `scripts/Practice/practice-planner.js`
 
 ### Medium Priority Issues
 
@@ -94,19 +94,19 @@ button in the left panel should hide the "edit practice plan" diaglog - before s
 **Complexity**: Medium (CRUD operations + UI updates)
 **Benefit**: Medium (user control enhancement)
 **Technical Details**: Add remove buttons to practice sections, update persistence.
-**Files**: `scripts/practice/practice-planner.js`, templates
+**Files**: `scripts/Practice/practice-planner.js`, templates
 
 #### 7. Timer Completion Dialog
 **Complexity**: Low (modal dialog + timer integration)
 **Benefit**: Medium (prevents accidental progression)
 **Technical Details**: Intercept timer completion, show confirmation before advancing.
-**Files**: `scripts/practice/practice-session-timer.js`
+**Files**: `scripts/Practice/practice-session-timer.js`
 
 #### 8. Wake Lock API for Screen Timeout
 **Complexity**: Medium (browser API + fallback handling)
 **Benefit**: High on mobile (prevents interruption)
 **Technical Details**: Use Screen Wake Lock API with fallbacks for unsupported browsers.
-**Files**: `scripts/practice/practice-session-starter.js`
+**Files**: `scripts/Practice/practice-session-starter.js`
 
 ## Development Iteration Plan
 
@@ -115,7 +115,7 @@ button in the left panel should hide the "edit practice plan" diaglog - before s
 
 **Tasks**:
 1. **Disable highlight selection in practice mode**
-   - Modify `scripts/practice/practice-session-starter.js` to call `window.PlayTimeHighlighting.disableSelection()` on session start
+   - Modify `scripts/Practice/practice-session-starter.js` to call `window.PlayTimeHighlighting.disableSelection()` on session start
    - Restore selection on session end
    - Add visual indicator that selection is disabled
 

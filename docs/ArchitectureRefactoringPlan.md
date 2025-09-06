@@ -198,7 +198,7 @@ function updateConfidence() {
 Replace manual DOM manipulation in practice completion dialogs:
 
 ```javascript
-// Current: scripts/practice/practice-session-manager.js
+// Current: scripts/Practice/practice-session-manager.js
 showSectionCompletionDialog(section) {
   const dialog = document.createElement('div');
   dialog.innerHTML = this.generateDialogHTML(section);
@@ -450,8 +450,8 @@ document.addEventListener('DOMContentLoaded', () => {
 ## File Deletion Checklist
 
 ### Files to Delete After Migration:
-- [ ] `scripts/practice/practice-session-manager.js` → Replaced by Practice domain
-- [ ] `scripts/practice/practice-session-starter.js` → Logic moved to PracticeSessionService
+- [ ] `scripts/Practice/practice-session-manager.js` → Replaced by Practice domain
+- [ ] `scripts/Practice/practice-session-starter.js` → Logic moved to PracticeSessionService
 - [ ] `scripts/highlighting/highlighting.js` → Split into Highlighting domain
 - [ ] `scripts/components/PracticeSessionComponent.js` → Moved to Practice/UI/
 - [ ] `scripts/services/` folder → Moved to domain-specific Application layers

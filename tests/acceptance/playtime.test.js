@@ -7,7 +7,7 @@ const { SCORE_LIST_CONFIG } = require('../../scripts/score-list');
 const { CONFIG } = require('../../scripts/main');
 const { PT_CONSTANTS } = require('../../scripts/constants');
 // Import templates needed for practice planner
-const { PracticePlannerTemplates } = require('../../scripts/practice/templates/practice-planner-template.js');
+const { PracticePlannerTemplates } = require('../../scripts/Practice/templates/practice-planner-template.js');
 const SELECTORS = PT_CONSTANTS.SELECTORS;
 
 // Make templates available globally for tests
@@ -83,7 +83,7 @@ describe('PlayTime Music Practice App', () => {
     global.window.PlayTimeFocusModeHandler = FocusModeHandler;
     
     // Setup practice planner
-    const { createPlayTimePracticePlanner } = require('../../scripts/practice/practice-planner.js');
+    const { createPlayTimePracticePlanner } = require('../../scripts/Practice/practice-planner.js');
     global.window.createPlayTimePracticePlanner = createPlayTimePracticePlanner;
         
         // Setup logger for main.js

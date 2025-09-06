@@ -11,7 +11,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 **Goal**: Fix fundamental issues that break practice sessions
 
 #### Task 1.1: Disable Highlight Creation in Practice Mode ✅ COMPLETED
-- **Files**: `scripts/practice/practice-session-starter.js`, `scripts/highlighting/highlighting.js`, `scripts/highlighting/MouseSelectionHandler.js`
+- **Files**: `scripts/Practice/practice-session-starter.js`, `scripts/highlighting/highlighting.js`, `scripts/highlighting/MouseSelectionHandler.js`
 - **Implementation**: 
   - ✅ Added new `disable()` and `enable()` methods to `MouseSelectionHandler.js`
   - ✅ Changed `window.PlayTimeHighlighting.disableSelection()` to call the disable method on the handler rather than destroying it
@@ -23,7 +23,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Effort**: 4 hours ✅ COMPLETED
 
 #### Task 1.2: Fix iPad Timer Positioning ✅ COMPLETED  
-- **Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-timer.js`, `index.html`, test files
+- **Files**: `styles/practice-mode.css`, `scripts/Practice/practice-session-timer.js`, `index.html`, test files
 - **Implementation**: 
   - ✅ Added responsive CSS with touch device media queries for fixed timer positioning
   - ✅ Enhanced JavaScript with mobile device detection using multiple signals (`ontouchstart`, `maxTouchPoints`, `matchMedia`)
@@ -36,7 +36,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Effort**: 6 hours ✅ COMPLETED
 
 #### Task 1.3: Practice Mode Highlight Visibility ✅ COMPLETED
-- **Files**: `styles/practice-mode.css`, `scripts/practice/practice-session-starter.js`
+- **Files**: `styles/practice-mode.css`, `scripts/Practice/practice-session-starter.js`
 - **Implementation**:
   - ✅ Added CSS rules to hide all highlights during practice mode except current section
   - ✅ Used simpler CSS selectors for better mobile performance (removed `:not()` pseudo-class)
@@ -81,7 +81,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Effort**: 12 hours ✅ COMPLETED
 
 #### Task 2.2: Screen Wake Lock Implementation ✅ COMPLETED
-- **Files**: `scripts/practice/practice-session-starter.js`
+- **Files**: `scripts/Practice/practice-session-starter.js`
 - **Implementation**:
   ```javascript
   async requestWakeLock() {
@@ -110,7 +110,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Effort**: 6 hours ✅ COMPLETED
 
 #### Task 2.3: Practice Plan Dialog Flow
-- **Files**: `scripts/practice/practice-planner.js`
+- **Files**: `scripts/Practice/practice-planner.js`
 - **Implementation**: Auto-hide edit dialog before starting session
 - **Testing**: ✅ Smooth transition from edit to practice mode
 - **Effort**: 4 hours ✅ COMPLETED
@@ -166,7 +166,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 **Goal**: Enhanced practice session management and real-world usability improvements
 
 #### Task 3.1: Section Completion Dialog Enhancements ⭐ UPDATED
-- [ ] **Files**: `scripts/practice/practice-session-manager.js`
+- [ ] **Files**: `scripts/Practice/practice-session-manager.js`
 - [ ] **Implementation**: 
   - [x] Change "How did this practice section go" to "How confident were you in this section?"
   - [ ] Display section name in completion dialog
@@ -177,7 +177,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Effort**: 12 hours (increased due to note editing feature)
 
 #### Task 3.2: Strategy Implementation & Focus Enhancement ⭐ NEW
-- [ ] **Files**: `scripts/practice/practice-session-starter.js`, `scripts/pdf-viewer.js`
+- [ ] **Files**: `scripts/Practice/practice-session-starter.js`, `scripts/pdf-viewer.js`
 - [ ] **Implementation**: 
   - [ ] **Extract Highlighted Section as PNG**: Render only the highlighted section to prevent "cheating"
   - [ ] Enhance "Chunking" strategy to truly isolate practice sections
@@ -188,7 +188,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Effort**: 20 hours
 
 #### Task 3.3: Mobile Timer Positioning & Zoom Handling ⭐ UPDATED
-- [ ] **Files**: `scripts/practice/practice-session-timer.js`, `styles/practice-mode.css`
+- [ ] **Files**: `scripts/Practice/practice-session-timer.js`, `styles/practice-mode.css`
 - [ ] **Implementation**: 
   - [ ] Pinch zoom-aware timer positioning
   - [ ] Timer remains visible and accessible during zoom operations
@@ -214,7 +214,7 @@ This plan addresses critical usability issues in practice mode, particularly on 
 - **Effort**: 8 hours
 
 #### Task 3.6: Practice Plan Management
-- [ ] **Files**: `scripts/practice/practice-planner.js`, templates
+- [ ] **Files**: `scripts/Practice/practice-planner.js`, templates
 - **Implementation**: Remove sections, append newly created sections, filter for confidence, reorder, bulk actions
 - **Testing**: Full CRUD operations on practice plan
 - **Effort**: 16 hours

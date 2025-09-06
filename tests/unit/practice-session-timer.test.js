@@ -1,11 +1,3 @@
-/**
- * Practice Session Tim    dispatchEvent: jest.fn(),
-}));
-
-const { PracticeSessionTimer } = require('../../scripts/practice/practice-session-timer.js');it Tests
- * Tests the timer component in isolation
- */
-
 const { JSDOM } = require('jsdom');
 
 // Set up DOM environment
@@ -33,7 +25,7 @@ global.window.matchMedia = jest.fn().mockImplementation(query => ({
 }));
 global.window = dom.window;
 
-const PracticeSessionTimer = require('../../scripts/practice/practice-session-timer');
+const PracticeSessionTimer = require('../../scripts/Practice/practice-session-timer');
 
 describe('PracticeSessionTimer', () => {
     let timer;

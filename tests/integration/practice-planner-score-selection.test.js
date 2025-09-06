@@ -57,7 +57,7 @@ describe('Practice Planner Score Selection', () => {
         };
 
         // Import and create practice planner
-        const { PracticePlanner } = require('../../scripts/practice/practice-planner.js');
+        const { PracticePlanner } = require('../../scripts/Practice/practice-planner.js');
         practicePlanner = new PracticePlanner(mockLogger, mockDatabase, mockHighlightPersistenceService);
     });
 
