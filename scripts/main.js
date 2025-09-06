@@ -448,10 +448,10 @@ function initializeHighlightingToggle(logger = console) {
 // ISSUE: This function also does too much - initialization AND UI creation
 // TODO: Split into initializeApplication() and createDevStatusElement()
 if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
-document.addEventListener('DOMContentLoaded', async function() {
-    // Application starting - import DIContainer module (browser ESM path with .js)
-    // createDiContainer() is exported to allow tests to create containers without side-effects
-    
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Application starting - import DIContainer module (browser ESM path with .js)
+        // createDiContainer() is exported to allow tests to create containers without side-effects
+
         try {
             const diModule = await import('./Core/Infrastructure/DIContainer.js');
             if (diModule && typeof diModule.createDiContainer === 'function') {
@@ -459,21 +459,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                 window.diContainer.initialize();
             }
         } catch (_) {}
-        
+
         try {
             // Initialize modules with logger dependency injection
             // Prefer DI-provided logger when available
             const diContainerInstance = (typeof window !== 'undefined' && window.diContainer) ? window.diContainer : null;
-        let appLogger = console;
-        try {
+            let appLogger = console;
+            try {
                 if (diContainerInstance && typeof diContainerInstance.get === 'function' && diContainerInstance.has && diContainerInstance.has('logger')) {
                     appLogger = diContainerInstance.get('logger') || window.logger || console;
-            } else {
+                } else {
+                    appLogger = window.logger || console;
+                }
+            } catch (e) {
                 appLogger = window.logger || console;
             }
-        } catch (e) {
-            appLogger = window.logger || console;
-        }
 
         if (!window.logger) {
             // Expose chosen logger globally to avoid scattered window.logger usage
@@ -760,9 +760,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Application ready
-    } catch (error) {
-        const appLogger = window.logger || console;
-        appLogger.error('Failed to initialize PlayTime application:', error.message);
+        } catch (error) {
+            const appLogger = window.logger || console;
+            appLogger.error('Failed to initialize PlayTime application:', error.message);
         // Show user-friendly error message
         const errorContainer = document.querySelector('.error-container') || document.body;
         if (errorContainer) {
@@ -772,9 +772,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             errorMessage.textContent = `Application failed to start: ${error.message}. Please refresh the page or check the appLogger for details.`;
             errorContainer.appendChild(errorMessage);
         }
-        throw error; // Re-throw so it's visible in appLogger
-    }
-});
+            throw error; // Re-throw so it's visible in appLogger
+        }
+    });
 }
 
 // Export for testing
