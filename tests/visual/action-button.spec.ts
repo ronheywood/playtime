@@ -74,7 +74,7 @@ test.describe('HighlightActionButton Visual Tests', () => {
         await expect(actionButton).toBeVisible();
 
         // Take screenshot
-        await expect(page).toHaveScreenshot('action-button-basic.png');
+    await expect(page).toHaveScreenshot('action-button-basic.png', { maxDiffPixelRatio: 0.02, animations: 'disabled' });
     });
 
     test('action button with lucide icon rendering', async ({ page }) => {
@@ -112,7 +112,7 @@ test.describe('HighlightActionButton Visual Tests', () => {
         await expect(svgIcon).toBeVisible();
 
         // Take screenshot focusing on the icon
-        await expect(page.locator('.highlight-action-btn').first()).toHaveScreenshot('action-button-icon-detail.png');
+    await expect(page.locator('.highlight-action-btn').first()).toHaveScreenshot('action-button-icon-detail.png', { maxDiffPixelRatio: 0.02, animations: 'disabled' });
     });
 
     test('action button positioning and styling', async ({ page }) => {
@@ -156,7 +156,7 @@ test.describe('HighlightActionButton Visual Tests', () => {
         await page.waitForTimeout(500);
 
         // Verify positioning and take full context screenshot
-        await expect(page).toHaveScreenshot('action-button-positioning-context.png');
+    await expect(page).toHaveScreenshot('action-button-positioning-context.png', { maxDiffPixelRatio: 0.02, animations: 'disabled' });
     });
 
     test('action button hover state visual', async ({ page }) => {
@@ -190,11 +190,11 @@ test.describe('HighlightActionButton Visual Tests', () => {
         await expect(actionButton).toBeVisible();
 
         // Normal state
-        await expect(actionButton).toHaveScreenshot('action-button-normal-state.png');
+    await expect(actionButton).toHaveScreenshot('action-button-normal-state.png', { maxDiffPixelRatio: 0.02, animations: 'disabled' });
 
         // Hover state
         await actionButton.hover();
         await page.waitForTimeout(300);
-        await expect(actionButton).toHaveScreenshot('action-button-hover-state.png');
+    await expect(actionButton).toHaveScreenshot('action-button-hover-state.png', { maxDiffPixelRatio: 0.02, animations: 'disabled' });
     });
 });

@@ -268,9 +268,31 @@ class DIContainer {
                     // Swallow - bootstrap will handle initialization failures if needed
                 }
             }
-            if (typeof window !== 'undefined') window.PlayTimeHighlighting = highlightingInstance;
+            // Do NOT write globals here; leave bootstrap to surface instances if needed
             return highlightingInstance;
             }, ['logger']);
+
+        // PDF Viewer - provide the PlayTime PDF viewer via DI
+        // Prefer a browser global factory `createPlayTimePDFViewer` if present,
+        // otherwise fall back to requiring the local implementation in CommonJS/test envs.
+        this.container.singleton('playTimePDFViewer', (logger) => {
+            let createFn = null;
+            if (typeof window !== 'undefined' && typeof window.createPlayTimePDFViewer === 'function') {
+                createFn = window.createPlayTimePDFViewer;
+            } else {
+                try {
+                    // eslint-disable-next-line global-require
+                    const mod = require('../../pdf-viewer');
+                    createFn = mod && (mod.createPlayTimePDFViewer || mod.default || mod);
+                } catch (e) {
+                    throw new Error('PlayTimePDFViewer factory not available');
+                }
+            }
+
+            const instance = createFn(logger);
+            // Do not assign to window here; bootstrap will decide whether to expose globals.
+            return instance;
+        }, ['logger']);
 
             // Score List - create and provide the PlayTime score list via DI
             // Keep this simple: require the local score-list factory in CommonJS/tests,

@@ -104,18 +104,43 @@ function updateCurrentScoreTitleDisplay(filename) {
     } catch (_) { /* noop for test environments without the element */ }
 }
 
+// Resolve the PDF viewer instance in one place (prefer DI, fall back to legacy window global)
+function resolvePDFViewer() {
+    try {
+        if (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has && window.diContainer.has('playTimePDFViewer')) {
+            return window.diContainer.get('playTimePDFViewer');
+        }
+    } catch (_) {}
+    try { return window.PlayTimePDFViewer || null; } catch(_) { return null; }
+}
+
 // --- refactor helpers (no behavior change) ---
 async function loadPDFIntoViewer(file) {
-    if (!window.PlayTimePDFViewer || typeof window.PlayTimePDFViewer.loadPDF !== 'function') return;
-    logger.loading('Loading PDF into viewer...');
-    await window.PlayTimePDFViewer.loadPDF(file);
-    await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
+    try {
+        // Prefer DI-provided instance when available, fall back to window global
+    const viewer = resolvePDFViewer();
+
+        if (!viewer || typeof viewer.loadPDF !== 'function') {
+            logger.warn('PDF viewer not available or missing loadPDF()');
+            return;
+        }
+
+        logger.info?.('Loading PDF into viewer...', file && file.name);
+        await viewer.loadPDF(file);
+        if (typeof viewer.renderPage === 'function') {
+            await viewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
+        }
+    } catch (err) {
+        logger.error?.('Error in loadPDFIntoViewer:', err && err.message);
+        throw err;
+    }
 }
 
 function getPagesFromViewerSafe() {
     try {
-        if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.getTotalPages === 'function') {
-            const total = window.PlayTimePDFViewer.getTotalPages();
+        const v = resolvePDFViewer();
+        if (v && typeof v.getTotalPages === 'function') {
+            const total = v.getTotalPages();
             if (Number.isFinite(total) && total > 0) return total;
         }
     } catch (_) {}
@@ -209,6 +234,9 @@ async function initializeFileUpload(database = null) {
             logger.warn(CONFIG.MESSAGES.ERROR_NO_FILE);
             return;
         }
+        try {
+            logger.info?.('File selected for upload:', file.name);
+        } catch(_) {}
         await handleFileSelection(file, pdfViewer, database);
     });
 }
@@ -431,10 +459,55 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
 
         // Initialize modules with better error handling
         try {
-            if (typeof window.createPlayTimePDFViewer === 'function') {
-                window.PlayTimePDFViewer = window.createPlayTimePDFViewer(appLogger);
-            } else {
-                appLogger.warn('PlayTimePDFViewer factory not available');
+            // Prefer DI-provided PDF viewer when a DI container is present
+            let pdfViewerInstance = null;
+            try {
+                if (window.diContainer && typeof window.diContainer.get === 'function' && window.diContainer.has('playTimePDFViewer')) {
+                    pdfViewerInstance = window.diContainer.get('playTimePDFViewer');
+                }
+            } catch (_) {
+                // ignore DI resolution errors and fall back to legacy factory
+            }
+
+            if (!pdfViewerInstance) {
+                if (typeof window.createPlayTimePDFViewer === 'function') {
+                    // Created from legacy window factory - assign to local only.
+                    // We will expose the resolved instance to window once it's
+                    // initialized below to centralize global writes.
+                    pdfViewerInstance = window.createPlayTimePDFViewer(appLogger);
+                } else {
+                    appLogger.warn('PlayTimePDFViewer factory not available');
+                }
+            }
+
+            if (pdfViewerInstance) {
+                // Make the resolved instance available on window so legacy
+                // helper functions and event handlers that reference
+                // `window.PlayTimePDFViewer` continue to work. We only write
+                // this global once here (after resolution) to centralize and
+                // limit global mutations.
+                try { window.PlayTimePDFViewer = pdfViewerInstance; } catch(_) {}
+                // Initialize the resolved PDF viewer instance here (whether it
+                // came from DI or the legacy factory) so we don't depend on
+                // the presence of a window global later in the bootstrap flow.
+                try {
+                    if (typeof pdfViewerInstance.init === 'function') {
+                        await pdfViewerInstance.init();
+                        appLogger.info?.('PDF viewer initialized');
+                    }
+                } catch (initErr) {
+                    appLogger.warn?.('PDF viewer init failed', initErr);
+                }
+
+                // Attach UI controls directly on the instance when available.
+                try {
+                    if (typeof pdfViewerInstance.attachUIControls === 'function') {
+                        pdfViewerInstance.attachUIControls();
+                        appLogger.info?.('PDF viewer UI controls attached');
+                    }
+                } catch (attachErr) {
+                    appLogger.warn?.('Failed attaching PDF viewer UI controls', attachErr);
+                }
             }
         } catch (pdfViewerError) {
             appLogger.error('Failed to create PDF viewer:', pdfViewerError.message);
@@ -458,26 +531,10 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
             throw new Error(`Database initialization failed: ${dbInitError.message}`);
         }
         
-        // Initialize PDF viewer early so highlighting + rehydration have a ready viewer
-        try {
-            if (window.PlayTimePDFViewer) {
-                await window.PlayTimePDFViewer.init();
-            } else {
-                appLogger.warn('PlayTimePDFViewer not available for initialization');
-            }
-        } catch (pdfInitError) {
-            appLogger.error('Failed to initialize PDF viewer:', pdfInitError.message);
-            throw new Error(`PDF viewer initialization failed: ${pdfInitError.message}`);
-        }
-        // Attach navigation + zoom UI controls now that viewer is initialized
-        if (window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.attachUIControls === 'function') {
-            try {
-                window.PlayTimePDFViewer.attachUIControls();
-                window.logger.info?.('PDF viewer UI controls attached');
-            } catch (e) {
-                window.logger.warn?.('Failed attaching PDF viewer UI controls', e);
-            }
-        }
+    // PDF viewer was initialized (and UI controls attached) on the resolved
+    // pdfViewerInstance earlier in the DI/factory resolution block. Avoid
+    // re-checking window globals here to prevent duplicate logs and
+    // spurious warnings in environments where DI is used.
         // Initialize refactored highlighting with dependency injection
         try {
 
@@ -562,10 +619,11 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
                 // Load PDF binary & render first page; highlight will rehydrate after PAGE_CHANGED
                 try {
                     const pdf = await window.PlayTimeDB.get(pdfId);
-                    if (pdf && window.PlayTimePDFViewer) {
+                    const viewer = resolvePDFViewer();
+                    if (pdf && viewer && typeof viewer.loadPDF === 'function') {
                         const blob = new Blob([pdf.data], { type: 'application/pdf' });
-                        await window.PlayTimePDFViewer.loadPDF(blob);
-                        await window.PlayTimePDFViewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
+                        await viewer.loadPDF(blob);
+                        if (typeof viewer.renderPage === 'function') await viewer.renderPage(CONFIG.SETTINGS.DEFAULT_PAGE);
                     }
                 } catch(errLoad) { window.logger.warn?.('SCORE_SELECTED viewer load failed', errLoad); }
             };
@@ -594,6 +652,7 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
                 }
                 if (typeof scoreListInstance.init === 'function') await scoreListInstance.init();
                 if (typeof scoreListInstance.refresh === 'function') await scoreListInstance.refresh();
+                // Keep DI-only: do not assign score list to window here. Tests should inject into DI when needed.
             } else {
                 appLogger.warn('PlayTimeScoreList not available for initialization');
             }

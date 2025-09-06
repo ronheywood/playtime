@@ -30,6 +30,8 @@ describe('Highlighting re-select score', () => {
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
+  // Create global instance for tests
+  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
     document.body.innerHTML = `
       <main>
         <section id="upload-section"><input type="file" id="pdf-upload" accept="application/pdf"></section>

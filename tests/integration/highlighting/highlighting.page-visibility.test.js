@@ -39,6 +39,8 @@ describe('Highlighting Page Visibility Integration', () => {
         prevPage: async function() { if (currentPage > 1) { currentPage -= 1; dispatchPageChanged(); } }
       };
     };
+  // Expose a test instance globally so tests can call nextPage/prevPage
+  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console);
 
     // In-memory DB stub (minimal)
     global.window.createPlayTimeDB = () => ({ init: jest.fn().mockResolvedValue(true), save: jest.fn().mockResolvedValue(true), getAll: jest.fn().mockResolvedValue([]) });

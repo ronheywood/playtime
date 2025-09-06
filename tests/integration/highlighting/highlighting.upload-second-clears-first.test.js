@@ -34,6 +34,8 @@ describe('Second upload clears first score highlights', () => {
       getCurrentPage: () => currentPage,
       getTotalPages: () => 2
     });
+  // Create global test instance
+  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
     const helpers = require('../../helpers/test-helpers.js');
     //TODO - use the helper to create this DOM
     document.body.innerHTML = `

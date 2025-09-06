@@ -43,6 +43,8 @@ describe('Highlighting multi score page 2 reselect', () => {
       getCurrentPage: () => currentPage,
       getTotalPages: () => 3
     });
+  // Create global instance for tests
+  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
 
     // Base DOM
     document.body.innerHTML = `

@@ -56,6 +56,9 @@ describe('PlayTime Music Practice App', () => {
             viewer.zoomOut = jest.fn(() => viewer.setZoom(zoom - ZOOM.STEP));
             return viewer;
         };
+        // Create a global instance for tests so code paths that expect the legacy
+        // global have a concrete viewer to operate against.
+        global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console);
         
     // Setup dependencies for highlighting module (required after dependency injection refactoring)
     const confidence = require('../../scripts/confidence');

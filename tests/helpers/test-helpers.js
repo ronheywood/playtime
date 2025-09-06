@@ -416,6 +416,18 @@ const TestHelpers = {
         
         // Execute main.js to define the functions and make them globally available
         eval(mainJsContent);
+
+        // Test-only compatibility shim: if the DI container wasn't used by main.js
+        // and tests still expect a `window.PlayTimePDFViewer` global, create it
+        // from the test factory `createPlayTimePDFViewer` so we don't reintroduce
+        // the legacy global in production code.
+        try {
+            if (!global.window.PlayTimePDFViewer && typeof global.window.createPlayTimePDFViewer === 'function') {
+                global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console);
+            }
+        } catch (e) {
+            // swallow errors - tests can still provide their own global if needed
+        }
         
         // Make key functions available globally for testing
         if (typeof initializeFileUpload !== 'undefined') {

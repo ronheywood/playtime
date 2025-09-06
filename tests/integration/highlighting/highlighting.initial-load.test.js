@@ -27,14 +27,16 @@ describe('Highlighting initial load rehydration', () => {
       getHighlights: jest.fn().mockImplementation(async (pdfId) => store.sections.filter(s => s.pdfId === pdfId || String(s.pdfId) === String(pdfId)))
     });
 
-    // PDF viewer stub with page tracking
-    global.window.createPlayTimePDFViewer = () => ({
+  // PDF viewer stub with page tracking
+  global.window.createPlayTimePDFViewer = () => ({
       init: jest.fn().mockResolvedValue(true),
       loadPDF: jest.fn().mockResolvedValue(true),
       renderPage: jest.fn().mockResolvedValue(true),
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
+  // Create the actual global viewer instance for tests so DI fallback isn't required
+  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
 
     const Highlighting = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
@@ -112,13 +114,14 @@ describe('Highlighting initial load rehydration', () => {
       addHighlight: jest.fn().mockImplementation(async (sec) => { store.sections.push({ id: store.sections.length+1, ...sec }); }),
       getHighlights: jest.fn().mockImplementation(async (pdfId) => store.sections.filter(s => s.pdfId === pdfId || String(s.pdfId) === String(pdfId)))
     });
-    global.window.createPlayTimePDFViewer = () => ({
+  global.window.createPlayTimePDFViewer = () => ({
       init: jest.fn().mockResolvedValue(true),
       loadPDF: jest.fn().mockResolvedValue(true),
       renderPage: jest.fn().mockResolvedValue(true),
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
+  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
     const Highlighting2 = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting2;
     require('../../../scripts/main.js');
