@@ -22,6 +22,9 @@ const PracticeSessionStarter = require('../../scripts/Practice/practice-session-
 describe('PracticeSessionStarter', () => {
     let practiceSessionStarter;
     let mockLogger;
+    let mockViewer;
+    let mockHighlighting;
+    let mockLayoutCommands;
 
     // Clean up after all tests in this suite
     afterAll(() => {
@@ -42,27 +45,19 @@ describe('PracticeSessionStarter', () => {
             debug: jest.fn()
         };
 
-        // Set up window mocks
-        global.window.PlayTimeHighlighting = {
+    // Create mocks and inject them via constructor options to avoid touching globals
+        mockViewer = {
+            getCurrentPage: jest.fn().mockReturnValue(1),
+            renderPage: jest.fn().mockResolvedValue()
+        };
+        mockHighlighting = {
             disableSelection: jest.fn(),
             enableSelection: jest.fn(),
             focusOnHighlight: jest.fn(),
             exitFocusMode: jest.fn(),
-            _components: {
-                persistenceService: {
-                    getHighlight: jest.fn()
-                }
-            }
+            _components: { persistenceService: { getHighlight: jest.fn() } }
         };
-
-        global.window.PlayTimeLayoutCommands = {
-            execute: jest.fn()
-        };
-
-        global.window.PlayTimePDFViewer = {
-            getCurrentPage: jest.fn().mockReturnValue(1),
-            renderPage: jest.fn().mockResolvedValue()
-        };
+        mockLayoutCommands = { execute: jest.fn() };
 
         // Mock event dispatching
         global.window.dispatchEvent = jest.fn();
@@ -103,8 +98,12 @@ describe('PracticeSessionStarter', () => {
 
         document.querySelectorAll = jest.fn(() => mockHighlights);
 
-        // Create instance with simplified constructor
-        practiceSessionStarter = new PracticeSessionStarter(mockLogger);
+        // Create instance with injected mocks (constructor injection)
+        practiceSessionStarter = new PracticeSessionStarter(mockLogger, {
+            highlighting: mockHighlighting,
+            layoutCommands: mockLayoutCommands,
+            pdfViewer: mockViewer
+        });
     });
 
     afterEach(() => {
@@ -112,9 +111,16 @@ describe('PracticeSessionStarter', () => {
         // Clear any pending timers to prevent test leaks
         jest.clearAllTimers();
         // Also clear any setTimeout/setInterval that might be pending
-        if (global.setTimeout.mock) {
+        if (global.setTimeout && global.setTimeout.mock) {
             global.setTimeout.mockClear();
         }
+        // Clean up DI registration and legacy global if present
+        try {
+            if (global.window && global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.remove === 'function') {
+                global.window.diContainer.container.remove('playTimePDFViewer');
+            }
+        } catch (_) {}
+        try { delete global.window.PlayTimePDFViewer; } catch (_) {}
     });
 
     describe('Constructor', () => {
@@ -128,16 +134,21 @@ describe('PracticeSessionStarter', () => {
             const result = await practiceSessionStarter.setupPracticeModeEnvironment();
 
             expect(result).toBe(true);
-            expect(global.window.PlayTimeHighlighting.disableSelection).toHaveBeenCalled();
-            expect(global.window.PlayTimeLayoutCommands.execute).toHaveBeenCalledWith('practice-mode', { action: 'enter' });
+            expect(mockHighlighting.disableSelection).toHaveBeenCalled();
+            expect(mockLayoutCommands.execute).toHaveBeenCalledWith('practice-mode', { action: 'enter' });
             expect(mockLogger.info).toHaveBeenCalledWith('Practice Session Starter: Highlight selection disabled');
             expect(mockLogger.info).toHaveBeenCalledWith('Practice Session Starter: Entered practice mode layout');
         });
 
         test('should fallback to direct attribute setting when layout commands not available', async () => {
-            global.window.PlayTimeLayoutCommands = undefined;
+            // Instantiate without layoutCommands to trigger fallback behavior
+            const fallbackStarter = new PracticeSessionStarter(mockLogger, {
+                highlighting: mockHighlighting,
+                layoutCommands: undefined,
+                pdfViewer: mockViewer
+            });
 
-            const result = await practiceSessionStarter.setupPracticeModeEnvironment();
+            const result = await fallbackStarter.setupPracticeModeEnvironment();
 
             expect(result).toBe(true);
             expect(document.querySelector).toHaveBeenCalledWith('#viewer-section');
@@ -145,10 +156,14 @@ describe('PracticeSessionStarter', () => {
         });
 
         test('should handle missing highlighting system gracefully', async () => {
-            global.window.PlayTimeHighlighting = undefined;
+            // Instantiate without highlighting to simulate missing system
+            const fallbackStarter = new PracticeSessionStarter(mockLogger, {
+                highlighting: undefined,
+                layoutCommands: mockLayoutCommands,
+                pdfViewer: mockViewer
+            });
 
-            const result = await practiceSessionStarter.setupPracticeModeEnvironment();
-            
+            const result = await fallbackStarter.setupPracticeModeEnvironment();
             expect(result).toBe(true);
             expect(result).toBeTruthy();
         });
@@ -158,7 +173,7 @@ describe('PracticeSessionStarter', () => {
         test('should re-enable highlighting and clean up environment', () => {
             practiceSessionStarter.cleanupPracticeModeEnvironment();
 
-            expect(global.window.PlayTimeHighlighting.enableSelection).toHaveBeenCalled();
+            expect(mockHighlighting.enableSelection).toHaveBeenCalled();
             expect(mockLogger.info).toHaveBeenCalledWith('Practice Session Starter: Highlight selection re-enabled');
         });
 
@@ -166,9 +181,7 @@ describe('PracticeSessionStarter', () => {
             practiceSessionStarter.cleanupPracticeModeEnvironment();
 
             // Should call the specific cleanup actions
-            expect(mockLogger.info).toHaveBeenCalledWith(
-                'Practice Session Starter: Highlight selection re-enabled'
-            );
+            expect(mockLogger.info).toHaveBeenCalledWith('Practice Session Starter: Highlight selection re-enabled');
         });
 
         test('should handle missing elements gracefully', () => {
@@ -199,27 +212,24 @@ describe('PracticeSessionStarter', () => {
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
             expect(mockHighlightElement.classList.add).toHaveBeenCalledWith('current-practice-section');
-            expect(global.window.PlayTimeHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockHighlightElement);
+            expect(mockHighlighting.focusOnHighlight).toHaveBeenCalledWith(mockHighlightElement);
         });
 
         test('should navigate to highlight page when needed', async () => {
             const mockHighlightData = { page: 2 };
-            global.window.PlayTimeHighlighting._components.persistenceService.getHighlight.mockResolvedValue(mockHighlightData);
-            global.window.PlayTimePDFViewer.getCurrentPage.mockReturnValue(1);
+            mockHighlighting._components.persistenceService.getHighlight.mockResolvedValue(mockHighlightData);
+            mockViewer.getCurrentPage.mockReturnValue(1);
 
             await practiceSessionStarter.focusOnPracticeSection(highlightId);
 
-            expect(global.window.PlayTimePDFViewer.renderPage).toHaveBeenCalledWith(2);
+            expect(mockViewer.renderPage).toHaveBeenCalledWith(2);
         });
 
         test('should handle missing highlight element gracefully', async () => {
             document.querySelector.mockReturnValue(null);
 
             await expect(practiceSessionStarter.focusOnPracticeSection(highlightId)).resolves.not.toThrow();
-            expect(mockLogger.warn).toHaveBeenCalledWith(
-                'Practice Session Starter: Highlight element not found after navigation',
-                { highlightId }
-            );
+            expect(mockLogger.warn).toHaveBeenCalledWith('Practice Session Starter: Highlight element not found after navigation', { highlightId });
         });
 
         test('should handle navigation errors gracefully', async () => {
@@ -227,10 +237,7 @@ describe('PracticeSessionStarter', () => {
             jest.spyOn(practiceSessionStarter, '_navigateToHighlightPage').mockRejectedValue(new Error('Navigation failed'));
 
             await expect(practiceSessionStarter.focusOnPracticeSection(highlightId)).resolves.not.toThrow();
-            expect(mockLogger.error).toHaveBeenCalledWith(
-                'Practice Session Starter: Error focusing on section',
-                expect.objectContaining({ highlightId })
-            );
+            expect(mockLogger.error).toHaveBeenCalledWith('Practice Session Starter: Error focusing on section', expect.objectContaining({ highlightId }));
         });
     });
 
@@ -243,7 +250,7 @@ describe('PracticeSessionStarter', () => {
 
             practiceSessionStarter._exitFocusMode();
 
-            expect(global.window.PlayTimeHighlighting.exitFocusMode).toHaveBeenCalled();
+            expect(mockHighlighting.exitFocusMode).toHaveBeenCalled();
         });
 
         test('_hideTimer should hide timer UI', () => {

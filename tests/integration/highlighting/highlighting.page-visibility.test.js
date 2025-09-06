@@ -19,24 +19,25 @@ describe('Highlighting Page Visibility Integration', () => {
       const totalPages = 3;
       const dispatchPageChanged = () => {
         try {
-          const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS.PAGE_CHANGED) || 'playtime:page-changed';
-            const ev = new CustomEvent(evName, { detail: { page: currentPage } });
-            window.dispatchEvent(ev);
-        } catch(_) { /* noop */ }
+          const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.PAGE_CHANGED) || 'playtime:page-changed';
+          const ev = new CustomEvent(evName, { detail: { page: currentPage } });
+          window.dispatchEvent(ev);
+        } catch (_) { /* noop */ }
       };
       return {
         init: jest.fn().mockResolvedValue(true),
         loadPDF: jest.fn().mockResolvedValue(true),
         renderPage: jest.fn().mockImplementation(async (p) => { currentPage = p; dispatchPageChanged(); }),
         getZoom: () => 1,
-        getZoomBounds: () => ({ min:1, max:3 }),
+        getZoomBounds: () => ({ min: 1, max: 3 }),
         setZoom: jest.fn(() => 1),
         zoomIn: jest.fn(() => 1),
         zoomOut: jest.fn(() => 1),
         getCurrentPage: () => currentPage,
         getTotalPages: () => totalPages,
         nextPage: async function() { if (currentPage < totalPages) { currentPage += 1; dispatchPageChanged(); } },
-        prevPage: async function() { if (currentPage > 1) { currentPage -= 1; dispatchPageChanged(); } }
+        prevPage: async function() { if (currentPage > 1) { currentPage -= 1; dispatchPageChanged(); } },
+        attachUIControls: () => {}
       };
     };
   // Register test factory into DI if present and keep legacy global fallback
@@ -59,6 +60,15 @@ describe('Highlighting Page Visibility Integration', () => {
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../../scripts/confidence.js');
     global.window.PlayTimeConfidence = confidence;
+          // Register test factory into DI if present and keep legacy global fallback
+          try {
+            if (typeof global.window.createPlayTimePDFViewer === 'function') {
+              try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
+                global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
+              } } catch(_) {}
+              if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch(_) {} }
+            }
+          } catch(_) {}
     global.window.PlayTimeConstants = PT_CONSTANTS;
 
     // Trigger app init (main registers DOMContentLoaded listener on require)

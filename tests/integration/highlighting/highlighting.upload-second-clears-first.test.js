@@ -34,15 +34,12 @@ describe('Second upload clears first score highlights', () => {
       getCurrentPage: () => currentPage,
       getTotalPages: () => 2
     });
-  // Register test factory into DI if present, fallback to legacy global instance
-  try {
-    if (typeof global.window.createPlayTimePDFViewer === 'function') {
-      try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
+    try {
+      if (typeof global.window.createPlayTimePDFViewer === 'function' && global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
         global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-      } } catch(_) {}
-      if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
-    }
-  } catch(_) {}
+      }
+    } catch (_) {}
+    if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
     const helpers = require('../../helpers/test-helpers.js');
     //TODO - use the helper to create this DOM
     document.body.innerHTML = `

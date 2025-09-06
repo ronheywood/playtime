@@ -24,7 +24,7 @@ const PRACTICE_PLANNER_CONFIG = {
 };
 
 class PracticePlanner {
-    constructor(logger, database, highlightPersistenceService, practicePlanPersistenceService) {
+    constructor(logger, database, highlightPersistenceService, practicePlanPersistenceService, practiceSessionStarter = null) {
         this.config = PRACTICE_PLANNER_CONFIG;
         this.logger = logger;
         this.database = database;
@@ -35,8 +35,8 @@ class PracticePlanner {
         this.currentPracticePlan = null; // Store currently loaded practice plan
         this.isEditingExistingPlan = false; // Track if we're editing an existing plan
         
-        // Initialize practice session starter module
-        this.practiceSessionStarter = null;
+    // Initialize practice session starter module (injected)
+    this.practiceSessionStarter = practiceSessionStarter;
         
         // Initialize practice session manager module
         this.practiceSessionManager = null;
@@ -100,13 +100,10 @@ class PracticePlanner {
         this.attachGlobalEventListeners();
 
         // Initialize practice session starter module
-        if (typeof window.createPracticeSessionStarter === 'function') {
-            this.practiceSessionStarter = window.createPracticeSessionStarter(
-                this.logger
-            );
-            this.logger.info('Practice Planner: Practice session starter initialized');
+        if (!this.practiceSessionStarter) {
+            this.logger.warn('Practice Planner: Practice session starter not injected; callers should pass one into the constructor');
         } else {
-            this.logger.warn('Practice Planner: Practice session starter not available');
+            this.logger.info('Practice Planner: Practice session starter injected');
         }
 
         // Initialize practice session manager module
@@ -1431,7 +1428,17 @@ class PracticePlanner {
 
 // Factory function for creating practice planner instance
 function createPlayTimePracticePlanner(logger, database, highlightPersistenceService, practicePlanPersistenceService) {
-    return new PracticePlanner(logger, database, highlightPersistenceService, practicePlanPersistenceService);
+    // Resolve a browser practiceSessionStarter (if available) and inject into constructor
+    let practiceSessionStarter = null;
+    if (typeof window !== 'undefined' && typeof window.createPracticeSessionStarter === 'function') {
+        try {
+            practiceSessionStarter = window.createPracticeSessionStarter(logger);
+        } catch (_) {
+            // ignore resolution errors and leave practiceSessionStarter null
+        }
+    }
+
+    return new PracticePlanner(logger, database, highlightPersistenceService, practicePlanPersistenceService, practiceSessionStarter);
 }
 
 // Export for both Node.js (tests) and browser

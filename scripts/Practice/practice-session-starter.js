@@ -7,24 +7,33 @@
 class PracticeSessionStarter {
     constructor(logger, options = {}) {
         this.logger = logger;
+        // Support constructor injection for unit tests and DI use.
+        // Options may provide: highlighting, layoutCommands, pdfViewer
+        // NOTE: Do not access window globals here — callers (factory/bootstrap) should
+        // pass the platform services via the options object. This keeps the class
+        // DI-first and testable.
+        this.highlighting = options.highlighting || null;
+        this.layoutCommands = options.layoutCommands || null;
+        this.pdfViewer = options.pdfViewer || null;
     }
 
     /**
      * Setup practice mode environment (UI state, highlighting, layout)
      */
     async setupPracticeModeEnvironment() {
-        // Disable highlight selection during practice mode
-        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.disableSelection === 'function') {
-            window.PlayTimeHighlighting.disableSelection();
+        // Disable highlight selection during practice mode (DI-first: use injected service)
+        const highlighting = this.highlighting;
+        if (highlighting && typeof highlighting.disableSelection === 'function') {
+            highlighting.disableSelection();
             this.logger.info('Practice Session Starter: Highlight selection disabled');
-            
             // Add visual indicator
             this._showSelectionDisabledIndicator();
         }
 
         // Set practice mode layout
-        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
-            window.PlayTimeLayoutCommands.execute('practice-mode', { action: 'enter' });
+        const layoutCommands = this.layoutCommands;
+        if (layoutCommands && typeof layoutCommands.execute === 'function') {
+            layoutCommands.execute('practice-mode', { action: 'enter' });
             this.logger.info('Practice Session Starter: Entered practice mode layout');
         } else {
             // Fallback: Set the attribute directly if layout commands are not available
@@ -43,11 +52,11 @@ class PracticeSessionStarter {
      * Cleanup practice mode environment
      */
     cleanupPracticeModeEnvironment() {
-        // Re-enable highlight selection
-        if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.enableSelection === 'function') {
-            window.PlayTimeHighlighting.enableSelection();
+        // Re-enable highlight selection (DI-first)
+        const highlighting = this.highlighting;
+        if (highlighting && typeof highlighting.enableSelection === 'function') {
+            highlighting.enableSelection();
             this.logger.info('Practice Session Starter: Highlight selection re-enabled');
-            
             // Remove visual indicator
             this._hideSelectionDisabledIndicator();
         }
@@ -98,9 +107,10 @@ class PracticeSessionStarter {
                 this.logger.info('Practice Session Starter: Applied current-practice-section class', { highlightId });
 
                 // Use highlighting module's focus method if available (same as double-click behavior)
-                if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.focusOnHighlight === 'function') {
+                const highlighting = this.highlighting;
+                if (highlighting && typeof highlighting.focusOnHighlight === 'function') {
                     this.logger.info('Practice Session Starter: Triggering focus action on highlight', { highlightId });
-                    window.PlayTimeHighlighting.focusOnHighlight(highlightElement);
+                    highlighting.focusOnHighlight(highlightElement);
                 } else {
                     // Fallback: scroll to the element
                     this.logger.info('Practice Session Starter: Using fallback scroll to highlight', { highlightId });
@@ -125,12 +135,10 @@ class PracticeSessionStarter {
             let highlightData = null;
             
             // Try to get from persistence service if available
-            if (window.PlayTimeHighlighting && 
-                window.PlayTimeHighlighting._components && 
-                window.PlayTimeHighlighting._components.persistenceService) {
-                
+            const highlighting = this.highlighting;
+            if (highlighting && highlighting._components && highlighting._components.persistenceService) {
                 try {
-                    highlightData = await window.PlayTimeHighlighting._components.persistenceService.getHighlight(highlightId);
+                    highlightData = await highlighting._components.persistenceService.getHighlight(highlightId);
                 } catch (persistenceError) {
                     this.logger.warn('Practice Session Starter: Could not load highlight from persistence', { 
                         highlightId, 
@@ -140,19 +148,17 @@ class PracticeSessionStarter {
             }
 
             // If we have page information and PDF viewer is available
-            if (highlightData && highlightData.page && window.PlayTimePDFViewer) {
-                const currentPage = window.PlayTimePDFViewer.getCurrentPage();
+            const pdfViewer = this.pdfViewer;
+            if (highlightData && highlightData.page && pdfViewer) {
+                const currentPage = pdfViewer.getCurrentPage();
                 const targetPage = highlightData.page;
-                
                 if (currentPage !== targetPage) {
                     this.logger.info('Practice Session Starter: Navigating to highlight page', { 
                         highlightId, 
                         currentPage, 
                         targetPage 
                     });
-                    
-                    await window.PlayTimePDFViewer.renderPage(targetPage);
-                    
+                    await pdfViewer.renderPage(targetPage);
                     // Give the page time to render and highlights to be rehydrated
                     await this._waitForPageRender();
                 } else {
@@ -166,9 +172,10 @@ class PracticeSessionStarter {
                     highlightId,
                     hasHighlightData: !!highlightData,
                     hasPageInfo: !!(highlightData && highlightData.page),
-                    hasPDFViewer: !!window.PlayTimePDFViewer
+                    hasPDFViewer: !!pdfViewer
                 });
             }
+            
         } catch (error) {
             this.logger.error('Practice Session Starter: Error navigating to highlight page', { highlightId, error });
         }
@@ -228,9 +235,10 @@ class PracticeSessionStarter {
             const canvas = document.querySelector('[data-role="pdf-canvas"]');
             const isInFocusMode = canvas && canvas.getAttribute('data-focus-mode') === 'active';
             
-            if (isInFocusMode && window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.exitFocusMode === 'function') {
+            const highlighting = this.highlighting || (typeof window !== 'undefined' && window.PlayTimeHighlighting);
+            if (isInFocusMode && highlighting && typeof highlighting.exitFocusMode === 'function') {
                 this.logger.info('Practice Session Starter: Exiting focus mode after session completion');
-                window.PlayTimeHighlighting.exitFocusMode();
+                highlighting.exitFocusMode();
             } else {
                 this.logger.debug?.('Practice Session Starter: Focus mode not active or highlighting not available');
             }
@@ -301,8 +309,9 @@ class PracticeSessionStarter {
         }
         
         // Exit practice mode layout after DOM operations
-        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
-            window.PlayTimeLayoutCommands.execute('practice-mode', { action: 'exit' });
+        const layoutCommands = this.layoutCommands;
+        if (layoutCommands && typeof layoutCommands.execute === 'function') {
+            layoutCommands.execute('practice-mode', { action: 'exit' });
             this.logger.info('Practice Session Starter: Exited practice mode layout');
         }
     }
@@ -346,8 +355,15 @@ class PracticeSessionStarter {
 
 // Factory function for creating practice session starter instances (browser only)
 if (typeof window !== 'undefined') {
-    window.createPracticeSessionStarter = function(logger, options) {
-        return new PracticeSessionStarter(logger, options);
+    // Browser factory: resolve platform services from the window and pass them
+    // into the constructor so the class itself remains DI-first.
+    window.createPracticeSessionStarter = function(logger, options = {}) {
+        const resolved = Object.assign({}, {
+            highlighting: window.PlayTimeHighlighting,
+            layoutCommands: window.PlayTimeLayoutCommands,
+            pdfViewer: window.PlayTimePDFViewer
+        }, options);
+        return new PracticeSessionStarter(logger, resolved);
     };
 }
 
