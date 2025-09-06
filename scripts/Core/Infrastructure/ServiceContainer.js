@@ -7,6 +7,8 @@ class ServiceContainer {
         this.services = new Map();
         this.singletons = new Map();
         this.instances = new Map();
+    // Track current resolution stack to detect circular dependencies
+    this._resolutionStack = [];
     }
 
     /**
@@ -51,6 +53,13 @@ class ServiceContainer {
             throw new Error(`Service '${name}' is not registered`);
         }
 
+        // Detect circular dependency if this service is already being resolved
+        if (this._resolutionStack.indexOf(name) !== -1) {
+            const cycleStart = this._resolutionStack.indexOf(name);
+            const cyclePath = this._resolutionStack.slice(cycleStart).concat(name).join(' -> ');
+            throw new RangeError(`Circular dependency detected: ${cyclePath}`);
+        }
+
         const service = this.services.get(name);
 
         // Return existing singleton instance if available
@@ -58,11 +67,19 @@ class ServiceContainer {
             return this.instances.get(name);
         }
 
-        // Resolve dependencies
-        const dependencies = this.resolveDependencies(service.dependencies);
-        
-        // Create instance
-        const instance = service.factory(...dependencies);
+        // Mark this service as currently resolving (push to stack)
+        this._resolutionStack.push(name);
+        let instance;
+        try {
+            // Resolve dependencies
+            const dependencies = this.resolveDependencies(service.dependencies);
+
+            // Create instance
+            instance = service.factory(...dependencies);
+        } finally {
+            // Pop from resolution stack whether factory threw or succeeded
+            this._resolutionStack.pop();
+        }
 
         // Store singleton instance
         if (service.singleton) {

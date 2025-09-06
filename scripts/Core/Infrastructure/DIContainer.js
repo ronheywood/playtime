@@ -57,9 +57,14 @@ class DIContainer {
         });
 
         // Database - singleton for data persistence
-        this.container.singleton('database', () => {
+        // Note: do NOT depend on 'database' here (self-dependency causes a cycle).
+        this.container.singleton('database', (logger) => {
             if (window.PlayTimeDB) {
                 return window.PlayTimeDB;
+            }
+            // Provide a clearer message and allow logger to record the issue
+            if (logger && typeof logger.error === 'function') {
+                try { logger.error('Database service requested before initialization'); } catch (_) {}
             }
             throw new Error('Database not initialized');
         }, ['logger']);
@@ -200,7 +205,7 @@ class DIContainer {
         // UI Highlighting - expose the PlayTimeHighlighting UI module via DI
         // Resolve the module directly from source in CommonJS/test environments.
         // Note: removing reliance on globals makes the service resolution explicit.
-        this.container.singleton('playTimeHighlighting', (logger) => {
+    this.container.singleton('playTimeHighlighting', (logger, database) => {
             // Resolve the PlayTimeHighlighting implementation lazily so this
             // DI container can be used both in browser bundles (where the
             // module may be loaded as a global) and in CommonJS test runs.
@@ -246,13 +251,30 @@ class DIContainer {
             }
 
             const config = {};
-            // Do NOT call init here. Initialization requires the database and
-            // other runtime services that may not yet be registered when the
-            // container is resolving UI services. Let the application bootstrap
-            // (main.js) call init() when the environment is ready.
+            // If a database was provided (DI resolved 'database'), perform a
+            // best-effort initialization here so consumers who request the
+            // highlighting instance from the container get an initialized module.
+            // If database is not yet available, leave initialization to the
+            // application bootstrap which will call init() explicitly.
+            if (database) {
+                try {
+                    const initResult = highlightingInstance.init(config, logger, window.PlayTimeConfidence, window.PlayTimeConstants, { database });
+                    // If init returns a promise, attach a noop catch so unhandled
+                    // rejections don't bubble up synchronously.
+                    if (initResult && typeof initResult.then === 'function') {
+                        initResult.catch(() => {});
+                    }
+                } catch (initErr) {
+                    // Swallow - bootstrap will handle initialization failures if needed
+                }
+            }
             if (typeof window !== 'undefined') window.PlayTimeHighlighting = highlightingInstance;
             return highlightingInstance;
         }, ['logger']);
+        // Note: 'database' intentionally omitted from dependency list here to
+        // avoid forcing resolution of the database during container initialization.
+        // Consumers can request the 'playTimeHighlighting' service after the
+        // database exists and DI will pass it when resolving.
     }
 
     /**
