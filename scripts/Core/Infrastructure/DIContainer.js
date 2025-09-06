@@ -239,9 +239,8 @@ const diContainer = new DIContainer();
 // Export for both ES6 modules and CommonJS
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { DIContainer, diContainer };
-} else if (typeof window !== 'undefined') {
-    window.DIContainer = DIContainer;
-    window.diContainer = diContainer;
 }
 
-export { DIContainer, diContainer };
+export function createDiContainer() {
+    return new DIContainer();
+}
