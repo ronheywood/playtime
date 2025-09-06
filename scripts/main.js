@@ -455,15 +455,16 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
         try {
             const diModule = await import('./Core/Infrastructure/DIContainer.js');
             if (diModule && typeof diModule.createDiContainer === 'function') {
-                window.diContainer = diModule.createDiContainer();
-                window.diContainer.initialize();
+                const diContainerInstance = diModule.createDiContainer();
+                diContainerInstance.initialize();
+                window.diContainer = diContainerInstance;
             }
         } catch (_) {}
 
         try {
             // Initialize modules with logger dependency injection
             // Prefer DI-provided logger when available
-            const diContainerInstance = (typeof window !== 'undefined' && window.diContainer) ? window.diContainer : null;
+            
             let appLogger = console;
             try {
                 if (diContainerInstance && typeof diContainerInstance.get === 'function' && diContainerInstance.has && diContainerInstance.has('logger')) {
