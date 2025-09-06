@@ -80,7 +80,7 @@ describe('Highlighting - Integration Tests', () => {
         test('initializes successfully with default config', async () => {
             const logger = { warn: jest.fn(), debug: jest.fn() };
             
-            await Highlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
             
             expect(Highlighting._state.initialized).toBe(true);
             expect(Highlighting._state.viewer).toBeTruthy();
@@ -91,7 +91,7 @@ describe('Highlighting - Integration Tests', () => {
             document.body.innerHTML = ''; // Remove required elements
             const logger = { warn: jest.fn(), debug: jest.fn() };
             
-            await Highlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, logger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
             
             expect(logger.warn).toHaveBeenCalledWith('Required DOM elements not found');
         });
@@ -102,7 +102,7 @@ describe('Highlighting - Integration Tests', () => {
                 TIMING: { REHYDRATION_DELAY: 100 }
             };
             
-            await Highlighting.init(customConfig, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init(customConfig, silentLogger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
             
             expect(Highlighting.CONFIG.SELECTORS.CUSTOM).toBe('[data-custom]');
             expect(Highlighting.CONFIG.TIMING.REHYDRATION_DELAY).toBe(100);
@@ -111,7 +111,7 @@ describe('Highlighting - Integration Tests', () => {
 
     describe('confidence management', () => {
         beforeEach(async () => {
-            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
         });
 
         test('sets active confidence from color', () => {
@@ -130,7 +130,7 @@ describe('Highlighting - Integration Tests', () => {
 
     describe('highlight management', () => {
         beforeEach(async () => {
-            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
         });
 
         test('adds sections from database records', () => {
@@ -212,7 +212,7 @@ describe('Highlighting - Integration Tests', () => {
 
     describe('mouse selection', () => {
         beforeEach(async () => {
-            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
             Highlighting.setActiveConfidenceFromColor('red');
         });
 
@@ -268,7 +268,7 @@ describe('Highlighting - Integration Tests', () => {
 
     describe('event handling', () => {
         beforeEach(async () => {
-            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
         });
 
         test('handles confidence changed events', () => {
@@ -323,7 +323,7 @@ describe('Highlighting - Integration Tests', () => {
 
     describe('persistence', () => {
         beforeEach(async () => {
-            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
             Highlighting.setActiveConfidenceFromColor('amber');
         });
 
@@ -374,7 +374,7 @@ describe('Highlighting - Integration Tests', () => {
 
     describe('legacy API compatibility', () => {
         beforeEach(async () => {
-            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
         });
 
         test('maintains getHighlights() compatibility', () => {
@@ -389,7 +389,7 @@ describe('Highlighting - Integration Tests', () => {
 
     describe('practice mode selection disable/enable', () => {
         beforeEach(async () => {
-            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants);
+            await Highlighting.init({}, silentLogger, mockConfidence, global.window.PlayTimeConstants, { database: global.window.PlayTimeDB });
         });
 
         test('should disable selection when disableSelection() is called', () => {

@@ -89,7 +89,7 @@ describe('Highlight Annotation Persistence', () => {
             }
         };
         
-        highlighting.init(mockViewer, mockLogger, mockConfidence, mockConstants);
+    highlighting.init(mockViewer, mockLogger, mockConfidence, mockConstants, { database: mockDatabase });
         highlighting._components.persistenceService = persistenceService;
     });
 

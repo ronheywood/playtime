@@ -95,7 +95,15 @@ describe('Highlight Creation with Immediate Annotation', () => {
 
         // Initialize highlighting system
         highlighting = global.PlayTimeHighlighting;
-        highlighting.init({}, silentLogger, mockConfidenceModule, mockConstantsModule);
+        // Ensure a mock database is available for deps
+        global.window.PlayTimeDB = {
+            addHighlight: jest.fn().mockResolvedValue(true),
+            getHighlights: jest.fn().mockResolvedValue([]),
+            getHighlight: jest.fn().mockResolvedValue(null),
+            updateHighlight: jest.fn().mockResolvedValue(true)
+        };
+
+        highlighting.init({}, silentLogger, mockConfidenceModule, mockConstantsModule, { database: global.window.PlayTimeDB });
 
         // Mock persistence service
         highlighting._components.persistenceService = {

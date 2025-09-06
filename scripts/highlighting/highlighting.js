@@ -126,14 +126,14 @@
 
         // Public API Methods
 
-        async init(config = {}, logger = console, confidenceModule = null, constantsModule = null) {
+    async init(config = {}, logger = console, confidenceModule = null, constantsModule = null, deps = null) {
             this._state.logger = logger || console;
             
             // Merge configuration
             this.CONFIG = this._mergeConfig(config);
             
-            // Initialize components with injected dependencies
-            this._initializeComponents(confidenceModule, constantsModule);
+            // Initialize components with injected dependencies (deps is required)
+            this._initializeComponents(confidenceModule, constantsModule, deps);
             
             // Discover DOM elements
             if (!this._discoverDOMElements()) {
@@ -411,7 +411,7 @@
             };
         },
 
-        _initializeComponents(confidenceModule = null, constantsModule = null) {
+    _initializeComponents(confidenceModule = null, constantsModule = null, deps = null) {
             // Ensure confidence module is available
             if (!confidenceModule) {
                 throw new Error('Confidence module must be injected via init() method');
@@ -435,7 +435,14 @@
                 minSelectionSize: this.CONFIG.SELECTION
             });
 
-            this._components.persistenceService = new HighlightPersistenceServiceClass();
+            // Persistence service must be constructed with a database provided by deps
+            if (!deps || !deps.database) {
+                throw new Error('Dependencies object (deps) with a `database` property must be provided to init()');
+            }
+
+            this._components.persistenceService = new HighlightPersistenceServiceClass(deps.database, this._state.logger, {
+                // pass any persistence-specific configuration here in future
+            });
 
             this._components.eventCoordinator = new HighlightEventCoordinatorClass({
                 events: CONST.EVENTS,
@@ -484,8 +491,7 @@
                 )
                 .onComplete((selection) => this._handleSelectionComplete(selection));
 
-            // Setup persistence service
-            this._components.persistenceService.setDatabase(window.PlayTimeDB);
+            // Persistence service is already constructed with the database via deps
 
             // Initialize event coordinator
             this._components.eventCoordinator

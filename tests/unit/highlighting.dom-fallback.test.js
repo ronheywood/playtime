@@ -12,11 +12,15 @@ describe('Highlighting - DOM fallback for pre-selected confidence', () => {
           <canvas id="pdf-canvas" data-role="pdf-canvas" width="400" height="400"></canvas>
         </div>
       </div>`;
+    global.window.PlayTimeDB = {
+      addHighlight: jest.fn().mockResolvedValue(1),
+      getHighlights: jest.fn().mockResolvedValue([])
+    };
   });
 
   test('sets activeConfidence from pre-selected button and creates highlight', async () => {
     const logger = { warn: jest.fn(), debug: jest.fn() };
-    await Highlighting.init({}, logger, confidence, PT_CONSTANTS);
+  await Highlighting.init({}, logger, confidence, PT_CONSTANTS, { database: global.window.PlayTimeDB });
     expect(Highlighting._state.activeConfidence).not.toBeNull();
     const canvas = document.getElementById('pdf-canvas');
     canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles:true, clientX:50, clientY:50 }));
@@ -25,5 +29,10 @@ describe('Highlighting - DOM fallback for pre-selected confidence', () => {
     const highlight = document.querySelector('[data-role="highlight"]');
     expect(highlight).toBeTruthy();
     expect(highlight.getAttribute('data-color')).toBe('green');
+  });
+
+  afterEach(() => {
+    delete global.window.PlayTimeDB;
+    document.body.innerHTML = '';
   });
 });

@@ -65,7 +65,8 @@ describe('Event-Driven Scroll Timing', () => {
             {},
             { info: () => {}, warn: () => {}, error: () => {} },
             mockConfidence,
-            mockConstants
+            mockConstants,
+            { database: global.window.PlayTimeDB }
         );
 
         // Spy on scrollIntoView

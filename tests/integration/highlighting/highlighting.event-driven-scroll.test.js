@@ -5,6 +5,11 @@
 const Highlighting = require('../../../scripts/highlighting/highlighting.js');
 const TestHelpers = require('../../helpers/test-helpers');
 
+// Provide commonly used mocks
+const mockLogger = { info: () => {}, warn: () => {}, error: () => {} };
+const mockConfidence = TestHelpers.createMockConfidenceModule();
+const mockConstants = TestHelpers.createMockConstantsModule();
+
 describe('Event-Driven Scroll Timing', () => {
     let layoutEventSpy;
     let scrollSpy;
@@ -27,13 +32,14 @@ describe('Event-Driven Scroll Timing', () => {
             getCurrentPage: jest.fn().mockReturnValue(1)
         };
 
-        // Initialize highlighting module
-        await Highlighting.init(
-            {},
-            { info: () => {}, warn: () => {}, error: () => {} },
-            TestHelpers.createMockConfidenceModule(),
-            TestHelpers.createMockConstantsModule()
-        );
+            // Initialize highlighting module
+            await Highlighting.init(
+                {},
+                mockLogger,
+                mockConfidence,
+                mockConstants,
+                { database: global.window.PlayTimeDB }
+            );
 
         // Setup spies
         layoutEventSpy = jest.fn();

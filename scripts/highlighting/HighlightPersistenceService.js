@@ -3,7 +3,10 @@
  * Abstracts database interactions and provides testable interface
  */
 class HighlightPersistenceService {
-    constructor(database = null, logger = null, config = {}) {
+    constructor(database, logger = null, config = {}) {
+        if (!database) {
+            throw new Error('HighlightPersistenceService requires a database instance (constructor injection)');
+        }
         this.database = database;
         this.logger = logger;
         this.config = {
@@ -16,9 +19,10 @@ class HighlightPersistenceService {
     /**
      * Set or update the database instance
      */
-    setDatabase(database) {
-        this.database = database;
-        return this;
+    // Deprecated: prefer constructor injection. Kept for compatibility but will
+    // throw to make misuse visible during migration.
+    setDatabase(/* database */) {
+        throw new Error('setDatabase is deprecated. Provide database via constructor injection to HighlightPersistenceService');
     }
 
     /**

@@ -65,7 +65,7 @@ describe('Highlighting: Canvas Size Monitoring System', () => {
         global.window.PlayTimeDB = mockDB;
         global.window.PlayTimePDFViewer = { getCurrentPage: jest.fn(() => 1) };
 
-        await Highlighting.init({}, mockLogger, mockConfidence, mockConstants);
+    await Highlighting.init({}, mockLogger, mockConfidence, mockConstants, { database: global.window.PlayTimeDB });
     });
 
     afterEach(() => {

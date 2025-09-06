@@ -10,11 +10,20 @@ describe('Highlighting - no confidence selection', () => {
       <div data-role="pdf-viewer" style="position:relative;width:400px;height:400px;">
         <canvas id="pdf-canvas" data-role="pdf-canvas" width="400" height="400"></canvas>
       </div>`;
+    global.window.PlayTimeDB = {
+      addHighlight: jest.fn().mockResolvedValue(1),
+      getHighlights: jest.fn().mockResolvedValue([])
+    };
+  });
+
+  afterEach(() => {
+    delete global.window.PlayTimeDB;
+    document.body.innerHTML = '';
   });
 
   test('does not create highlight without activeConfidence', async () => {
     const logger = { warn: jest.fn(), debug: jest.fn() };
-    await Highlighting.init({}, logger, confidence, PT_CONSTANTS);
+  await Highlighting.init({}, logger, confidence, PT_CONSTANTS, { database: global.window.PlayTimeDB });
     const canvas = document.querySelector('#pdf-canvas');
     const md = new MouseEvent('mousedown', { bubbles:true, clientX:50, clientY:50 });
     const mm = new MouseEvent('mousemove', { bubbles:true, clientX:150, clientY:120 });

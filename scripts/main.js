@@ -552,7 +552,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Initialize refactored highlighting with dependency injection
         if (window.PlayTimeHighlighting) {
             try {
-                await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants);
+                // Build deps object and pass explicit database to highlighting
+                const deps = {};
+                try {
+                    if (window.diContainer && typeof window.diContainer.get === 'function') {
+                        deps.database = window.diContainer.get('database');
+                    }
+                } catch (_) {}
+                // Fallback to legacy global DB if DI not present
+                deps.database = deps.database || window.PlayTimeDB;
+
+                await window.PlayTimeHighlighting.init({}, appLogger, window.PlayTimeConfidence, window.PlayTimeConstants, deps);
                 // Start with highlighting disabled - user must explicitly activate it
                 window.PlayTimeHighlighting.disableSelection();
                 appLogger.info('Highlighting initialized in disabled state');
