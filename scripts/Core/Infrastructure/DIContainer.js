@@ -215,13 +215,43 @@ class DIContainer {
                 }
             }
 
-            const highlighting = new HighlightingImpl();
+            // Support multiple shapes:
+            // - constructor function / class (new HighlightingImpl())
+            // - factory function (HighlightingImpl() returns instance)
+            // - plain object instance (use as-is)
+            let highlightingInstance = null;
+            try {
+                if (typeof HighlightingImpl === 'function') {
+                    // Try to construct; if constructing throws, try calling as factory
+                    try {
+                        highlightingInstance = new HighlightingImpl();
+                    } catch (ctorErr) {
+                        // Try factory invocation
+                        try {
+                            highlightingInstance = HighlightingImpl();
+                        } catch (factoryErr) {
+                            // Both construction and factory invocation failed
+                            throw ctorErr;
+                        }
+                    }
+                } else if (HighlightingImpl && typeof HighlightingImpl === 'object') {
+                    highlightingInstance = HighlightingImpl;
+                }
+            } catch (err) {
+                throw new Error('Failed to create PlayTimeHighlighting instance: ' + (err && err.message));
+            }
+
+            if (!highlightingInstance) {
+                throw new Error('PlayTimeHighlighting implementation not available');
+            }
+
             const config = {};
-            // Initialize using DI-provided database when available
-            highlighting.init(config, logger, window.PlayTimeConfidence, window.PlayTimeConstants, this.get('database'));
-            // Preserve global for legacy consumers
-            if (typeof window !== 'undefined') window.PlayTimeHighlighting = highlighting;
-            return highlighting;
+            // Do NOT call init here. Initialization requires the database and
+            // other runtime services that may not yet be registered when the
+            // container is resolving UI services. Let the application bootstrap
+            // (main.js) call init() when the environment is ready.
+            if (typeof window !== 'undefined') window.PlayTimeHighlighting = highlightingInstance;
+            return highlightingInstance;
         }, ['logger']);
     }
 
