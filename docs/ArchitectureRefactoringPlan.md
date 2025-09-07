@@ -831,3 +831,26 @@ A clean architecture foundation will make Sprint 3 features:
 - **More maintainable**
 
 This is the classic "slow down to speed up" scenario where architectural investment pays immediate dividends.
+
+## Case Study: Pragmatic UI changes added to PracticeSessionStarter (2025-09-07)
+
+Summary
+- During a bug fix to restore touch behavior for Practice and Focus modes we added UI-manipulation code (toggle text updates, confidence panel hiding, viewer-level CSS class changes) into `scripts/Practice/practice-session-starter.js` and `scripts/layout/focus-mode-handler.js`.
+- These changes were pragmatic and made the immediate UAT scenario pass, but they violated separation of concerns: the Practice starter now directly manipulates Highlighting UI state.
+
+Why this is a problem
+- Coupling: Practice startup logic should orchestrate practice-related services (layout, timer, persistence), not UI state for other features. Mixing these concerns makes the module harder to test and maintain.
+- Hidden side effects: Other code paths that enable/disable highlighting expect a single authoritative flow. By updating UI state in multiple places we create race conditions and UI drift (e.g., toggle text out-of-sync with real highlighting state).
+- Technical debt: Small, fast fixes like this accumulate into brittle patches that block future refactors and make it harder to migrate to a DI/AppState model.
+
+What we did instead (and why we reverted)
+- We initially added the UI updates to quickly unblock UAT. After reviewing the architecture implications we reverted the change and restored the original, minimal behavior in `practice-session-starter.js` and `focus-mode-handler.js`.
+- The correct long-term fix is to centralize UI state changes behind a service or AppState (see 'State Management' and 'Boundary Enforcement Strategy'). Practice/session/focus code should call a single service (e.g., HighlightingService.disable()) and that service should update UI and publish state changes.
+
+Recommended concrete follow-ups
+1. Implement a small `HighlightingService` that exposes `enable()`, `disable()`, and `getState()` and centralizes DOM updates (toggle text, confidence panel visibility, `highlighting-active` class).
+2. Inject `HighlightingService` into modules that need it (Practice starter, Focus handler, main.js) rather than calling `document.*` directly.
+3. Add unit tests that assert the UI state is controlled only by `HighlightingService` (prevent regressions).
+4. Add a lint rule or code-review checklist item: "Do not manipulate UI for other features inside domain modules; use services or events." 
+
+This case study is recorded here to capture the trade-off we made and the learning: pragmatic fixes are fine short-term, but they must be reconciled by an architectural follow-up to avoid rot.
