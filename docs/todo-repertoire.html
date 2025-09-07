@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Repertoire Practice — TODO (Static)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/styles/practice-mode.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    // Initialize lucide icons and theme for the static page to match the site
+    document.addEventListener('DOMContentLoaded', function () {
+      try { if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons(); } catch (e) {}
+
+      // Simple theme init similar to ThemeManager: respect ?theme=dark or saved preference
+      (function initTheme() {
+        const params = new URLSearchParams(window.location.search);
+        const urlTheme = params.get('theme');
+        const isValidUrlTheme = urlTheme === 'dark' || urlTheme === 'light';
+        const savedTheme = localStorage.getItem('playTime-theme') || 'light';
+        const initialTheme = isValidUrlTheme ? urlTheme : savedTheme;
+        if (initialTheme === 'dark') document.body.classList.add('dark');
+        else document.body.classList.remove('dark');
+      })();
+    });
+  </script>
+</head>
+<body>
+  <div class="container mx-auto p-6 space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold">Repertoire Practice</h1>
+        <p class="text-muted-foreground">Keep your repertoire fresh with regular performance practice</p>
+      </div>
+      <button class="btn btn-default inline-flex items-center gap-2">
+        <i data-lucide="music" class="w-4 h-4"></i>
+        <span>Add Repertoire</span>
+      </button>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+
+      <!-- Card 1 -->
+      <div class="card hover:shadow-lg transition-shadow">
+        <div class="p-4 border-b">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <div class="text-lg font-semibold">Moonlight Sonata - 1st Movement</div>
+              <div class="text-sm text-muted-foreground">Ludwig van Beethoven</div>
+            </div>
+            <span class="badge badge-outline bg-green-100 text-green-800">fresh</span>
+          </div>
+        </div>
+        <div class="p-4 space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+            <div class="flex items-center gap-2"> <i data-lucide="calendar" class="w-4 h-4"></i><span>...</span></div>
+            <div class="flex items-center gap-2"> <i data-lucide="clock" class="w-4 h-4"></i><span>6 min</span></div>
+            <div class="flex items-center gap-2"> <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>15 sessions</span></div>
+            <div class="text-muted-foreground">Intermediate</div>
+          </div>
+          <button class="btn w-full inline-flex items-center justify-center"><i data-lucide="play" class="w-4 h-4 mr-2"></i>Start Performance</button>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="card hover:shadow-lg transition-shadow">
+        <div class="p-4 border-b">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <div class="text-lg font-semibold">Prelude in C Major</div>
+              <div class="text-sm text-muted-foreground">Johann Sebastian Bach</div>
+            </div>
+            <span class="badge badge-outline bg-blue-100 text-blue-800">maintaining</span>
+          </div>
+        </div>
+        <div class="p-4 space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+            <div class="flex items-center gap-2"> <i data-lucide="calendar" class="w-4 h-4"></i><span>...</span></div>
+            <div class="flex items-center gap-2"> <i data-lucide="clock" class="w-4 h-4"></i><span>3 min</span></div>
+            <div class="flex items-center gap-2"> <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>8 sessions</span></div>
+            <div class="text-muted-foreground">Beginner</div>
+          </div>
+          <button class="btn w-full inline-flex items-center justify-center"><i data-lucide="play" class="w-4 h-4 mr-2"></i>Start Performance</button>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="card hover:shadow-lg transition-shadow">
+        <div class="p-4 border-b">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <div class="text-lg font-semibold">Ballade No. 1</div>
+              <div class="text-sm text-muted-foreground">Frédéric Chopin</div>
+            </div>
+            <span class="badge badge-outline bg-yellow-100 text-yellow-800">stale</span>
+          </div>
+        </div>
+        <div class="p-4 space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+            <div class="flex items-center gap-2"> <i data-lucide="calendar" class="w-4 h-4"></i><span>...</span></div>
+            <div class="flex items-center gap-2"> <i data-lucide="clock" class="w-4 h-4"></i><span>12 min</span></div>
+            <div class="flex items-center gap-2"> <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>22 sessions</span></div>
+            <div class="text-muted-foreground">Advanced</div>
+          </div>
+          <button class="btn w-full inline-flex items-center justify-center btn-secondary"><i data-lucide="play" class="w-4 h-4 mr-2"></i>Start Performance</button>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="card hover:shadow-lg transition-shadow">
+        <div class="p-4 border-b">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1">
+              <div class="text-lg font-semibold">Clair de Lune</div>
+              <div class="text-sm text-muted-foreground">Claude Debussy</div>
+            </div>
+            <span class="badge badge-outline bg-red-100 text-red-800">rusty</span>
+          </div>
+        </div>
+        <div class="p-4 space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+            <div class="flex items-center gap-2"> <i data-lucide="calendar" class="w-4 h-4"></i><span>...</span></div>
+            <div class="flex items-center gap-2"> <i data-lucide="clock" class="w-4 h-4"></i><span>5 min</span></div>
+            <div class="flex items-center gap-2"> <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>5 sessions</span></div>
+            <div class="text-muted-foreground">Intermediate</div>
+          </div>
+          <button class="btn w-full inline-flex items-center justify-center btn-destructive"><i data-lucide="play" class="w-4 h-4 mr-2"></i>Start Performance</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
