@@ -62,6 +62,27 @@
 3. **Highlight Persistence** - Save/load highlights to IndexedDB
 4. **Section Selection** - Make highlights clickable/selectable
 
+### Scores & Repertoire Mode (new)
+
+- [ ] **Extract Scores list into standalone section** (placed before current practice modes)
+  - [ ] Scores should be categorised as **"Learning"** (works-in-progress) and **"Repertoire"** (performance pieces)
+  - [ ] Provide filters/tags on the score list UI to switch between Learning and Repertoire views
+  - [ ] Show indicators on score cards (fresh, maintaining, stale, rusty) and last-practiced metadata
+
+- [ ] **Repertoire Practice Mode**
+  - [ ] Treat repertoire practice as a distinct practice mode focused on whole-section performance with page-turn support
+  - [ ] During a Repertoire session the app presents the full score (or sequential pages) and supports seamless page turns
+  - [ ] After a performance the user can mark specific sections as needing revision (adds them to Learning or a revision plan)
+  - [ ] Acceptance: User can start a Repertoire practice from a score card, perform through the piece with page turns, and mark sections for later revision
+  - [ ] Effort: 12-20 hours
+  - [ ] Files: `scripts/score-list.js`, `scripts/repertoire-mode.js` (new), UI templates in `layout/` and `Practice/`, `db/*` updates for practice history and revision flags
+
+- [ ] **Smart prompts & warmups**
+  - [ ] After a 25-minute cumulative practice session (or user-configured interval) optionally prompt the user with a Repertoire piece to play through as a cooldown/warmdown
+  - [ ] Provide a lightweight "Warm up with Repertoire" option on app startup or on returning to the app
+  - [ ] Acceptance: After a qualifying practice session the app will suggest a Repertoire piece; on return the user can choose a quick warm-up repertoire run
+
+
 ### Phase 1: Basic PDF Upload & Display
 - [ ] **File Upload Handler** (scripts/main.js)
   - [x] Listen for file input change events
@@ -97,6 +118,20 @@
   - [x] Load and display saved highlights
   - [x] Add description and notes to highlight
   - [ ] Edit/delete existing highlights
+
+### Inline Text Markers (fingering, underlines, small notes)
+
+- [ ] **Add support for inline text markers** (different from practice-section highlights)
+  - [ ] Allow users to place short text markers (e.g. fingering numbers, underlines, small rhythmic cues, melodic notes) directly over the PDF canvas
+  - [ ] Markers must be positioned relative to the PDF canvas coordinates (not the page DOM) so they stay aligned when pages or layouts change
+  - [ ] Markers must scale and reposition correctly when the canvas is zoomed or translated (match PDF.js scale/transform)
+  - [ ] Markers should be visually distinct from section highlights (smaller UI, editable text, optional underline/line annotations)
+  - [ ] Provide editing UI: add, move, resize, change text, delete
+  - [ ] Persist markers to IndexedDB alongside highlights (link to score + page + canvas transform metadata)
+  - [ ] Acceptance: User can add a fingering number or short note that stays correctly positioned and scaled while zooming and when reopening the score
+  - [ ] Effort: 6-10 hours
+  - [ ] Files: `scripts/text.js` (new), `db/*` persistence updates, UI: templates in `layout/` or `Practice/` where applicable
+
 
 ### Phase 4: Practice Features
   - [x] Focus whole score (See todo-focus-mode.html for an example)
