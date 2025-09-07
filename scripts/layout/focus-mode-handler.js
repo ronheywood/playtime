@@ -92,6 +92,21 @@ class FocusModeHandler {
      * @param {object} options - Focus options (currently unused)
      */
     enterFocusMode(options = {}) {
+        // If highlighting is active, disable it first to ensure touch behaviors are correct
+        try {
+            if (window.PlayTimeHighlighting && typeof window.PlayTimeHighlighting.disableSelection === 'function') {
+                window.PlayTimeHighlighting.disableSelection();
+            }
+            const toggleBtn = document.getElementById('highlighting-toggle');
+            if (toggleBtn) {
+                toggleBtn.setAttribute('aria-pressed', 'false');
+                toggleBtn.classList.remove('selected');
+            }
+            // Remove any highlighting-specific viewer class
+            const viewer = this.viewerContainer || document.querySelector('[data-role="pdf-viewer"]');
+            if (viewer && viewer.classList) viewer.classList.remove('highlighting-active');
+        } catch(_) {}
+
         this.canvas.setAttribute('data-focus-mode', 'active');
         if (this.sidebar) this.sidebar.style.display = 'none';
         // Add focus-mode class to viewer container (was previously done in highlighting module)

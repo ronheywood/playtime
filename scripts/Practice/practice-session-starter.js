@@ -21,13 +21,30 @@ class PracticeSessionStarter {
      * Setup practice mode environment (UI state, highlighting, layout)
      */
     async setupPracticeModeEnvironment() {
-        // Disable highlight selection during practice mode (DI-first: use injected service)
-        const highlighting = this.highlighting;
-        if (highlighting && typeof highlighting.disableSelection === 'function') {
-            highlighting.disableSelection();
-            this.logger.info('Practice Session Starter: Highlight selection disabled');
-            // Add visual indicator
-            this._showSelectionDisabledIndicator();
+        // If highlighting is active, disable it fully before entering practice mode.
+        // This prevents touch suppression (pinch/scroll) from being applied except when highlighting mode is active.
+        const highlighting = this.highlighting || (typeof window !== 'undefined' && window.PlayTimeHighlighting);
+        try {
+            if (highlighting) {
+                if (typeof highlighting.disableSelection === 'function') {
+                    highlighting.disableSelection();
+                    this.logger.info('Practice Session Starter: Highlight selection disabled');
+                }
+                // Also clear toggle UI if present
+                const toggleBtn = document.getElementById('highlighting-toggle');
+                if (toggleBtn) {
+                    toggleBtn.setAttribute('aria-pressed', 'false');
+                    toggleBtn.classList.remove('selected');
+                }
+                // Remove viewer-level highlighting class so CSS no longer forces touch-action:none
+                const viewer = document.querySelector('.pdf-viewer-container') || document.querySelector('[data-role="pdf-viewer"]');
+                if (viewer && viewer.classList) viewer.classList.remove('highlighting-active');
+
+                // Show visual indicator that selection is disabled
+                this._showSelectionDisabledIndicator();
+            }
+        } catch (e) {
+            this.logger.warn('Practice Session Starter: Error disabling highlighting before practice mode', { error: e && e.message });
         }
 
         // Set practice mode layout

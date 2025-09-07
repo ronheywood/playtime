@@ -309,6 +309,7 @@ function initializeConfidenceControls() {
 }
 
 // Initialize highlighting toggle controls
+// TODO: This should be in the UI orchestrator
 function initializeHighlightingToggle(logger = console) {
     const toggleButton = document.getElementById('highlighting-toggle');
     const confidencePanel = document.getElementById('confidence-panel');
@@ -335,6 +336,14 @@ function initializeHighlightingToggle(logger = console) {
         if (confidencePanel) {
             confidencePanel.style.display = active ? 'block' : 'none';
         }
+
+        // Toggle a viewer-level class so CSS can target highlighting-specific touch behavior
+        try {
+            const viewerContainer = document.querySelector('.pdf-viewer-container') || document.querySelector('[data-role="pdf-viewer"]');
+            if (viewerContainer && viewerContainer.classList) {
+                viewerContainer.classList.toggle('highlighting-active', active);
+            }
+        } catch (_) { /* non-fatal */ }
         
         // Enable/disable highlighting in the highlighting module
         if (window.PlayTimeHighlighting) {

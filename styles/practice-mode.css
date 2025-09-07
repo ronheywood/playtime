@@ -270,9 +270,9 @@ body {
         padding: 0.875rem;
     }
     
-    /* Better canvas interaction feedback */
+    /* Better canvas interaction feedback: do not globally disable touch actions here.
+       Highlighting-specific rules control touch-action when highlighting is active. */
     #pdf-canvas {
-        touch-action: none; /* Disable default touch behaviors during selection */
         -webkit-user-select: none;
         user-select: none;
     }

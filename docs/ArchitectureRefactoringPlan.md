@@ -712,6 +712,14 @@ This addresses the core complexity issues identified in the architecture analysi
 - [ ] **Implementation**:
   ```javascript
   // Centralized state with change notifications
+  ***Example: 
+  A bug in the highliighting state. 
+  User clicks Highlight Sections and the UI allows drawing on the canvas
+  Button changes to "Exit Highlighting"
+  The bug is becauase focus mode and practice mode independently disable highlighting - the button text remains "Exit Highlighting"
+  but the application state is already changed
+  We need one flow to enable and disable highlighting that can be triggered by many events in the UI
+  ***
   class AppState {
     constructor() {
       this.state = {
