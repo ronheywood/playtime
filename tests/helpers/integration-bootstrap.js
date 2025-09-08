@@ -272,6 +272,45 @@ async function bootstrapApplicationForTests() {
                                     updateHighlightVisibility();
                                 });
                                 
+                                // Listen for score selection events to rehydrate highlights from database
+                                window.addEventListener('playtime:score-selected', async (e) => {
+                                    const pdfId = e.detail.pdfId;
+                                    
+                                    // Clear existing highlights
+                                    mockHighlights.forEach(highlight => {
+                                        if (highlight.parentNode) {
+                                            highlight.parentNode.removeChild(highlight);
+                                        }
+                                    });
+                                    mockHighlights.length = 0;
+                                    
+                                    // Get database and load highlights for this PDF
+                                    try {
+                                        const database = global.window.createPlayTimeDB?.() || global.window.PlayTimeDB;
+                                        if (database && typeof database.getHighlights === 'function') {
+                                            const highlights = await database.getHighlights(pdfId);
+                                            
+                                            // Create DOM elements for each highlight
+                                            highlights.forEach(highlightData => {
+                                                const rect = {
+                                                    left: (highlightData.xPct || 0) * 300, // Assume 300px canvas width
+                                                    top: (highlightData.yPct || 0) * 200,  // Assume 200px canvas height
+                                                    width: (highlightData.wPct || 0.2) * 300,
+                                                    height: (highlightData.hPct || 0.1) * 200
+                                                };
+                                                
+                                                const color = highlightData.color || 
+                                                    (highlightData.confidence === 0 ? 'red' : 
+                                                     highlightData.confidence === 1 ? 'amber' : 'green');
+                                                     
+                                                createHighlight(rect, color, highlightData.page || 1);
+                                            });
+                                        }
+                                    } catch (e) {
+                                        console.warn('Failed to rehydrate highlights from database:', e);
+                                    }
+                                });
+                                
                                 return true;
                             }),
                             disableSelection: jest.fn(),
@@ -366,6 +405,19 @@ async function triggerDOMContentLoaded() {
     if (global.document && global.document.readyState !== 'loading') {
         global.document.dispatchEvent(new Event('DOMContentLoaded'));
     }
+    
+    // Simulate auto-selection of first score (like real app does)
+    // This triggers highlight rehydration for tests that expect it
+    setTimeout(() => {
+        try {
+            const scoreSelectedEvent = new CustomEvent('playtime:score-selected', {
+                detail: { pdfId: 1 }
+            });
+            window.dispatchEvent(scoreSelectedEvent);
+        } catch (e) {
+            // Silent fail in test environment
+        }
+    }, 10);
     
     return app;
 }
