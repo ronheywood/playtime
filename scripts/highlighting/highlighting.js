@@ -533,10 +533,17 @@
                 return;
             }
 
-            // Get current page
+            // Get current page from DI container
             let pageNum = null;
-            if (window.PlayTimePDFViewer && window.PlayTimePDFViewer.getCurrentPage) {
-                pageNum = window.PlayTimePDFViewer.getCurrentPage();
+            try {
+                if (window.diContainer && window.diContainer.has && window.diContainer.has('playTimePDFViewer')) {
+                    const pdfViewer = window.diContainer.get('playTimePDFViewer');
+                    if (pdfViewer && typeof pdfViewer.getCurrentPage === 'function') {
+                        pageNum = pdfViewer.getCurrentPage();
+                    }
+                }
+            } catch (e) {
+                this._state.logger.warn?.('Failed to get PDF viewer from DI container:', e);
             }
 
             // Create highlight element

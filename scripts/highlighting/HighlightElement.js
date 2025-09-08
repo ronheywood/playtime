@@ -48,10 +48,10 @@ class HighlightElement {
      * Create HighlightElement from stored database record
      */
     static fromDatabaseRecord(record) {
-        if (!record || typeof record !== 'object') {
-            throw new Error('fromDatabaseRecord requires a valid record object');
+        if (!record) {
+            throw new Error('fromDatabaseRecord requires a valid record');
         }
-
+        
         // Import ConfidenceMapper for color conversion
         const ConfidenceMapper = (typeof require !== 'undefined') ? 
             require('./ConfidenceMapper') : window.ConfidenceMapper;
@@ -68,14 +68,8 @@ class HighlightElement {
                     const mapper = new ConfidenceMapper(confidenceModule);
                     color = mapper.confidenceToColor(record.confidence);
                 } catch (e) {
-                    // Fallback to basic enum-to-color mapping
-                    const fallbackColors = { 0: 'red', 1: 'amber', 2: 'green' };
-                    color = fallbackColors[record.confidence] || record.color || 'amber';
+                    // Fall back to record.color if mapping fails
                 }
-            } else {
-                // Fallback without ConfidenceMapper
-                const fallbackColors = { 0: 'red', 1: 'amber', 2: 'green' };
-                color = fallbackColors[record.confidence] || record.color || 'amber';
             }
         }
         

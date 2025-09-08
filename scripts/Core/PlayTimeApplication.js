@@ -29,6 +29,9 @@ class PlayTimeApplication {
             // Initialize dependency injection container
             this.diContainer = window.createDiContainer();
             this.diContainer.initialize();
+            
+            // Expose DI container globally for legacy modules
+            window.diContainer = this.diContainer;
 
             // Get core services
             this.logger = this.diContainer.get('logger');
