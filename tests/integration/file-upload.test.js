@@ -139,7 +139,7 @@ describe('File Upload Integration', () => {
         expect(mockPDFViewer.renderPage).not.toHaveBeenCalled();
         
         const statusElement = pdfViewer.querySelector('.status-message');
-        expect(statusElement.textContent).toContain('Error loading PDF');
+        expect(statusElement.textContent).toContain('Error: PDF data not found');
         expect(statusElement.getAttribute('data-status')).toBe('error');
         
         // Restore original method
