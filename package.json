@@ -29,6 +29,10 @@
     "playwright": "^1.40.0"
   },
   "jest": {
+    "globals": {
+      "__dirname": true
+    },
+    "transform": {},
     "testEnvironment": "jsdom",
     "testMatch": ["**/tests/**/*.test.js"],
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
@@ -39,18 +43,30 @@
     "projects": [
       {
         "displayName": "acceptance",
+        "globals": {
+          "__dirname": true
+        },
+        "transform": {},
         "testMatch": ["<rootDir>/tests/acceptance/**/*.test.js"],
         "testEnvironment": "jsdom",
         "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]
       },
       {
         "displayName": "integration", 
+        "globals": {
+          "__dirname": true
+        },
+        "transform": {},
         "testMatch": ["<rootDir>/tests/integration/**/*.test.js"],
         "testEnvironment": "jsdom",
         "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]
       },
       {
         "displayName": "unit",
+        "globals": {
+          "__dirname": true
+        },
+        "transform": {},
         "testMatch": ["<rootDir>/tests/unit/**/*.test.js"],
         "testEnvironment": "node",
         "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"]

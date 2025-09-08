@@ -142,7 +142,13 @@ describe('PracticeSessionManager', () => {
             expect(manager.timer).toBe(mockTimer);
             expect(manager.practiceSessionStarter).toBe(mockStarter);
             expect(manager.practicePlanPersistenceService).toBe(mockPersistenceService);
-            expect(manager.database).toBe(mockDatabase);
+            
+            // The adapter wraps the database in a PracticePersistence facade
+            expect(manager.database).toBeDefined();
+            expect(manager.database.constructor.name).toBe('PracticePersistence');
+            expect(manager.database.database).toBe(mockDatabase); // The original database is wrapped
+            expect(manager.database.logger).toBe(mockLogger); // Logger is injected into persistence
+            
             expect(manager.practiceSession).toBeNull();
             expect(manager.practiceSessionTimer).toBeNull();
             expect(manager.wakeLock).toBeNull();
