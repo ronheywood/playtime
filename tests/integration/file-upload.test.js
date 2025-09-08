@@ -8,7 +8,7 @@ const TestHelpers = require('../helpers/test-helpers');
 describe('File Upload Integration', () => {
     let mockDatabase;
     
-    beforeEach(() => {
+    beforeEach(async () => {
         // Setup DOM for file upload testing
         TestHelpers.setupFileUploadDOM();
         
@@ -37,13 +37,10 @@ describe('File Upload Integration', () => {
         };
         
         // Setup main.js integration (this will create default mocks)
-        TestHelpers.setupMainJSIntegration();
+        await TestHelpers.setupMainJSIntegration();
         
-        // Override the database mock with our custom one AFTER main.js setup
-        global.window.PlayTimeDB = mockDatabase;
-        
-        // Initialize the file upload handler with dependency injection
-        initializeFileUpload(mockDatabase);
+        // The file upload is already initialized by PlayTimeApplication.setupFileUpload()
+        // during the bootstrap, so no manual initialization needed
     });
     
     afterEach(() => {
@@ -64,12 +61,12 @@ describe('File Upload Integration', () => {
     
     test('should handle PDF file type validation', () => {
         const fileInput = document.querySelector('#pdf-upload');
-        const pdfViewer = document.querySelector('.pdf-viewer-container');
         
         const invalidFile = { name: 'document.txt', type: 'text/plain' };
         TestHelpers.simulateFileUpload(fileInput, invalidFile);
         
-        expect(pdfViewer.textContent).toContain('Error: Please select a PDF file');
+        const statusElement = document.querySelector('.status-message');
+        expect(statusElement.textContent).toContain('Error: Please select a PDF file');
     });
     
     test('should clear previous selection when new file is chosen', () => {

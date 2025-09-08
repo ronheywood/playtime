@@ -218,6 +218,7 @@ const TestHelpers = {
             </div>
             <div class="pdf-viewer-container">
                 <canvas id="pdf-canvas"></canvas>
+                <div class="status-message"></div>
             </div>
             <div class="viewer-controls">
                 <button id="prev-page-btn" data-role="prev-page" aria-label="Previous page">◀</button>

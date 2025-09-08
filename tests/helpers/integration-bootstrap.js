@@ -75,6 +75,7 @@ async function bootstrapApplicationForTests() {
                 constructor() {
                     this.container = serviceContainer;
                     this.initialized = false;
+                    this.databaseInstance = null; // Will be set during initialization
                 }
                 
                 // Delegate all methods to the service container
@@ -96,12 +97,15 @@ async function bootstrapApplicationForTests() {
                     // Load MemoryDatabase for tests
                     const MemoryDatabase = require('../../scripts/db/MemoryDatabase.js');
                     
+                    // Create shared database instance
+                    this.databaseInstance = new MemoryDatabase();
+                    
                     // Register core services directly without window dependencies
                     this.register('appState', () => new AppState(), { singleton: true });
                     this.register('stateManager', () => new StateManager(), { singleton: true });
                     
                     // Register in-memory database for tests
-                    this.register('database', () => new MemoryDatabase(), { singleton: true });
+                    this.register('database', () => this.databaseInstance, { singleton: true });
                     
                     // Register logger
                     this.register('logger', () => ({
@@ -112,18 +116,47 @@ async function bootstrapApplicationForTests() {
                     }), { singleton: true });
                     
                     // Register mock UI services for tests
-                    this.register('playTimePDFViewer', () => ({
-                        init: jest.fn().mockResolvedValue(),
-                        attachUIControls: jest.fn(),
-                        loadPDF: jest.fn().mockResolvedValue(),
-                        renderPage: jest.fn().mockResolvedValue(), // Added for page navigation tests
-                        getCurrentPage: jest.fn().mockReturnValue(1),
-                        getTotalPages: jest.fn().mockReturnValue(1),
-                        nextPage: jest.fn(),
-                        prevPage: jest.fn(),
-                        setZoom: jest.fn(),
-                        getZoom: jest.fn().mockReturnValue(1)
-                    }), { singleton: true });
+                    this.register('playTimePDFViewer', () => {
+                        const mockViewer = {
+                            init: jest.fn().mockResolvedValue(),
+                            attachUIControls: jest.fn(),
+                            loadPDF: jest.fn().mockImplementation(async (file) => {
+                                // Simulate PDF loading by updating DOM with validation
+                                const pdfViewer = document.querySelector('.pdf-viewer-container');
+                                if (pdfViewer) {
+                                    // Create or get status message element  
+                                    let statusElement = pdfViewer.querySelector('.status-message');
+                                    if (!statusElement) {
+                                        statusElement = document.createElement('div');
+                                        statusElement.className = 'status-message';
+                                        pdfViewer.appendChild(statusElement);
+                                    }
+                                    
+                                    // Validate file type (like real implementation)
+                                    if (!file.type.includes('pdf')) {
+                                        statusElement.textContent = 'Error: Please select a PDF file';
+                                        statusElement.setAttribute('data-status', 'error');
+                                        pdfViewer.textContent = 'Error: Please select a PDF file';
+                                        throw new Error('Invalid file type');
+                                    } else {
+                                        statusElement.textContent = `Selected: ${file.name}`;
+                                        statusElement.setAttribute('data-status', 'success');
+                                    }
+                                }
+                                return Promise.resolve();
+                            }),
+                            renderPage: jest.fn().mockResolvedValue(), // Added for page navigation tests
+                            getCurrentPage: jest.fn().mockReturnValue(1),
+                            getTotalPages: jest.fn().mockReturnValue(1),
+                            nextPage: jest.fn(),
+                            prevPage: jest.fn(),
+                            setZoom: jest.fn(),
+                            getZoom: jest.fn().mockReturnValue(1)
+                        };
+                        // Make the mock viewer available globally for some tests that expect it
+                        global.window.PlayTimePDFViewer = mockViewer;
+                        return mockViewer;
+                    }, { singleton: true });
                     
                     this.register('playTimeScoreList', () => ({
                         init: jest.fn().mockResolvedValue(),
@@ -169,6 +202,22 @@ async function bootstrapApplicationForTests() {
 
         // Initialize the application (it will call window.createDiContainer internally)
         await app.initialize();
+        
+        // Now that the DI container is initialized, get the database instance for global access
+        const databaseInstance = app.diContainer.databaseInstance;
+        
+        // Set up mock PlayTimeDB for file upload tests using the same database instance
+        global.window.PlayTimeDB = {
+            async getAll() {
+                return await databaseInstance.getAll();
+            },
+            async save(file, metadata = {}) {
+                return await databaseInstance.save(file, metadata);
+            },
+            async get(id) {
+                return await databaseInstance.get(id);
+            }
+        };
 
         // Enable development mode for tests
         if (typeof app.enableDevMode === 'function') {

@@ -31,7 +31,25 @@
   - [ ] **Effort**: 12 hours
   - [ ] **Files**: `scripts/core/AppState.js`, `scripts/core/StateManager.js`
 
-**Total Architecture Sprint**: 80 hours (2 weeks) - **MUST COMPLETE BEFORE SPRINT 3**
+- [ ] **🔥 CRITICAL: Fix Component Integration Testing Architecture**
+  - [ ] **Problem**: PDF viewer mock requires 25+ lines of DOM manipulation and business logic duplication
+  - [ ] **Root Cause**: PDF viewer component violates Single Responsibility Principle
+    - Handles file validation (should be FileValidator service)
+    - Manages status messages (should be StatusMessageService)
+    - Creates DOM elements (should be declarative UI layer)
+    - Tightly coupled to specific CSS selectors
+  - [ ] **Solution**: Separate concerns into focused services
+    ```javascript
+    // Instead of monolithic PDF viewer
+    class FileUploadHandler {
+      constructor(validator, statusService, pdfViewer) {...}
+    }
+    ```
+  - [ ] **Impact**: Test mocking will reduce from 25 lines to 3 lines, better maintainability
+  - [ ] **Effort**: 8 hours
+  - [ ] **Files**: Extract `FileValidator.js`, `StatusMessageService.js`, refactor `pdf-viewer.js`
+
+**Total Architecture Sprint**: 88 hours (2.2 weeks) - **MUST COMPLETE BEFORE SPRINT 3**
 
 ## 🚀 Implementation Priority Queue (AFTER Architecture Sprint)
 
