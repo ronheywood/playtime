@@ -226,6 +226,9 @@ async function bootstrapApplicationForTests() {
 
         console.log('✅ PlayTime Application bootstrapped successfully (No Window Dependencies)');
         
+        // Store app instance for tests that need to access DI container
+        global.testApp = app;
+        
         return app;
 
     } catch (error) {

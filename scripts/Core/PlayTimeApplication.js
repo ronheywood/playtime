@@ -370,9 +370,12 @@ class PlayTimeApplication {
             await pdfViewer.loadPDF(file);
             await pdfViewer.renderPage(1);
 
-            // Save to database
+            // Get page count from loaded PDF
+            const pageCount = pdfViewer.getTotalPages ? pdfViewer.getTotalPages() : 1;
+
+            // Save to database with actual page count
             const database = this.diContainer.get('database');
-            const id = await database.save(file, { pages: 1 });
+            const id = await database.save(file, { pages: pageCount });
             window.PlayTimeCurrentScoreId = id;
 
             // Refresh score list
@@ -380,7 +383,7 @@ class PlayTimeApplication {
             await scoreList.refresh();
 
             // Dispatch score selected event
-            const detail = { pdfId: id, name: file.name, pages: 1 };
+            const detail = { pdfId: id, name: file.name, pages: pageCount };
             window.dispatchEvent(new CustomEvent('playtime:score-selected', { detail }));
 
         } catch (error) {

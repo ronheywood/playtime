@@ -101,34 +101,34 @@ describe('File Upload Integration', () => {
     test('should load PDF into viewer when valid file is uploaded', async () => {
         const fileInput = document.querySelector('#pdf-upload');
         
-        const mockPDFViewer = {
-            loadPDF: jest.fn(() => Promise.resolve()),
-            renderPage: jest.fn(() => Promise.resolve()),
-            init: jest.fn(() => Promise.resolve())
-        };
-        global.window.PlayTimePDFViewer = mockPDFViewer;
+        // Get the DI container's PDF viewer (this is what the app actually uses)
+        const app = global.testApp || window.testApp; // Should be set by bootstrap
+        const pdfViewer = app?.diContainer?.get('playTimePDFViewer');
+        
+        // Verify we can access the mock PDF viewer from DI container
+        expect(pdfViewer).toBeDefined();
+        expect(pdfViewer.loadPDF).toBeDefined();
         
         const mockFile = TestHelpers.createMockPDFFile('viewer-test.pdf');
         TestHelpers.simulateFileUpload(fileInput, mockFile);
         
         await TestHelpers.waitFor();
         
-        expect(mockPDFViewer.loadPDF).toHaveBeenCalledWith(mockFile);
-        expect(mockPDFViewer.renderPage).toHaveBeenCalledWith(TEST_CONSTANTS.FIRST_PAGE);
-        
-        delete global.window.PlayTimePDFViewer;
+        expect(pdfViewer.loadPDF).toHaveBeenCalledWith(mockFile);
+        expect(pdfViewer.renderPage).toHaveBeenCalledWith(TEST_CONSTANTS.FIRST_PAGE);
     });
     
     test('should handle PDF viewer loading errors gracefully', async () => {
         const fileInput = document.querySelector('#pdf-upload');
         const pdfViewer = document.querySelector('.pdf-viewer-container');
         
-        const mockPDFViewer = {
-            loadPDF: jest.fn(() => Promise.reject(new Error('Failed to load PDF'))),
-            renderPage: jest.fn(() => Promise.resolve()),
-            init: jest.fn(() => Promise.resolve())
-        };
-        global.window.PlayTimePDFViewer = mockPDFViewer;
+        // Get the DI container's PDF viewer
+        const app = global.testApp || window.testApp;
+        const mockPDFViewer = app?.diContainer?.get('playTimePDFViewer');
+        
+        // Override the loadPDF method to simulate an error
+        const originalLoadPDF = mockPDFViewer.loadPDF;
+        mockPDFViewer.loadPDF = jest.fn(() => Promise.reject(new Error('Failed to load PDF')));
         
         const mockFile = TestHelpers.createMockPDFFile('error-test.pdf');
         TestHelpers.simulateFileUpload(fileInput, mockFile);
@@ -142,23 +142,25 @@ describe('File Upload Integration', () => {
         expect(statusElement.textContent).toContain('Error loading PDF');
         expect(statusElement.getAttribute('data-status')).toBe('error');
         
-        delete global.window.PlayTimePDFViewer;
+        // Restore original method
+        mockPDFViewer.loadPDF = originalLoadPDF;
     });
 
     // New test: ensure pages are persisted as part of saved metadata
     test('should persist page count in database metadata', async () => {
         const fileInput = document.querySelector('#pdf-upload');
 
-        // Mock viewer to return a deterministic page count
-        const mockPDFViewer = {
-            loadPDF: jest.fn(() => Promise.resolve()),
-            renderPage: jest.fn(() => Promise.resolve()),
-            init: jest.fn(() => Promise.resolve()),
-            getTotalPages: jest.fn(() => 3)
-        };
-        global.window.PlayTimePDFViewer = mockPDFViewer;
+        // Get the DI container's PDF viewer and override getTotalPages BEFORE file upload
+        const app = global.testApp || window.testApp;
+        const mockPDFViewer = app?.diContainer?.get('playTimePDFViewer');
+        
+        // Override getTotalPages to return 3 pages (must be done before file upload)
+        const originalGetTotalPages = mockPDFViewer.getTotalPages;
+        mockPDFViewer.getTotalPages = jest.fn(() => 3);
 
         const mockFile = TestHelpers.createMockPDFFile('pages-meta.pdf');
+        
+        // Now simulate file upload with the mocked method in place
         TestHelpers.simulateFileUpload(fileInput, mockFile);
 
         await TestHelpers.waitFor(200);
@@ -168,6 +170,7 @@ describe('File Upload Integration', () => {
         expect(savedPdfs[0].name).toBe('pages-meta.pdf');
         expect(savedPdfs[0].pages).toBe(3);
 
-        delete global.window.PlayTimePDFViewer;
+        // Restore original method
+        mockPDFViewer.getTotalPages = originalGetTotalPages;
     });
 });

@@ -49,7 +49,56 @@
   - [ ] **Effort**: 8 hours
   - [ ] **Files**: Extract `FileValidator.js`, `StatusMessageService.js`, refactor `pdf-viewer.js`
 
-**Total Architecture Sprint**: 88 hours (2.2 weeks) - **MUST COMPLETE BEFORE SPRINT 3**
+- [ ] **🔥 CRITICAL: Eliminate Global Database Access (window.PlayTimeDB)**
+  - [ ] **Problem**: Tests and some application code access database via global `window.PlayTimeDB` instead of DI container
+  - [ ] **Root Cause**: Legacy pattern before proper dependency injection was established
+  - [ ] **Current Impact**: 
+    - Tests have mixed access patterns (`window.PlayTimeDB` vs `app.diContainer.get('database')`)
+    - Harder to mock and test database interactions
+    - Violates dependency injection principles
+    - Creates implicit dependencies rather than explicit constructor parameters
+  - [ ] **Solution**: All database access should go through DI container
+    ```javascript
+    // Instead of: await window.PlayTimeDB.getAll()
+    // Use: await this.database.getAll() (injected via constructor)
+    ```
+  - [ ] **Impact**: Cleaner architecture, easier testing, proper dependency management
+  - [ ] **Effort**: 6 hours
+  - [ ] **Files**: Update all tests to use DI container, remove `window.PlayTimeDB` setup in bootstrap
+
+- [ ] **🔥 CRITICAL: Extract File Upload Logic from PlayTimeApplication**
+  - [ ] **Problem**: `PlayTimeApplication.handleFileUpload()` contains business logic that should be in a dedicated component
+  - [ ] **Root Cause**: Application class is doing orchestration AND domain logic instead of pure orchestration
+  - [ ] **Current Impact**: 
+    - Application class is tightly coupled to file upload specifics
+    - Hard to test file upload logic in isolation
+    - Violates Single Responsibility Principle
+    - Makes the main application class bloated with domain concerns
+  - [ ] **Solution**: Extract to dedicated `FileUploadHandler` service
+    ```javascript
+    class FileUploadHandler {
+      constructor(pdfViewer, database, scoreList, statusService, logger) {
+        this.pdfViewer = pdfViewer;
+        this.database = database;
+        // ... other dependencies
+      }
+      
+      async handleUpload(file) {
+        // All the current handleFileUpload logic goes here
+      }
+    }
+    
+    // PlayTimeApplication just orchestrates:
+    setupFileUpload() {
+      const handler = this.diContainer.get('fileUploadHandler');
+      fileInput.addEventListener('change', (e) => handler.handleUpload(e.target.files[0]));
+    }
+    ```
+  - [ ] **Impact**: Testable file upload logic, cleaner application class, better separation of concerns
+  - [ ] **Effort**: 4 hours
+  - [ ] **Files**: Create `scripts/services/FileUploadHandler.js`, update `PlayTimeApplication.js`
+
+**Total Architecture Sprint**: 110 hours (2.8 weeks) - **MUST COMPLETE BEFORE SPRINT 3**
 
 ## 🚀 Implementation Priority Queue (AFTER Architecture Sprint)
 
