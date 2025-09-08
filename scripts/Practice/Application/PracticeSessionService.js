@@ -3,14 +3,10 @@
  * Pure business logic for managing practice sessions
  * No DOM dependencies - fully testable
  */
-const PracticeSession = (typeof window !== 'undefined' && window.PracticeSession) || require('../Domain/PracticeSession');
-const PracticeSection = (typeof window !== 'undefined' && window.PracticeSection) || require('../Domain/PracticeSection');
-const PracticePersistence = (typeof window !== 'undefined' && window.PracticePersistence) || require('../Infrastructure/PracticePersistence');
-
 class PracticeSessionService {
     constructor(persistence, logger, confidenceMapper) {
         // persistence should implement savePracticeSession, getPracticeSession, getHighlightsBySection, saveHighlight, updateHighlight
-        this.persistence = persistence instanceof PracticePersistence ? persistence : new PracticePersistence(persistence, logger);
+        this.persistence = persistence instanceof window.PracticePersistence ? persistence : new window.PracticePersistence(persistence, logger);
         this.logger = logger;
         this.confidenceMapper = confidenceMapper;
     }
@@ -281,5 +277,3 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
     window.PracticeSessionService = PracticeSessionService;
 }
-
-export default PracticeSessionService;

@@ -374,5 +374,3 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
     window.ScoreManagementService = ScoreManagementService;
 }
-
-export default ScoreManagementService;

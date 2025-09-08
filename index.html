@@ -205,9 +205,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
     <script src="scripts/Core/Infrastructure/ServiceContainer.js"></script>
-    <script type="module" src="scripts/db/AbstractDatabase.js"></script>
+    <script src="scripts/db/AbstractDatabase.js"></script>
     <script type="module" src="scripts/db/IndexedDBDatabase.js"></script>
-    <script type="module" src="scripts/Core/Infrastructure/DIContainer.js"></script>
+    <script src="scripts/Core/Infrastructure/AppState.js"></script>
+    <script src="scripts/Core/Infrastructure/StateManager.js"></script>
+    <script src="scripts/Core/Infrastructure/EventSystemManager.js"></script>
+    <script src="scripts/Practice/Infrastructure/PracticePersistence.js"></script>
+    <script src="scripts/Practice/Application/PracticeSessionService.js"></script>
+    <script src="scripts/highlighting/Application/HighlightingService.js"></script>
+    <script src="scripts/Scores/ScoreManagementService.js"></script>
+    <script src="scripts/Core/Infrastructure/DIContainer.js"></script>
 
     <script src="scripts/logger.js"></script>
     <script src="scripts/theme.js"></script>
@@ -230,15 +237,13 @@
     <!-- Focus mode styles -->
     <link rel="stylesheet" href="styles/focus-mode.css">
     <script src="scripts/layout/layout-commands.js"></script>
-    <script src="scripts/layout/focus-mode-handler.js"></script>
-    <script src="scripts/layout/focus-mode-commands.js"></script>
     <script src="scripts/Practice/templates/practice-planner-template.js"></script>
     <script src="scripts/Practice/PracticePlanPersistenceService.js"></script>
     <script src="scripts/Practice/practice-session-timer.js"></script>
     <script src="scripts/Practice/practice-session-manager.js"></script>
     <script src="scripts/Practice/practice-session-starter.js"></script>
     <script src="scripts/Practice/practice-planner.js"></script>
-    <script src="scripts/main.js"></script>
+    <script src="scripts/main.js" type="module"></script>
 
     <!-- Initialize Lucide icons after DOM is loaded -->
     <script>

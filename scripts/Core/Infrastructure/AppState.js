@@ -443,5 +443,3 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
     window.AppState = AppState;
 }
-
-export default AppState;

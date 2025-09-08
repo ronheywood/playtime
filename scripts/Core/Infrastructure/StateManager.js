@@ -417,5 +417,3 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
     window.StateManager = StateManager;
 }
-
-export default StateManager;

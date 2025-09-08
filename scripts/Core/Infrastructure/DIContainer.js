@@ -1,30 +1,6 @@
-/**
- * Application Dependency Injection Container
- * Configures and provides all application services
- */
-// Resolve ServiceContainer in a dual-mode way so this file can be required
-// Note: Avoid importing UI modules at top-level to keep this file usable
-// as an ES module in browsers and as CommonJS in tests. UI modules are
-// resolved lazily from globals or via require when needed.
-// from CommonJS test environments as well as imported by browser bundles.
-let ServiceContainer;
-try {
-    if (typeof require === 'function' && typeof module !== 'undefined' && module.exports) {
-        // CommonJS environment (Node/Jest)
-        // eslint-disable-next-line global-require
-        const mod = require('./ServiceContainer.js');
-        ServiceContainer = mod && (mod.default || mod);
-    } else {
-        // Browser environment - expect a global
-        ServiceContainer = (typeof window !== 'undefined' && window.ServiceContainer) || null;
-    }
-} catch (e) {
-    ServiceContainer = (typeof window !== 'undefined' && window.ServiceContainer) || null;
-}
-
 class DIContainer {
     constructor() {
-        this.container = new ServiceContainer();
+        this.container = new window.ServiceContainer();
         this.initialized = false;
     }
 
@@ -62,11 +38,24 @@ class DIContainer {
             if (window.PlayTimeDB) {
                 return window.PlayTimeDB;
             }
+            
+            // Create database instance if it doesn't exist
+            if (window.IndexedDBDatabase && window.AbstractDatabase) {
+                try {
+                    logger.info('Creating database instance...');
+                    window.PlayTimeDB = new window.IndexedDBDatabase(logger);
+                    return window.PlayTimeDB;
+                } catch (error) {
+                    logger.error('Failed to create database instance:', error);
+                    throw new Error('Failed to create database instance: ' + error.message);
+                }
+            }
+            
             // Provide a clearer message and allow logger to record the issue
             if (logger && typeof logger.error === 'function') {
-                try { logger.error('Database service requested before initialization'); } catch (_) {}
+                try { logger.error('Database classes not loaded or database service requested before initialization'); } catch (_) {}
             }
-            throw new Error('Database not initialized');
+            throw new Error('Database not initialized - database classes not available');
         }, ['logger']);
         
         this.container.singleton('highlightPersistenceService', (database, logger) => {
@@ -192,15 +181,6 @@ class DIContainer {
             }
             return new StateManager(appState, logger);
         }, ['appState', 'logger']);
-
-        // Component Factory - creates components with proper DI
-        this.container.singleton('componentFactory', (container, logger) => {
-            const ComponentFactory = window.ComponentFactory;
-            if (!ComponentFactory) {
-                throw new Error('ComponentFactory class not loaded');
-            }
-            return new ComponentFactory(container, logger);
-        }, ['container', 'logger']);
 
         // UI Highlighting - expose the PlayTimeHighlighting UI module via DI
         // Resolve the module directly from source in CommonJS/test environments.
@@ -366,6 +346,11 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = { DIContainer, diContainer };
 }
 
-export function createDiContainer() {
+function createDiContainer() {
     return new DIContainer();
+}
+
+// Make createDiContainer available globally
+if (typeof window !== 'undefined') {
+    window.createDiContainer = createDiContainer;
 }

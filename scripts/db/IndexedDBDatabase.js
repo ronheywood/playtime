@@ -521,4 +521,9 @@ export function createIndexedDBDatabase(logger = console) {
     return new IndexedDBDatabase(logger);
 }
 
+// Export for browser environments
+if (typeof window !== 'undefined') {
+    window.IndexedDBDatabase = IndexedDBDatabase;
+}
+
 
