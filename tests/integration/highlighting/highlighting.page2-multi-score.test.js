@@ -76,8 +76,10 @@ describe('Highlighting multi score page 2 reselect', () => {
     global.window.PlayTimeConstants = PT_CONSTANTS;
     
     require('../../../scripts/highlighting/highlighting.js');
-    require('../../../scripts/main.js');
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    // Bootstrap the application using test harness
+    const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
+    await triggerDOMContentLoaded();
     await new Promise(r=>setTimeout(r,120)); // allow auto-select first score and rehydrate (page 1 only visible)
   });
 

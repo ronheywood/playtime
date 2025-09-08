@@ -71,9 +71,9 @@ describe('Highlighting Page Visibility Integration', () => {
           } catch(_) {}
     global.window.PlayTimeConstants = PT_CONSTANTS;
 
-    // Trigger app init (main registers DOMContentLoaded listener on require)
-    require('../../../scripts/main.js');
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    // Bootstrap the application using test harness
+    const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
+    await triggerDOMContentLoaded();
     await new Promise(r => setTimeout(r, 15));
   });
 

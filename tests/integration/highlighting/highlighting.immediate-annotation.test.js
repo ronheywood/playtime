@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-require('../../../scripts/main.js');
+const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
 const { PT_CONSTANTS } = require('../../../scripts/constants.js');
 const TestHelpers = require('../../helpers/test-helpers');
 

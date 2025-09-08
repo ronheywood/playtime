@@ -55,9 +55,9 @@ describe('Highlighting initial load rehydration', () => {
     global.window.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
 
-    // First app load
-    require('../../../scripts/main.js');
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    // Bootstrap the application using test harness
+    const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
+    await triggerDOMContentLoaded();
     await new Promise(r => setTimeout(r, 25));
 
     // Upload a PDF
@@ -132,8 +132,9 @@ describe('Highlighting initial load rehydration', () => {
   global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
     const Highlighting2 = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting2;
-    require('../../../scripts/main.js');
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    // Bootstrap the application using test harness
+    await triggerDOMContentLoaded();
     await new Promise(r => setTimeout(r, 50));
   });
 

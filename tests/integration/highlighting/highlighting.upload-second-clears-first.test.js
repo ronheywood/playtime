@@ -98,8 +98,10 @@ describe('Second upload clears first score highlights', () => {
     global.window.PlayTimeConstants = PT_CONSTANTS;
     
     require('../../../scripts/highlighting/highlighting.js');
-    require('../../../scripts/main.js');
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    // Bootstrap the application using test harness
+    const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
+    await triggerDOMContentLoaded();
     await new Promise(r=>setTimeout(r,60));
   });
 

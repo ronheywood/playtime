@@ -403,19 +403,16 @@ const TestHelpers = {
 
     /**
      * Setup main.js integration for navigation testing
-     * Loads and evaluates main.js in the test environment
+     * Uses the test application bootstrap instead of eval'ing main.js
      */
-    setupMainJSIntegration: () => {
-        const path = require('path');
-        const fs = require('fs');
-        const mainJsPath = path.join(__dirname, '../../scripts/main.js');
-        const mainJsContent = fs.readFileSync(mainJsPath, 'utf8');
+    setupMainJSIntegration: async () => {
+        const { triggerDOMContentLoaded } = require('./integration-bootstrap');
         
         // Mock the required global objects for main.js
         TestHelpers.setupMainJsMocks();
         
-        // Execute main.js to define the functions and make them globally available
-        eval(mainJsContent);
+        // Bootstrap the application using the window-free test harness
+        const app = await triggerDOMContentLoaded();
 
         // Test-only compatibility shim: if the DI container wasn't used by main.js
         // and tests still expect a `window.PlayTimePDFViewer` global, create it
