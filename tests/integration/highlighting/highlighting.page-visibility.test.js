@@ -53,10 +53,6 @@ describe('Highlighting Page Visibility Integration', () => {
     // In-memory DB stub (minimal)
     global.window.createPlayTimeDB = () => ({ init: jest.fn().mockResolvedValue(true), save: jest.fn().mockResolvedValue(true), getAll: jest.fn().mockResolvedValue([]) });
 
-    // Real highlighting module
-    const Highlighting = require('../../../scripts/highlighting/highlighting.js');
-    global.window.PlayTimeHighlighting = Highlighting;
-
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../../scripts/confidence.js');
     global.window.PlayTimeConfidence = confidence;
@@ -71,9 +67,9 @@ describe('Highlighting Page Visibility Integration', () => {
           } catch(_) {}
     global.window.PlayTimeConstants = PT_CONSTANTS;
 
-    // Bootstrap the application using test harness
-    const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
-    await triggerDOMContentLoaded();
+    // Bootstrap the application using test harness (uses mocked highlighting via DI)
+    const { bootstrapApplicationForTests } = require('../../helpers/integration-bootstrap');
+    await bootstrapApplicationForTests();
     await new Promise(r => setTimeout(r, 15));
   });
 

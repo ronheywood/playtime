@@ -117,6 +117,19 @@ async function bootstrapApplicationForTests() {
                     
                     // Register mock UI services for tests
                     this.register('playTimePDFViewer', () => {
+                        let currentPage = 1;
+                        const totalPages = 3;
+                        
+                        const dispatchPageChanged = () => {
+                            try {
+                                const evName = 'playtime:page-changed';
+                                const ev = new CustomEvent(evName, { detail: { page: currentPage } });
+                                window.dispatchEvent(ev);
+                            } catch (e) {
+                                // Silent fail for test environment
+                            }
+                        };
+                        
                         const mockViewer = {
                             init: jest.fn().mockResolvedValue(),
                             attachUIControls: jest.fn(),
@@ -145,11 +158,25 @@ async function bootstrapApplicationForTests() {
                                 }
                                 return Promise.resolve();
                             }),
-                            renderPage: jest.fn().mockResolvedValue(), // Added for page navigation tests
-                            getCurrentPage: jest.fn().mockReturnValue(1),
-                            getTotalPages: jest.fn().mockReturnValue(1),
-                            nextPage: jest.fn(),
-                            prevPage: jest.fn(),
+                            renderPage: jest.fn().mockImplementation(async (page) => {
+                                currentPage = page;
+                                dispatchPageChanged();
+                                return Promise.resolve();
+                            }),
+                            getCurrentPage: jest.fn().mockImplementation(() => currentPage),
+                            getTotalPages: jest.fn().mockReturnValue(totalPages),
+                            nextPage: jest.fn().mockImplementation(async () => {
+                                if (currentPage < totalPages) {
+                                    currentPage += 1;
+                                    dispatchPageChanged();
+                                }
+                            }),
+                            prevPage: jest.fn().mockImplementation(async () => {
+                                if (currentPage > 1) {
+                                    currentPage -= 1;
+                                    dispatchPageChanged();
+                                }
+                            }),
                             setZoom: jest.fn(),
                             getZoom: jest.fn().mockReturnValue(1)
                         };
@@ -165,13 +192,105 @@ async function bootstrapApplicationForTests() {
                         getCurrentScore: jest.fn().mockReturnValue(null)
                     }), { singleton: true });
                     
-                    this.register('playTimeHighlighting', () => ({
-                        init: jest.fn().mockResolvedValue(),
-                        disableSelection: jest.fn(),
-                        enableSelection: jest.fn(),
-                        addHighlight: jest.fn(),
-                        removeHighlight: jest.fn()
-                    }), { singleton: true });
+                    this.register('playTimeHighlighting', () => {
+                        const mockHighlights = [];
+                        let isSelecting = false;
+                        let startPoint = null;
+                        let activeColor = 'green';
+                        let currentPage = 1;
+                        
+                        const updateHighlightVisibility = () => {
+                            mockHighlights.forEach(highlight => {
+                                const highlightPage = parseInt(highlight.dataset.page);
+                                if (highlightPage === currentPage) {
+                                    highlight.style.display = '';
+                                } else {
+                                    highlight.style.display = 'none';
+                                }
+                            });
+                        };
+                        
+                        const createHighlight = (rect, color = activeColor, page = currentPage) => {
+                            const element = document.createElement('div');
+                            element.setAttribute('data-role', 'highlight');
+                            element.setAttribute('data-color', color);
+                            element.dataset.confidence = String(color === 'red' ? 0 : color === 'amber' ? 1 : 2);
+                            element.dataset.page = String(page);
+                            element.style.position = 'absolute';
+                            element.style.left = rect.left + 'px';
+                            element.style.top = rect.top + 'px';
+                            element.style.width = rect.width + 'px';
+                            element.style.height = rect.height + 'px';
+                            element.style.background = `rgba(${color === 'red' ? '255,0,0' : color === 'amber' ? '255,193,7' : '0,255,0'}, 0.3)`;
+                            element.style.border = `2px solid ${color === 'red' ? 'red' : color === 'amber' ? '#ffa000' : 'green'}`;
+                            
+                            // Initially visible if on current page
+                            element.style.display = (page === currentPage) ? '' : 'none';
+                            
+                            mockHighlights.push(element);
+                            const viewer = document.querySelector('[data-role="pdf-viewer"]');
+                            if (viewer) {
+                                viewer.appendChild(element);
+                            }
+                            
+                            return element;
+                        };
+                        
+                        return {
+                            init: jest.fn().mockImplementation(async () => {
+                                // Set up mouse event listeners on canvas to simulate highlighting
+                                const canvas = document.querySelector('[data-role="pdf-canvas"]');
+                                if (canvas) {
+                                    canvas.addEventListener('mousedown', (e) => {
+                                        isSelecting = true;
+                                        startPoint = { x: e.clientX, y: e.clientY };
+                                    });
+                                    
+                                    canvas.addEventListener('mouseup', (e) => {
+                                        if (isSelecting && startPoint) {
+                                            const endPoint = { x: e.clientX, y: e.clientY };
+                                            const rect = {
+                                                left: Math.min(startPoint.x, endPoint.x),
+                                                top: Math.min(startPoint.y, endPoint.y),
+                                                width: Math.abs(endPoint.x - startPoint.x),
+                                                height: Math.abs(endPoint.y - startPoint.y)
+                                            };
+                                            
+                                            // Only create highlight if drag is significant
+                                            if (rect.width > 5 && rect.height > 5) {
+                                                createHighlight(rect, activeColor, currentPage);
+                                            }
+                                        }
+                                        isSelecting = false;
+                                        startPoint = null;
+                                    });
+                                }
+                                
+                                // Listen for page change events to update highlight visibility
+                                window.addEventListener('playtime:page-changed', (e) => {
+                                    currentPage = e.detail.page;
+                                    updateHighlightVisibility();
+                                });
+                                
+                                return true;
+                            }),
+                            disableSelection: jest.fn(),
+                            enableSelection: jest.fn(),
+                            getHighlights: jest.fn().mockReturnValue(mockHighlights),
+                            setActiveConfidenceFromColor: jest.fn().mockImplementation((color) => {
+                                activeColor = color;
+                            }),
+                            addHighlight: jest.fn().mockImplementation((highlightData) => {
+                                return createHighlight({
+                                    left: 100, top: 100, width: 100, height: 50
+                                }, highlightData?.color, highlightData?.page || currentPage);
+                            }),
+                            removeHighlight: jest.fn(),
+                            _state: {
+                                activeConfidence: 2
+                            }
+                        };
+                    }, { singleton: true });
                     
                     // Register mock persistence service
                     this.register('highlightPersistenceService', () => ({

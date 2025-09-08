@@ -98,6 +98,32 @@
   - [ ] **Effort**: 4 hours
   - [ ] **Files**: Create `scripts/services/FileUploadHandler.js`, update `PlayTimeApplication.js`
 
+- [ ] **🔥 CRITICAL: Integration Test Mock Complexity Crisis**
+  - [ ] **Problem**: Highlighting service mock has become a mini-application (80+ lines) re-implementing the real service
+  - [ ] **Root Cause**: Integration tests require full behavior simulation rather than focused unit testing
+  - [ ] **Current Impact**: 
+    - Mock highlighting service includes: DOM creation, mouse events, page navigation, state management, visibility logic
+    - Test maintenance burden equals maintaining two highlighting implementations
+    - Mock complexity approaching real implementation complexity (anti-pattern)
+    - 4 remaining integration tests need persistence layer added to mock (more complexity)
+  - [ ] **Evidence**: `tests/helpers/integration-bootstrap.js` lines 195-276 - complex state management
+    ```javascript
+    // This is essentially re-writing the highlighting service:
+    const mockHighlights = [];
+    let isSelecting = false;
+    let startPoint = null;
+    let activeColor = 'green';
+    let currentPage = 1;
+    // + 60 more lines of business logic
+    ```
+  - [ ] **Solution Options**:
+    1. **Refactor to focused unit tests** - Test highlighting service in isolation with simple mocks
+    2. **Use real highlighting service in integration tests** - Accept longer test runtime for accuracy 
+    3. **Hybrid approach** - Keep current 16/20 passing tests, unit test the edge cases
+  - [ ] **Impact**: Current 80% integration test success is good enough, focus effort on new features instead
+  - [ ] **Effort**: 12 hours for full refactor OR mark remaining 4 tests as known issues (0 hours)
+  - [ ] **Files**: `tests/helpers/integration-bootstrap.js`, potentially new unit test files
+
 **Total Architecture Sprint**: 110 hours (2.8 weeks) - **MUST COMPLETE BEFORE SPRINT 3**
 
 ## 🚀 Implementation Priority Queue (AFTER Architecture Sprint)
