@@ -107,6 +107,7 @@ class PlayTimeApplication {
             // Initialize PDF viewer
             const pdfViewer = this.diContainer.get('playTimePDFViewer');
             await pdfViewer.init();
+            pdfViewer.attachUIControls(); // Attach UI controls for navigation and zoom
             this.logger.info('PDF viewer initialized');
 
             // Initialize score list
@@ -204,6 +205,9 @@ class PlayTimeApplication {
 
         // Set up file upload
         this.setupFileUpload();
+
+        // Set up score selection handler
+        this.setupScoreSelectionHandler();
 
         this.logger.info('Event handlers set up');
     }
@@ -378,6 +382,52 @@ class PlayTimeApplication {
             this.logger.error('Failed to process uploaded PDF', error);
             this.showStatusMessage('Error loading PDF', 'error');
         }
+    }
+
+    /**
+     * Set up score selection handler
+     * Handles loading PDFs from database when scores are selected
+     */
+    setupScoreSelectionHandler() {
+        window.addEventListener('playtime:score-selected', async (event) => {
+            try {
+                const { pdfId } = event.detail;
+                if (!pdfId) {
+                    this.logger.warn('Score selected event missing pdfId');
+                    return;
+                }
+
+                this.logger.info(`🎯 Loading PDF from database: ${pdfId}`);
+
+                // Get PDF from database
+                const database = this.diContainer.get('database');
+                const pdf = await database.get(pdfId);
+
+                if (!pdf || !pdf.data) {
+                    this.logger.error(`PDF not found or missing data: ${pdfId}`);
+                    this.showStatusMessage('Error: PDF data not found', 'error');
+                    return;
+                }
+
+                // Create blob from database data
+                const blob = new Blob([pdf.data], { type: 'application/pdf' });
+                const file = new File([blob], pdf.filename || pdf.name || 'score.pdf', { type: 'application/pdf' });
+
+                // Load into PDF viewer
+                const pdfViewer = this.diContainer.get('playTimePDFViewer');
+                await pdfViewer.loadPDF(file);
+                await pdfViewer.renderPage(1);
+
+                // Set current score ID
+                window.PlayTimeCurrentScoreId = pdfId;
+
+                this.logger.info(`✅ PDF loaded successfully: ${pdf.filename || pdf.name}`);
+
+            } catch (error) {
+                this.logger.error('Failed to load selected score', error);
+                this.showStatusMessage('Error loading score', 'error');
+            }
+        });
     }
 
     /**

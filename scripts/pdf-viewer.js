@@ -391,4 +391,6 @@ function createPlayTimePDFViewer(logger = console) {
 // Export factory function for Node.js/testing
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = createPlayTimePDFViewer;
+} else if (typeof window !== 'undefined') {
+    window.createPlayTimePDFViewer = createPlayTimePDFViewer;
 }
