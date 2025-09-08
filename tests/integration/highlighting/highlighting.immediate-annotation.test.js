@@ -119,6 +119,17 @@ describe('Highlight Creation with Immediate Annotation', () => {
             getCurrentPage: jest.fn().mockReturnValue(1)
         };
 
+        // Mock DI container for new architecture
+        global.window.diContainer = {
+            has: jest.fn().mockImplementation((service) => service === 'playTimePDFViewer'),
+            get: jest.fn().mockImplementation((service) => {
+                if (service === 'playTimePDFViewer') {
+                    return global.window.PlayTimePDFViewer;
+                }
+                return null;
+            })
+        };
+
         // Mock global score ID
         global.PlayTimeCurrentScoreId = 'test-score-123';
     });
