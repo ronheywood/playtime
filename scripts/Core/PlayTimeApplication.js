@@ -183,6 +183,11 @@ class PlayTimeApplication {
                     );
                 }
 
+                // Initialize the practice planner to attach event handlers
+                if (window.PlayTimePracticePlanner && typeof window.PlayTimePracticePlanner.init === 'function') {
+                    window.PlayTimePracticePlanner.init();
+                }
+
                 this.logger.info('Practice planner initialized');
             }
         } catch (error) {
