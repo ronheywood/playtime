@@ -105,7 +105,7 @@ describe('HighlightElement', () => {
 
         test('throws on invalid record', () => {
             expect(() => HighlightElement.fromDatabaseRecord(null))
-                .toThrow('fromDatabaseRecord requires a valid record object');
+                .toThrow('fromDatabaseRecord requires a valid record');
         });
     });
 
