@@ -62,6 +62,7 @@ Focus on interfaces that provide immediate web benefits while enabling future po
 - Event bus abstraction (easier testing + cross-platform ready)
 - Storage interface (better mocking + platform agnostic)
 - Business logic extraction (cleaner architecture + reusable across platforms)
+- **Future Cloud Features**: SignalR integration points for real-time synchronization
 
 ### **Phase 2: Defer Complex UI Abstraction**
 Skip renderer/gesture abstraction until iOS port becomes reality. Current web-specific patterns acceptable for:
