@@ -369,7 +369,7 @@ class PracticeSessionComponent {
         }
     }
 
-    // UI Methods (to be implemented with Alpine.js in Sprint 3)
+    // UI Methods (to be implemented in Sprint 3)
 
     showPracticeMode() {
         // Show practice UI elements

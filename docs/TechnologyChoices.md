@@ -2,6 +2,78 @@
 
 This document outlines the key technology choices made for the rapid prototype of the PlayTime application, aligning with the goal of a lightweight, portable web application with offline capabilities for core features.
 
+## 🎯 **Cross-Platform Strategy Decision (Sep 9, 2025)**
+
+## 🎯 **Cross-Platform Strategy Decision (Sep 9, 2025)**
+
+**Expected Value Analysis**: After evaluating full platform abstraction vs. pragmatic hybrid approach:
+- **Probability of iOS port**: 20% (2 in 10 scenarios based on customer interest)
+- **Full abstraction cost**: 24 hours upfront + 15% slower web development
+- **Expected value**: +18 hours (pragmatic approach wins)
+
+**Decision**: **Pragmatic Hybrid Approach** - Smart abstractions that improve web development AND preserve cross-platform options.
+
+### **React Native Consideration (Sep 9, 2025)**
+
+**Alternative Migration Path Analysis**: React Native as potential iOS strategy:
+
+#### **Option Comparison at 20% Probability:**
+- **Pure Pragmatic (8h)**: +8h expected value (immediate web benefits, no mobile prep)
+- **React Native Ready (12h)**: +8h expected value (4h mobile prep + smaller web benefits)  
+- **Full Abstraction (24h)**: +5h expected value (over-engineering penalty)
+
+**Conclusion**: At 20% probability, React Native preparation **doesn't justify the 4h investment**. Both pragmatic and React Native ready approaches yield identical expected value (+8h).
+
+**Strategy**: 
+1. Implement smart abstractions (8h) for immediate web benefits
+2. Document clean React Native migration path in architecture
+3. **Wait for market signal** before investing in React Native compatibility
+4. Breakeven point: ~35-40% probability would justify React Native preparation
+
+**Rationale**: This is a real options problem - the option premium (4h) doesn't justify the expected payoff at current probability levels.
+
+### **React Migration Analysis (Sep 9, 2025)**
+
+**Question**: Would React speed up new feature development compared to vanilla JS + smart abstractions?
+
+#### **React Development Speed Analysis:**
+- **Simple Features** (dialogs, forms): React faster once established, vanilla competitive with good patterns
+- **Complex Features** (practice sessions, highlighting): React significant advantage with component state
+- **PDF Integration**: React potential complications, vanilla maintains direct control
+
+#### **Migration Cost vs Speed Benefit:**
+- **Migration cost**: 20h (convert existing codebase + build setup)
+- **Future development speed**: +25% faster with React
+- **Breakeven point**: 80h of future development (20h ÷ 0.25 = 80h)
+- **Current projection**: ~40h development planned
+- **Expected value**: (40h × 0.25) - 20h = **-10 hours**
+
+#### **Decision**: **Stick with Vanilla + Smart Abstractions**
+**Rationale**: 
+- Migration cost (20h) outweighs speed benefits at current development volume
+- Smart abstractions provide 70% of React's architectural benefits
+- PDF.js integration already optimized for vanilla approach
+- Maintains lightweight, fast-loading app characteristics
+
+**Threshold**: If future development exceeds 80h, React migration becomes worthwhile.
+
+### **Phase 1: Essential Abstractions (8 hours)**
+Focus on interfaces that provide immediate web benefits while enabling future portability:
+- Event bus abstraction (easier testing + cross-platform ready)
+- Storage interface (better mocking + platform agnostic)
+- Business logic extraction (cleaner architecture + reusable across platforms)
+
+### **Phase 2: Defer Complex UI Abstraction**
+Skip renderer/gesture abstraction until iOS port becomes reality. Current web-specific patterns acceptable for:
+- DOM manipulation
+- PDF.js integration
+- Canvas operations
+
+### **Rationale**
+- **80% scenarios**: Web-only forever - get cleaner architecture without over-engineering
+- **20% scenarios**: iOS port - business logic reuses 100%, UI layer needs platform-specific implementation
+- **Risk mitigation**: Document "portability debt" as web-specific code is created
+
 ## Core Technologies
 
 *   **HTML (HyperText Markup Language):**
@@ -57,7 +129,11 @@ This document outlines the key technology choices made for the rapid prototype o
 
 ## Summary
 
-The technology stack for the PlayTime rapid prototype prioritizes a lean, client-centric approach using standard web technologies and `IndexedDB` for quick implementation of local PDF storage and markup. This allows for rapid iteration and validation of core user needs before considering more complex backend or cloud-based solutions.
+The technology stack for the PlayTime rapid prototype prioritizes a lean, client-centric approach using standard web technologies and `IndexedDB` for quick implementation of local PDF storage and markup. 
+
+**Architecture Strategy**: Pragmatic hybrid approach balancing immediate web development velocity with future cross-platform options. Smart abstractions (event bus, storage interface, business logic) provide immediate benefits while preserving portability potential. Complex UI abstraction deferred until cross-platform need is validated.
+
+This allows for rapid iteration and validation of core user needs while maintaining architectural flexibility for future platform expansion.
 
 ## Architecure
 

@@ -6,12 +6,33 @@
 
 ## � **ARCHITECTURE TECHNICAL DEBT - PRIORITIZED BY IMPACT/EFFORT**
 
-> **Execution Strategy**: Based on impact vs effort analysis in `docs/ArchitectureRefactoringPlan.md`
-> **Total Effort**: 66 hours (1.65 weeks) | **Expected ROI**: 400% improvement in development velocity
+> **Cross-Platform Strategy (Sep 9, 2025)**: Pragmatic hybrid approach - smart abstractions that improve web development AND preserve cross-platform options
+> **Expected Value**: +18 hours vs full platform abstraction approach  
+> **Total Effort**: 58 hours (1.45 weeks) | **Expected ROI**: 350% improvement in development velocity
 
-### **🚀 QUICK WINS (Week 1: 10 hours) - HIGHEST ROI**
+### **🚀 SMART ABSTRACTIONS (Week 1: 8 hours) - DUAL BENEFIT**
 
-- [ ] **1. Extract File Upload Logic from PlayTimeApplication** ⚡ 4 hours | 🔥🔥🔥 Impact | ROI: 8.75x
+- [ ] **1. Create Event Bus Interface** ⚡ 3 hours | 🔥🔥🔥 Impact | Web Benefits: Easier testing, cleaner communication
+  - [ ] **Problem**: Direct DOM event usage makes testing harder and couples components  
+  - [ ] **Solution**: `IEventBus` interface with web implementation, easy to mock
+  - [ ] **Cross-Platform Bonus**: Ready for iOS port if needed
+  - [ ] **Files**: Create `scripts/core/EventBus.js` with interface pattern
+
+- [ ] **2. Create Storage Interface** ⚡ 3 hours | 🔥🔥🔥 Impact | Web Benefits: Better mocking, cleaner dependencies
+  - [ ] **Problem**: Direct IndexedDB usage in services makes testing complex
+  - [ ] **Solution**: `IStorage` interface with IndexedDB implementation
+  - [ ] **Cross-Platform Bonus**: Easy to swap for CoreData or other storage
+  - [ ] **Files**: Create `scripts/core/Storage.js` with interface pattern
+
+- [ ] **3. Extract File Upload Logic with Interfaces** ⚡ 2 hours | 🔥🔥🔥 Impact | Web Benefits: Testable logic, cleaner app
+  - [ ] **Problem**: Application class doing orchestration AND domain logic
+  - [ ] **Solution**: `FileUploadHandler` using event bus and storage interfaces
+  - [ ] **Cross-Platform Bonus**: Business logic reusable on any platform
+  - [ ] **Files**: Create `scripts/services/FileUploadHandler.js` using interfaces
+
+### **🔥 HIGH-IMPACT PROJECTS (Week 2: 18 hours) - CORE FOUNDATION**
+
+- [ ] **4. Extract Business Logic from UI Dependencies** ⚡⚡ 8 hours | 🔥🔥🔥🔥 Impact | Cross-Platform Ready
   - [ ] **Problem**: Application class doing orchestration AND domain logic instead of pure orchestration
   - [ ] **Solution**: Extract to dedicated `FileUploadHandler` service
   - [ ] **Impact**: Testable file upload logic, unblocks new features, cleaner application class
@@ -59,41 +80,51 @@
   - [ ] **Impact**: Eliminates `innerHTML` patterns, reactive state binding
   - [ ] **Files**: Gradual enhancement starting with practice dialogs
 
-## 📊 **EXECUTION STRATEGY & ROI ANALYSIS**
+## 📊 **EXECUTION STRATEGY & EXPECTED VALUE ANALYSIS**
 
-### **ROI Calculation Method**
-**ROI = (Impact Score × Development Velocity Multiplier) / Effort Hours**
-- Impact Scores: 🔥=1, 🔥🔥=2, 🔥🔥🔥=3, 🔥🔥🔥🔥=4, 🔥🔥🔥🔥🔥=5
-- Velocity Multipliers: Testing=3x, Feature Development=2x, Maintainability=1.5x
-- Effort: Actual hour estimates
+### **Cross-Platform Decision Framework**
+**Expected Value = Probability × Benefit - Investment Cost**
+- **iOS Port Probability**: 20% (2 in 10 successful scenarios)
+- **Full Platform Abstraction**: 24h investment, 100% cross-platform ready
+- **Smart Abstractions**: 8h investment, business logic cross-platform ready
+- **Result**: Smart abstractions provide 80% of cross-platform benefit for 33% of cost
 
 ### **Week-by-Week Execution**
 
-**Week 1 (10 hours): Foundation Cleanup**
-- ROI Target: 7.3x average
-- Deliverable: Clean file upload, consistent database access
-- Risk: Low (small, focused changes)
+**Week 1 (8 hours): Smart Abstractions**
+- ROI Target: Immediate web benefits + cross-platform options preserved
+- Deliverable: Event bus, storage interface, clean file upload
+- Risk: Low (interface patterns, incremental changes)
 
-**Week 2 (20 hours): Testing & State Infrastructure** 
-- ROI Target: 4.3x average
-- Deliverable: Sustainable testing patterns, centralized state
+**Week 2 (18 hours): Business Logic Extraction** 
+- ROI Target: 50% faster feature development
+- Deliverable: Platform-agnostic business services, centralized state
 - Risk: Medium (affects multiple components)
 
-**Week 3-4 (36 hours): Architectural Foundation**
-- ROI Target: 3.1x average  
-- Deliverable: Full dependency injection, business service layer
-- Risk: High (major architectural changes)
+**Week 3-4 (32 hours): Foundation Completion**
+- ROI Target: Full dependency injection, sustainable architecture
+- Deliverable: Service container, testing architecture
+- Risk: Medium (architectural changes, requires coordination)
 
-**Week 5 (Optional, 12-16 hours): UI Modernization**
-- ROI Target: 2.25x
-- Deliverable: Declarative UI patterns with Alpine.js
-- Risk: Low (progressive enhancement)
+**Week 5 (Optional, 12-16 hours): UI Enhancement**
+- ROI Target: Modern UI patterns with Alpine.js
+- Deliverable: Declarative templates, reactive state binding
+- Risk: Low (progressive enhancement, web-optimized choice acceptable)
 
 ### **Expected Outcomes**
-- **Testing Velocity**: 80% reduction in test setup complexity
-- **Feature Development**: 50% faster implementation 
-- **Maintenance**: 60% fewer bugs from architectural issues
-- **Team Onboarding**: 70% faster due to clear patterns
+- **Testing Velocity**: 70% reduction in test setup complexity (vs 80% with full abstraction)
+- **Feature Development**: 45% faster implementation (vs 50% with full abstraction)
+- **Cross-Platform Readiness**: Business logic 100% portable, UI layer platform-specific
+- **Risk**: If iOS port needed, UI layer requires platform-specific implementation (~2-3 weeks vs 6 months full rewrite)
+
+### **Portability Debt Tracking**
+Document web-specific patterns for future migration assessment:
+```typescript
+// TODO: Abstract for cross-platform
+const canvas = document.createElement('canvas');  // Web-specific
+PDF.js.getDocument(data);                        // Web-specific  
+Alpine.directive('x-data', ...);                 // Web-specific
+```
 
 ### **Integration Test Architecture Inconsistencies (RESOLVED)**
   - [ ] **Problem**: Integration tests have multiple conflicting architectural patterns causing fragile test setup
