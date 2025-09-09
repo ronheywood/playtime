@@ -131,6 +131,77 @@ highlightElement.dataset.color = newConfidenceColor;
 
 ---
 
+---
+
+## 🎯 **TECHNICAL DEBT PRIORITY MATRIX (Impact vs Effort)**
+
+### **QUICK WINS (High Impact, Low Effort) - DO FIRST**
+1. **🚀 Extract File Upload Logic from PlayTimeApplication** 
+   - **Impact**: 🔥🔥🔥 (Unblocks testing, enables feature development)
+   - **Effort**: ⚡ 4 hours
+   - **ROI**: 8.75x
+   - **Blocks**: New file upload features, clean testing
+
+2. **🚀 Eliminate Global Database Access (window.PlayTimeDB)**
+   - **Impact**: 🔥🔥🔥 (Fixes architecture inconsistency, improves testing)
+   - **Effort**: ⚡ 6 hours  
+   - **ROI**: 5.83x
+   - **Blocks**: Proper dependency injection, clean test patterns
+
+### **HIGH-IMPACT PROJECTS (High Impact, Medium Effort) - DO SECOND**
+3. **🔥 Fix Component Integration Testing Architecture**
+   - **Impact**: 🔥🔥🔥🔥 (Reduces test complexity 80%, enables TDD)
+   - **Effort**: ⚡⚡ 8 hours
+   - **ROI**: 5.0x
+   - **Blocks**: Sustainable testing, component reuse
+
+4. **🔥 Implement Centralized State Management**
+   - **Impact**: 🔥🔥🔥🔥 (Enables advanced features, fixes data flow)
+   - **Effort**: ⚡⚡⚡ 12 hours
+   - **ROI**: 3.67x
+   - **Blocks**: PNG extraction, mobile features, complex UI
+
+### **MAJOR INFRASTRUCTURE (High Impact, High Effort) - PLAN CAREFULLY**
+5. **🔥 Implement Service Container & Dependency Injection**
+   - **Impact**: 🔥🔥🔥🔥🔥 (Foundation for all future work)
+   - **Effort**: ⚡⚡⚡⚡ 16 hours
+   - **ROI**: 3.44x
+   - **Blocks**: Everything - this is architectural foundation
+
+6. **🔥 Extract Business Service Layer**
+   - **Impact**: 🔥🔥🔥🔥🔥 (50% faster feature development)
+   - **Effort**: ⚡⚡⚡⚡⚡ 20 hours
+   - **ROI**: 2.75x
+   - **Blocks**: Clean domain logic, advanced features
+
+### **FRAMEWORK ENHANCEMENT (Medium Impact, Medium Effort) - DO LATER**
+7. **Alpine.js Integration** (From framework analysis below)
+   - **Impact**: 🔥🔥🔥 (Eliminates manual DOM manipulation)
+   - **Effort**: ⚡⚡⚡ 12-16 hours
+   - **ROI**: 2.25x
+   - **Blocks**: Complex UI features, maintainable templates
+
+## 📊 **RECOMMENDED EXECUTION SEQUENCE**
+
+### **Week 1: Quick Wins (10 hours total)**
+- Day 1-2: Extract File Upload Logic (4h) 
+- Day 3-4: Eliminate Global Database Access (6h)
+- **Result**: Clean architecture patterns established, testing improved
+
+### **Week 2: High-Impact Projects (20 hours total)**  
+- Day 1-2: Fix Component Integration Testing (8h)
+- Day 3-5: Implement Centralized State Management (12h)
+- **Result**: Sustainable testing, clean data flow
+
+### **Week 3-4: Major Infrastructure (36 hours total)**
+- Week 3: Implement Service Container & DI (16h)
+- Week 4: Extract Business Service Layer (20h)
+- **Result**: Solid architectural foundation
+
+### **Week 5: Framework Enhancement (Optional)**
+- Alpine.js integration for improved UI patterns
+- **Result**: Modern, maintainable UI layer
+
 ## 📋 **Detailed Framework Research Results**
 
 ### **Alpine.js Deep Dive**

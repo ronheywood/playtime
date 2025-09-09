@@ -4,7 +4,6 @@
  */
 
 const { SCORE_LIST_CONFIG } = require('../../scripts/score-list');
-const { CONFIG } = require('../../scripts/main');
 const { PT_CONSTANTS } = require('../../scripts/constants');
 // Import templates needed for practice planner
 const { PracticePlannerTemplates } = require('../../scripts/Practice/templates/practice-planner-template.js');
@@ -140,13 +139,9 @@ describe('PlayTime Music Practice App', () => {
     // Set logger to silent for tests
     logger.setSilent(true);
         
-    // Require main.js once; it registers a DOMContentLoaded handler
-        // Removed duplicate inner requires for SELECTORS
-    require('../../scripts/main');
-        
-        // Trigger DOMContentLoaded event to initialize the app
-        const domContentLoadedEvent = new Event('DOMContentLoaded');
-        document.dispatchEvent(domContentLoadedEvent);
+    // Bootstrap the application using integration test harness (same as integration tests)
+    const { triggerDOMContentLoaded } = require('../helpers/integration-bootstrap');
+    await triggerDOMContentLoaded();
 
         // Inject a score list instance into the DI container for cleaner wiring
         try {
@@ -420,9 +415,9 @@ describe('PlayTime Music Practice App', () => {
             });
 
             test('As a musician, I want a zoom button to increase the score view', async () => {
-                const zoomInBtn = document.querySelector(CONFIG.SELECTORS.ZOOM_IN_BTN);
-                const zoomOutBtn = document.querySelector(CONFIG.SELECTORS.ZOOM_OUT_BTN);
-                const zoomDisplay = document.querySelector(CONFIG.SELECTORS.ZOOM_DISPLAY);
+                const zoomInBtn = document.querySelector(PT_CONSTANTS.SELECTORS.ZOOM_IN);
+                const zoomOutBtn = document.querySelector(PT_CONSTANTS.SELECTORS.ZOOM_OUT);
+                const zoomDisplay = document.querySelector('[data-role="zoom-display"]'); // Add to constants if needed
                 expect(zoomInBtn).toBeTruthy();
                 expect(zoomOutBtn).toBeTruthy();
                 // Functional check: clicking changes canvas dimensions & display text
@@ -455,7 +450,7 @@ describe('PlayTime Music Practice App', () => {
         describe('User Story 3.1: Distraction-Free Mode', () => {
             test('As a musician, I want to hide UI distractions to focus on the score', async () => {
                 // Arrange
-                const focusModeBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN);
+                const focusModeBtn = document.querySelector(PT_CONSTANTS.SELECTORS.FOCUS_SECTION_BTN);
                 const sidebar = document.querySelector(SELECTORS.SIDEBAR) || document.querySelector('.sidebar');
                 expect(focusModeBtn).toBeTruthy();
                 expect(sidebar).toBeTruthy();
@@ -473,7 +468,7 @@ describe('PlayTime Music Practice App', () => {
 
             test('Toggling focus mode does not clear the canvas content (dimensions unchanged)', async () => {
                 // Arrange
-                const focusModeBtn = document.querySelector(CONFIG.SELECTORS.FOCUS_MODE_BTN);
+                const focusModeBtn = document.querySelector(PT_CONSTANTS.SELECTORS.FOCUS_SECTION_BTN);
                 const canvas = document.getElementById('pdf-canvas');
                 expect(focusModeBtn).toBeTruthy();
                 expect(canvas).toBeTruthy();
