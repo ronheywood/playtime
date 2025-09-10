@@ -111,7 +111,7 @@ class PracticePlanner {
             this.practiceSessionManager = window.createPracticeSessionManager(
                 this.logger,
                 window.PlayTimeHighlighting,
-                window.PracticeSessionTimer,
+                new PracticeSessionTimer(this.logger, {}),
                 this.practiceSessionStarter,
                 this.practicePlanPersistenceService,
                 this.database
@@ -716,8 +716,7 @@ class PracticePlanner {
             };
             
             // Initialize timer component with event callbacks (fallback)
-            this._fallbackPracticeSessionTimer = new window.PracticeSessionTimer({
-                logger: this.logger,
+            this._practiceSessionTimer = new PracticeSessionTimer(this.logger, {
                 onTimerComplete: () => this.handleTimerComplete(),
                 onTimerTick: (timeLeft) => this.handleTimerTick(timeLeft),
                 onPauseToggle: (isPaused) => this.handlePauseToggle(isPaused),
@@ -739,7 +738,7 @@ class PracticePlanner {
 
             // Start the timer for the first section
             const firstSection = sessionData.sections[0];
-            this._fallbackPracticeSessionTimer.startTimer(firstSection.targetTime);
+            this._practiceSessionTimer.startTimer(firstSection.targetTime);
             
             // Focus on the first section
             this.focusOnPracticeSection(firstSection.highlightId);
@@ -847,7 +846,7 @@ class PracticePlanner {
         if (this.practiceSessionStarter) {
             return this.practiceSessionStarter.practiceSessionTimer;
         }
-        return this._fallbackPracticeSessionTimer || null;
+        return this._practiceSessionTimer || null;
     }
     
     /**
@@ -996,7 +995,7 @@ class PracticePlanner {
         } else {
             // Fallback for when practiceSessionStarter is not available
             this._fallbackPracticeSession = null;
-            this._fallbackPracticeSessionTimer = null;
+            this._practiceSessionTimer = null;
         }
     }
 

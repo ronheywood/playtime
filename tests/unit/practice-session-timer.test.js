@@ -72,8 +72,7 @@ describe('PracticeSessionTimer', () => {
         };
 
         // Create timer instance
-        timer = new PracticeSessionTimer({
-            logger: mockLogger,
+        timer = new PracticeSessionTimer(mockLogger, {
             onTimerComplete,
             onTimerTick,
             onPauseToggle,
@@ -93,7 +92,7 @@ describe('PracticeSessionTimer', () => {
 
     describe('Constructor', () => {
         test('should initialize with default options', () => {
-            const basicTimer = new PracticeSessionTimer();
+            const basicTimer = new PracticeSessionTimer(mockLogger);
             
             expect(basicTimer.isRunning).toBe(false);
             expect(basicTimer.isPaused).toBe(false);

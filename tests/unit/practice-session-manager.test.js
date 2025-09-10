@@ -56,7 +56,6 @@ describe('PracticeSessionManager', () => {
             dispatchEvent: jest.fn(),
             addEventListener: jest.fn(),
             removeEventListener: jest.fn(),
-            PracticeSessionTimer: jest.fn().mockImplementation((config) => mockTimer),
             // Mock ConfidenceMapper and PlayTimeConfidence
             ConfidenceMapper: jest.fn().mockImplementation((confidenceModule) => ({
                 confidenceToColor: jest.fn((level) => {
@@ -80,6 +79,12 @@ describe('PracticeSessionManager', () => {
                 })
             }
         };
+
+        // Mock global PracticeSessionTimer constructor
+        global.PracticeSessionTimer = jest.fn().mockImplementation((logger, config) => mockTimer);
+
+        // Mock global CustomEvent constructor using jsdom's built-in Event
+        global.CustomEvent = global.window.CustomEvent;
 
         global.document = {
             querySelector: jest.fn(),

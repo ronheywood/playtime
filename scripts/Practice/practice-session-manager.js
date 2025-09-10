@@ -98,18 +98,14 @@ class PracticeSessionManager {
             }
 
             // Initialize timer component if available
-            if (window.PracticeSessionTimer) {
-                this.practiceSessionTimer = new window.PracticeSessionTimer({
-                    logger: this.logger,
-                    onTimerComplete: () => this.handleTimerComplete(),
-                    onTimerTick: (timeLeft) => this.handleTimerTick(timeLeft),
-                    onPauseToggle: (isPaused) => this.handlePauseToggle(isPaused),
-                    onManualNext: () => this.handleManualNext(),
-                    onExit: () => this.handleTimerExit()
-                });
-            } else {
-                this.logger.warn('Practice Session Manager: Timer component not available');
-            }
+            this.practiceSessionTimer = new PracticeSessionTimer(this.logger,{
+                onTimerComplete: () => this.handleTimerComplete(),
+                onTimerTick: (timeLeft) => this.handleTimerTick(timeLeft),
+                onPauseToggle: (isPaused) => this.handlePauseToggle(isPaused),
+                onManualNext: () => this.handleManualNext(),
+                onExit: () => this.handleTimerExit()
+            });
+                
 
             // Request screen wake lock to prevent screen from turning off during practice
             await this.requestWakeLock();

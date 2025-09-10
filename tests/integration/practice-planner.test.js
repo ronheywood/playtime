@@ -5,6 +5,7 @@
 
 // Use the same setup approach as other tests
 require('../setup');
+global.PracticeSessionTimer = require('../../scripts/Practice/practice-session-timer'); // Ensure timer is loaded first
 
 describe('Practice Planner Integration Tests', () => {
     let practicePlanner;
@@ -68,7 +69,6 @@ describe('Practice Planner Integration Tests', () => {
         // Make timer available on global/window
         if (typeof global !== 'undefined') {
             global.window = global.window || {};
-            global.window.PracticeSessionTimer = PracticeSessionTimer;
         }
         
         // Load the practice planner module
