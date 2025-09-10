@@ -74,8 +74,7 @@ class Logger {
      */
     debug(message, ...args) {
         // Only debug in dev mode. Prefer PlayTimeConfig.env in browser, fall back to process.env when available.
-        const runtimeCfg = (typeof window !== 'undefined' && window.PlayTimeConfig) ? window.PlayTimeConfig : null;
-        const isDev = (runtimeCfg && runtimeCfg.env === 'development') || (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development');
+        const isDev = (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development');
         if (!this.isSilent && !this.isTestEnvironment && isDev) {
             console.log('🐛', message, ...args);
         }
