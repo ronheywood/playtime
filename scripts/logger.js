@@ -91,13 +91,3 @@ const logger = new Logger();
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = logger;
 }
-
-// For browser environments
-if (typeof window !== 'undefined') {
-    window.logger = logger;
-}
-
-// Also export as global for tests
-if (typeof global !== 'undefined') {
-    global.logger = logger;
-}

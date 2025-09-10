@@ -7,8 +7,6 @@ describe('Highlighting re-select score', () => {
     // Setup silent logger to reduce test noise
     const testLogger = require('../../../scripts/logger.js');
     testLogger.setSilent(true);
-    global.logger = testLogger;
-    global.window.logger = testLogger;
     
     global.window.createPlayTimeDB = () => ({
       init: jest.fn().mockResolvedValue(true),

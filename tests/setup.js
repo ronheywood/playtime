@@ -46,15 +46,7 @@ try {
             if (global.window.diContainer && typeof global.window.diContainer.initialize === 'function') {
                 try { global.window.diContainer.initialize(); } catch (_) { /* ignore */ }
             }
-
-            // If instance exposes logger, wire it
-            try {
-                const instance = global.window.diContainer;
-                if (instance && typeof instance.has === 'function' && instance.has('logger')) {
-                    const logger = instance.get('logger');
-                    if (logger) global.window.logger = logger;
-                }
-            } catch (_) { /* ignore */ }
+            
         } catch (err) {
             // Ignore instantiation errors - tests continue to run in legacy mode
         }

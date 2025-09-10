@@ -9,9 +9,6 @@ describe('Highlighting Page Visibility Integration', () => {
     // Silence logs
     const logger = require('../../../scripts/logger.js');
     logger.setSilent(true);
-    global.logger = logger;
-    // Ensure window.logger is also set for main.js
-    global.window.logger = logger;
 
     // Provide PDF viewer stub with paging + events
     global.window.createPlayTimePDFViewer = (logger) => {

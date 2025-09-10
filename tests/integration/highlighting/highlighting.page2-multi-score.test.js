@@ -8,8 +8,6 @@ describe('Highlighting multi score page 2 reselect', () => {
     // Setup silent logger to reduce test noise
     const testLogger = require('../../../scripts/logger.js');
     testLogger.setSilent(true);
-    global.logger = testLogger;
-    global.window.logger = testLogger;
 
     // Shared store to mimic persistence
     if (!global.__storeMulti) global.__storeMulti = { pdfs: [], sections: [] };

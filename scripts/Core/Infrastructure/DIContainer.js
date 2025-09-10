@@ -29,7 +29,7 @@ class DIContainer {
 
         // Logger - singleton for consistent logging
         this.container.singleton('logger', () => {
-            return window.Logger || console;
+            return new Logger();
         });
 
         // Database - singleton for data persistence
@@ -185,7 +185,7 @@ class DIContainer {
         // UI Highlighting - expose the PlayTimeHighlighting UI module via DI
         // Resolve the module directly from source in CommonJS/test environments.
         // Note: removing reliance on globals makes the service resolution explicit.
-    this.container.singleton('playTimeHighlighting', (logger, database) => {
+        this.container.singleton('playTimeHighlighting', (logger, database) => {
             // Resolve the PlayTimeHighlighting implementation lazily so this
             // DI container can be used both in browser bundles (where the
             // module may be loaded as a global) and in CommonJS test runs.
@@ -310,6 +310,10 @@ class DIContainer {
             this.initialize();
         }
         return this.container.get(serviceName);
+    }
+
+    register(serviceName, factory, dependencies = []) {
+        this.container.singleton(serviceName, factory, dependencies);
     }
 
     /**

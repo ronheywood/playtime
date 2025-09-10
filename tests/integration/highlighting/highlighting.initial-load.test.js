@@ -6,9 +6,6 @@ describe('Highlighting initial load rehydration', () => {
   beforeEach(async () => {
     const logger = require('../../../scripts/logger.js');
     logger.setSilent(true);
-    global.logger = logger;
-    // Ensure window.logger is also set for main.js
-    global.window.logger = logger;
 
     // Minimal DB with persistence across reload simulation (in-memory variable)
     if (!global.__dbStore) global.__dbStore = { pdfs: [], sections: [] };
