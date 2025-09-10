@@ -55,13 +55,6 @@ try {
     // Non-fatal: continue without DI in test environments where module cannot be required
 }
 
-// Ensure PlayTimeConfig exists in the test window so bootstrap can read runtime flags
-try {
-    if (typeof global.window !== 'undefined') {
-        global.window.PlayTimeConfig = global.window.PlayTimeConfig || { throwOnMissingDI: false };
-    }
-} catch (_) { /* ignore */ }
-
 
 // Mock IndexedDB for testing
 global.indexedDB = {
