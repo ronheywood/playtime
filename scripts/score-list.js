@@ -116,7 +116,7 @@ function createPlayTimeScoreList(database, logger = console) {
                 this._markSelectedItem(pdf.id);
                 // Dispatch SCORE_SELECTED event (temporary until SCORE_SELECT_COMMAND used)
                 try {
-                    const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.SCORE_SELECTED) || 'playtime:score-selected';
+                    const evName = PT_CONSTANTS.EVENTS.SCORE_SELECTED;
                     const detail = { pdfId: pdf.id, name: pdf.name || pdf.filename, pages: pdf.pages };
                     // Suppress duplicate rapid re-dispatch for same id (upload + auto-click, or repeated clicks)
                     const lastId = window.__playTimeLastScoreSelectedId;

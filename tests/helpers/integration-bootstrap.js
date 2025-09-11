@@ -64,6 +64,7 @@ async function bootstrapApplicationForTests() {
         const ServiceContainer = require('../../scripts/Core/Infrastructure/ServiceContainer.js');
         const AppState = require('../../scripts/Core/Infrastructure/AppState.js');
         const StateManager = require('../../scripts/Core/Infrastructure/StateManager.js');
+        global.PT_CONSTANTS = require('../../scripts/constants.js').PT_CONSTANTS;
         
         // Create a factory function that returns a properly configured DIContainer
         function createTestDiContainer() {

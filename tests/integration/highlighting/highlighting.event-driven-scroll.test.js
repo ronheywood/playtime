@@ -4,7 +4,7 @@
 /** @jest-environment jsdom */
 const Highlighting = require('../../../scripts/highlighting/highlighting.js');
 const TestHelpers = require('../../helpers/test-helpers');
-
+global.PT_CONSTANTS = require('../../../scripts/constants.js');
 // Provide commonly used mocks
 const mockLogger = { info: () => {}, warn: () => {}, error: () => {} };
 const mockConfidence = TestHelpers.createMockConfidenceModule();

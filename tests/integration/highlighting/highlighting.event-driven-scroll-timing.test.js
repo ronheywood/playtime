@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 const Highlighting = require('../../../scripts/highlighting/highlighting.js');
-
+global.PT_CONSTANTS = require('../../../scripts/constants.js');
 describe('Event-Driven Scroll Timing', () => {
     let scrollSpy;
 

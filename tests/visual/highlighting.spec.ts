@@ -11,7 +11,6 @@ async function gotoWithSeed(page) {
   // First, wait for dependencies to be loaded
   await page.waitForFunction(() => {
     return (window as any).PlayTimeConfidence && 
-           (window as any).PlayTimeConstants && 
            (window as any).HighlightElement;
   }, { timeout: 5000 });
 

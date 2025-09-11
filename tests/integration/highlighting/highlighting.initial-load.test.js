@@ -32,7 +32,7 @@ describe('Highlighting initial load rehydration', () => {
     const confidence = require('../../../scripts/confidence.js');
     const { PT_CONSTANTS } = require('../../../scripts/constants.js');
     global.PlayTimeConfidence = confidence;
-    global.window.PlayTimeConstants = PT_CONSTANTS;
+    global.PT_CONSTANTS = PT_CONSTANTS;
 
     // Bootstrap the application using test harness
     const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');

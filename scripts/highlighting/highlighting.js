@@ -5,6 +5,9 @@
 
 (function init(global) {
     // Load dependencies using dual-mode pattern (Node.js vs Browser)
+    
+    const PT_CONSTANTS = (typeof require !== 'undefined') ? 
+        require('../constants') : global.PT_CONSTANTS;
     const HighlightElementClass = (typeof require !== 'undefined') ? 
         require('./HighlightElement') : global.HighlightElement;
     const SelectionOverlayClass = (typeof require !== 'undefined') ? 
@@ -24,6 +27,7 @@
     const HighlightAnnotationFormClass = (typeof require !== 'undefined') ? 
         require('./HighlightAnnotationForm') : window.HighlightAnnotationForm;
     
+        
     // Dependencies will be injected via init() method
     let CONST = null;
 
@@ -128,7 +132,7 @@
 
     async init(config = {}, logger = console, confidenceModule = null, constantsModule = null, deps = null) {
             this._state.logger = logger || console;
-            
+            this.EventLayoutChanged = constantsModule.EVENTS.LAYOUT_CHANGED;
             // Merge configuration
             this.CONFIG = this._mergeConfig(config);
             
@@ -1000,12 +1004,11 @@
          * Schedule scrolling to happen after layout changes complete
          */
         _scheduleScrollAfterLayout(highlightEl, coordinates, options = {}) {
-            const eventName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.LAYOUT_CHANGED) || 'playtime:layout-changed';
             
             // Set up one-time listener for layout change event
             const scrollAfterLayout = () => {
                 // Remove the listener to prevent multiple calls
-                window.removeEventListener(eventName, scrollAfterLayout);
+                window.removeEventListener(this.EventLayoutChanged, scrollAfterLayout);
                 
                 // Small delay to ensure all layout changes are complete
                 setTimeout(() => {
@@ -1013,11 +1016,11 @@
                 }, 50);
             };
             
-            window.addEventListener(eventName, scrollAfterLayout);
+            window.addEventListener(this.EventLayoutChanged, scrollAfterLayout);
             
             // Fallback timeout in case layout change event doesn't fire
             setTimeout(() => {
-                window.removeEventListener(eventName, scrollAfterLayout);
+                window.removeEventListener(this.EventLayoutChanged, scrollAfterLayout);
                 this._scrollHighlightIntoView(highlightEl, coordinates, options);
             }, 1000);
         },

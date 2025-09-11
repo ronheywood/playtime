@@ -89,6 +89,9 @@ const TestHelpers = {
             AMBER: 'amber', 
             GREEN: 'green'
         },
+        SELECTORS: {
+            PAGE_INFO: '[data-role="page-info"]'
+        },
         EVENTS: {
             LAYOUT_CHANGED: 'playtime:layout-changed'
         }
@@ -376,7 +379,7 @@ const TestHelpers = {
         };
         
         // Mock constants module
-        global.window.PlayTimeConstants = {
+        global.PT_CONSTANTS = {
             EVENTS: {
                 CONFIDENCE_CHANGED: 'confidence-changed',
                 PAGE_CHANGED: 'page-changed',

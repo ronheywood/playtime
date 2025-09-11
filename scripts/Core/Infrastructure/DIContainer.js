@@ -240,7 +240,7 @@ class DIContainer {
             // application bootstrap which will call init() explicitly.
             if (database) {
                 try {
-                    const initResult = highlightingInstance.init(config, logger, confidence, window.PlayTimeConstants, { database });
+                    const initResult = highlightingInstance.init(config, logger, confidence, PT_CONSTANTS, { database });
                     // If init returns a promise, attach a noop catch so unhandled
                     // rejections don't bubble up synchronously.
                     if (initResult && typeof initResult.then === 'function') {
@@ -271,7 +271,7 @@ class DIContainer {
                 }
             }
 
-            const instance = createFn(logger, window.PlayTimeConstants);
+            const instance = createFn(logger, PT_CONSTANTS);
             // Do not assign to window here; bootstrap will decide whether to expose globals.
             return instance;
         }, ['logger']);

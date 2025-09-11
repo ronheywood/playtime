@@ -8,6 +8,9 @@
  */
 function createPlayTimePDFViewer(logger = console, constants) {
     const EventLayoutChanged = constants.EVENTS.LAYOUT_CHANGED;
+    const EventPageChanged = constants.EVENTS.PAGE_CHANGED;
+    const SelectorPageInfo = constants.SELECTORS.PAGE_INFO;
+
     // PDF viewer state
     let currentPDF = null;
     let currentPage = 1;
@@ -204,8 +207,7 @@ function createPlayTimePDFViewer(logger = console, constants) {
                 logger.info(`✅ Page ${pageNum} rendered (zoom x${zoomMultiplier.toFixed(2)}) baseFit=${documentBaseFitScale?.toFixed(2) || 'null'} effective=${effectiveScale.toFixed(2)}`);
                 // Publish page-changed for interested modules (e.g., highlighting visibility)
                 try {
-                    const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.PAGE_CHANGED) || 'playtime:page-changed';
-                    const ev = new CustomEvent(evName, { detail: { page: currentPage } });
+                    const ev = new CustomEvent(EventPageChanged, { detail: { page: currentPage } });
                     window.dispatchEvent(ev);
                 } catch(_) { /* noop */ }
                 
@@ -373,8 +375,7 @@ function createPlayTimePDFViewer(logger = console, constants) {
         getTotalPages: function() { return totalPages; },
         
         updatePageInfo: function() {
-            const roleSelector = (window.PlayTimeConstants && window.PlayTimeConstants.SELECTORS && window.PlayTimeConstants.SELECTORS.PAGE_INFO) || '[data-role="page-info"]';
-            const nodes = Array.from(document.querySelectorAll(roleSelector));
+            const nodes = Array.from(document.querySelectorAll(SelectorPageInfo));
             nodes.forEach(n => { n.textContent = `Page ${currentPage} of ${totalPages}`; });
         },
         
