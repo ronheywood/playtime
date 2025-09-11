@@ -47,30 +47,19 @@ class HighlightElement {
     /**
      * Create HighlightElement from stored database record
      */
-    static fromDatabaseRecord(record) {
+    static fromDatabaseRecord(record, mapper) {
+
         if (!record) {
             throw new Error('fromDatabaseRecord requires a valid record');
         }
-        
-        // Import ConfidenceMapper for color conversion
-        const ConfidenceMapper = (typeof require !== 'undefined') ? 
-            require('./ConfidenceMapper') : window.ConfidenceMapper;
+        if (!mapper) {
+            throw new Error('fromDatabaseRecord requires a valid mapper');
+        }
         
         let color = record.color;
         
-        // If confidence exists, derive color from it (prioritize confidence over potentially stale color field)
         if (Number.isFinite(record.confidence)) {
-            if (ConfidenceMapper) {
-                try {
-                    // Try to create mapper with confidence module if available
-                    const confidenceModule = (typeof require !== 'undefined') ? 
-                        require('../confidence') : PlayTimeConfidence;
-                    const mapper = new ConfidenceMapper(confidenceModule);
-                    color = mapper.confidenceToColor(record.confidence);
-                } catch (e) {
-                    // Fall back to record.color if mapping fails
-                }
-            }
+            color = mapper.confidenceToColor(record.confidence);
         }
         
         // Ensure we have a valid color

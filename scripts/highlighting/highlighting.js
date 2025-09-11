@@ -199,7 +199,7 @@
 
             sections.forEach(section => {
                 if (this._isValidSection(section)) {
-                    const highlightElement = HighlightElementClass.fromDatabaseRecord(section);
+                    const highlightElement = HighlightElementClass.fromDatabaseRecord(section,this._components.ConfidenceMapperClass);
                     const domElement = this._createHighlightFromElement(highlightElement, currentPage);
                     
                     // Apply annotation data from database record to DOM element

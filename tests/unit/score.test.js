@@ -453,44 +453,5 @@ describe('Score Value Object', () => {
             });
         });
 
-        describe('fromDatabaseRecords', () => {
-            it('should create array of Scores from array of database records', () => {
-                const dbRecords = [
-                    { id: 1, filename: 'first.pdf', name: 'First Score' },
-                    { id: 2, filename: 'second.pdf', name: 'Second Score' }
-                ];
-
-                const scores = Score.fromDatabaseRecords(dbRecords);
-
-                expect(scores).toHaveLength(2);
-                expect(scores[0].id).toBe('1');
-                expect(scores[0].name).toBe('First Score');
-                expect(scores[1].id).toBe('2');
-                expect(scores[1].name).toBe('Second Score');
-            });
-
-            it('should return empty array for empty input', () => {
-                const scores = Score.fromDatabaseRecords([]);
-                expect(scores).toEqual([]);
-            });
-
-            it('should throw error for non-array input', () => {
-                expect(() => Score.fromDatabaseRecords(null))
-                    .toThrow('Database records must be an array');
-
-                expect(() => Score.fromDatabaseRecords({}))
-                    .toThrow('Database records must be an array');
-            });
-
-            it('should propagate validation errors from individual records', () => {
-                const dbRecords = [
-                    { id: 1, filename: 'valid.pdf' },
-                    { id: 2 } // missing filename
-                ];
-
-                expect(() => Score.fromDatabaseRecords(dbRecords))
-                    .toThrow('Score must have a valid filename');
-            });
-        });
     });
 });
