@@ -5,23 +5,18 @@
  */
 
 class PracticeSessionManager {
-    constructor(logger, highlighting, timer, practiceSessionStarter, practicePlanPersistenceService, database, options = {}) {
+    constructor(logger, highlighting, timer, practiceSessionStarter, practicePlanPersistenceService, database, confidenceMapper, options = {}) {
         this.logger = logger;
         this.highlighting = highlighting;
         this.timer = timer;
         this.practiceSessionStarter = practiceSessionStarter;
         this.practicePlanPersistenceService = practicePlanPersistenceService;
         this.database = database;
+        this.confidenceMapper = confidenceMapper;
         
         this.practiceSession = null;
         this.practiceSessionTimer = null;
         this.wakeLock = null; // Screen wake lock instance
-        
-        // Initialize ConfidenceMapper with confidence module
-        this.confidenceMapper = null;
-        if (typeof window !== 'undefined' && window.ConfidenceMapper && PlayTimeConfidence) {
-            this.confidenceMapper = new window.ConfidenceMapper(PlayTimeConfidence);
-        }
         
         // Configurable timeouts for testing
         this.pageRenderTimeout = options.pageRenderTimeout ?? 500;
@@ -644,8 +639,8 @@ class PracticeSessionManager {
 
 // Factory function for creating practice session manager instances (browser only)
 if (typeof window !== 'undefined') {
-    window.createPracticeSessionManager = function(logger, highlighting, timer, practiceSessionStarter, practicePlanPersistenceService, database, options) {
-        return new PracticeSessionManager(logger, highlighting, timer, practiceSessionStarter, practicePlanPersistenceService, database, options);
+    window.createPracticeSessionManager = function(logger, highlighting, timer, practiceSessionStarter, practicePlanPersistenceService, database, confidenceMapper, options) {
+        return new PracticeSessionManager(logger, highlighting, timer, practiceSessionStarter, practicePlanPersistenceService, database, confidenceMapper, options);
     };
 }
 

@@ -4,18 +4,19 @@
  * This replaces the legacy practice-session-manager.js with clean separation of concerns
  */
 class PracticeSessionComponent {
-    constructor(container) {
+    constructor(stateManager, practiceSessionService, highlightingService, logger) {
         // Inject services from container
-        this.stateManager = container.get('stateManager');
-        this.practiceSessionService = container.get('practiceSessionService');
-        this.highlightingService = container.get('highlightingService');
-        this.logger = container.get('logger');
+        this.stateManager = stateManager;
+        this.practiceSessionService = practiceSessionService;
+        this.highlightingService = highlightingService;
+        this.logger = logger;
         
         // UI state subscriptions
         this.subscriptions = [];
         
         // Timer for practice sections
         this.sectionTimer = null;
+        this.visualTimer = null; // Visual timer component
         this.wakeLock = null;
         
         this.init();
@@ -310,13 +311,92 @@ class PracticeSessionComponent {
     startSectionTimer() {
         this.stopSectionTimer(); // Stop any existing timer
         
-        const duration = this.stateManager.selectors.getTimerDuration();
+        const duration = this.stateManager.selectors.getTimerDuration() || 180000; // 3 minutes fallback
+        
+        // Show visual timer UI
+        this.showTimerUI(duration);
         
         this.sectionTimer = setTimeout(() => {
             document.dispatchEvent(new CustomEvent('practice-timer-complete'));
         }, duration);
         
-        this.logger.info('Section timer started', { duration });
+        this.logger.info('Section timer started with UI', { duration });
+    }
+
+    /**
+     * Show the visual timer UI
+     */
+    showTimerUI(duration) {
+        // Show the practice session timer component
+        const timerElement = document.querySelector('[data-role="practice-session-timer"]');
+        if (timerElement) {
+            timerElement.style.display = 'block';
+        } else {
+            this.logger.warn('Timer element not found in DOM');
+            return;
+        }
+        
+        // Initialize PracticeSessionTimer if available
+        if (window.PracticeSessionTimer) {
+            try {
+                // Ensure we clean up any existing timer first
+                if (this.visualTimer && this.visualTimer.destroy) {
+                    this.visualTimer.destroy();
+                    this.visualTimer = null;
+                }
+                
+                const targetMinutes = Math.max(0.1, duration / (1000 * 60)); // Convert ms to minutes, minimum 0.1 minutes
+                
+                this.visualTimer = new window.PracticeSessionTimer(this.logger, {
+                    onTimerComplete: () => {
+                        this.logger.info('Visual timer completed, dispatching event');
+                        document.dispatchEvent(new CustomEvent('practice-timer-complete'));
+                    },
+                    onPauseToggle: (isPaused) => {
+                        this.logger.info('Timer pause toggled', { isPaused });
+                    },
+                    onManualNext: () => {
+                        this.logger.info('Manual next section triggered');
+                        document.dispatchEvent(new CustomEvent('practice-timer-complete'));
+                    },
+                    onExit: () => {
+                        this.logger.info('Timer exit requested');
+                        this.stopSectionTimer();
+                        this.stateManager.actions.endPracticeSession();
+                    }
+                });
+                
+                // Wait a brief moment for DOM to be ready, then start timer
+                setTimeout(() => {
+                    if (this.visualTimer) {
+                        this.visualTimer.startTimer(targetMinutes);
+                        this.logger.info('Visual timer started successfully', { targetMinutes });
+                    }
+                }, 100);
+                
+            } catch (error) {
+                this.logger.error('Failed to start visual timer', error);
+            }
+        } else {
+            this.logger.warn('PracticeSessionTimer class not available');
+        }
+    }
+
+    /**
+     * Hide the visual timer UI
+     */
+    hideTimerUI() {
+        // Hide the practice session timer component
+        const timerElement = document.querySelector('[data-role="practice-session-timer"]');
+        if (timerElement) {
+            timerElement.style.display = 'none';
+        }
+        
+        // Destroy visual timer if it exists
+        if (this.visualTimer && this.visualTimer.destroy) {
+            this.visualTimer.destroy();
+            this.visualTimer = null;
+        }
     }
 
     /**
@@ -328,6 +408,9 @@ class PracticeSessionComponent {
             this.sectionTimer = null;
             this.logger.info('Section timer stopped');
         }
+        
+        // Hide the visual timer UI
+        this.hideTimerUI();
     }
 
     /**
@@ -369,16 +452,34 @@ class PracticeSessionComponent {
         }
     }
 
-    // UI Methods (to be implemented in Sprint 3)
+    // UI Methods
 
     showPracticeMode() {
         // Show practice UI elements
         document.body.classList.add('practice-mode');
+        
+        // Activate focus mode for distraction-free practice
+        if (window.PlayTimeFocusModeCommands?.changeLayout) {
+            window.PlayTimeFocusModeCommands.changeLayout('focus-mode', { action: 'enter' });
+        } else if (window.PlayTimeLayoutCommands?.changeLayout) {
+            window.PlayTimeLayoutCommands.changeLayout('focus-mode', { action: 'enter' });
+        }
+        
+        this.logger.info('Practice mode activated with focus mode');
     }
 
     hidePracticeMode() {
         // Hide practice UI elements
         document.body.classList.remove('practice-mode');
+        
+        // Exit focus mode
+        if (window.PlayTimeFocusModeCommands?.changeLayout) {
+            window.PlayTimeFocusModeCommands.changeLayout('focus-mode', { action: 'exit' });
+        } else if (window.PlayTimeLayoutCommands?.changeLayout) {
+            window.PlayTimeLayoutCommands.changeLayout('focus-mode', { action: 'exit' });
+        }
+        
+        this.logger.info('Practice mode deactivated');
     }
 
     showConfidenceDialog() {
@@ -405,6 +506,14 @@ class PracticeSessionComponent {
         // Navigate to the section page/location
         if (section.page) {
             this.stateManager.actions.setPdfPage(section.page);
+        }
+        
+        // Focus on the specific section if highlight ID is available
+        if (section.highlightId && this.highlightingService?.focusOnHighlight) {
+            this.highlightingService.focusOnHighlight(section.highlightId);
+            this.logger.info('Focused on section highlight', { highlightId: section.highlightId, page: section.page });
+        } else {
+            this.logger.info('Navigated to section page', { page: section.page });
         }
     }
 

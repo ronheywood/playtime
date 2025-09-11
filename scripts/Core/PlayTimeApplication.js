@@ -157,47 +157,18 @@ class PlayTimeApplication {
      */
     initializePracticePlanner() {
         try {
-            if (typeof window.createPlayTimePracticePlanner === 'function') {
-                const database = this.diContainer.get('database');
-                const logger = this.diContainer.get('logger');
-
-                // Get highlight persistence service
-                let highlightPersistenceService = null;
-                try {
-                    highlightPersistenceService = this.diContainer.get('highlightPersistenceService');
-                } catch (e) {
-                    // Fallback to component from highlighting module
-                    highlightPersistenceService = window.PlayTimeHighlighting?._components?.persistenceService;
-                }
-
-                // Initialize practice plan persistence service
-                let practicePlanPersistenceService = null;
-                if (typeof window.createPracticePlanPersistenceService === 'function') {
-                    practicePlanPersistenceService = window.createPracticePlanPersistenceService(database, logger);
-                }
-
-                if (highlightPersistenceService) {
-                    window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(
-                        logger, database, highlightPersistenceService, practicePlanPersistenceService
-                    );
-                } else {
-                    window.PlayTimePracticePlanner = window.createPlayTimePracticePlanner(
-                        logger, database, null, practicePlanPersistenceService
-                    );
-                }
-
-                // Initialize the practice planner to attach event handlers
-                if (window.PlayTimePracticePlanner && typeof window.PlayTimePracticePlanner.init === 'function') {
-                    window.PlayTimePracticePlanner.init();
-                }
-
-                this.logger.info('Practice planner initialized');
-            }
+            // Initialize the practice session component for managing active sessions
+            const practiceSessionComponent = this.diContainer.get('practiceSessionComponent');
+            
+            // Initialize the practice planner UI for setup and management using DI
+            const practicePlanner = this.diContainer.get('practicePlanner');
+            practicePlanner.init();
+            
+            this.logger.info('Practice planner initialized');
         } catch (error) {
-            this.logger.warn('Failed to initialize practice planner', error);
+            this.logger.error('Failed to initialize practice planner', error);
         }
     }
-
     /**
      * Set up event handlers and UI interactions
      */

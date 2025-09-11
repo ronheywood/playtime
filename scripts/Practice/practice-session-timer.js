@@ -367,4 +367,6 @@ class PracticeSessionTimer {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = PracticeSessionTimer;
+} else if (typeof window !== 'undefined') {
+    window.PracticeSessionTimer = PracticeSessionTimer;
 }

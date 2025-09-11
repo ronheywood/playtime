@@ -38,8 +38,8 @@ class PracticePlanner {
     // Initialize practice session starter module (injected)
     this.practiceSessionStarter = practiceSessionStarter;
         
-        // Initialize practice session manager module
-        this.practiceSessionManager = null;
+        // Initialize practice session component module
+        this.practiceSessionComponent = null;
         
         // DOM elements - will be populated by init()
         this.setupButton = null;
@@ -106,19 +106,16 @@ class PracticePlanner {
             this.logger.info('Practice Planner: Practice session starter injected');
         }
 
-        // Initialize practice session manager module
-        if (typeof window.createPracticeSessionManager === 'function') {
-            this.practiceSessionManager = window.createPracticeSessionManager(
-                this.logger,
-                window.PlayTimeHighlighting,
-                new PracticeSessionTimer(this.logger, {}),
-                this.practiceSessionStarter,
-                this.practicePlanPersistenceService,
-                this.database
-            );
-            this.logger.info('Practice Planner: Practice session manager initialized');
-        } else {
-            this.logger.warn('Practice Planner: Practice session manager not available');
+        // Initialize practice session component (new architecture)
+        try {
+            if (typeof window !== 'undefined' && window.diContainer) {
+                this.practiceSessionComponent = window.diContainer.get('practiceSessionComponent');
+                this.logger.info('Practice Planner: Practice session component injected from DI container');
+            } else {
+                this.logger.error('Practice Planner: DI container not available - cannot initialize practice session component');
+            }
+        } catch (error) {
+            this.logger.error('Practice Planner: Failed to initialize practice session component', error);
         }
 
         this.logger.info('Practice Planner event handlers attached');
@@ -777,7 +774,7 @@ class PracticePlanner {
             });
 
             // Start session from the saved plan
-            const success = await this.practiceSessionManager.startFromPlan(tempPlanId, this.currentScoreId);
+            const success = await this.practiceSessionComponent.startPracticeFromPlan(tempPlanId, this.currentScoreId);
             
             if (!success) {
                 this.logger.error('Practice Planner: Failed to start session from temporary plan');
@@ -804,9 +801,9 @@ class PracticePlanner {
             return;
         }
 
-        if (!this.practiceSessionManager) {
-            this.logger.error('Practice Planner: Practice session manager not available');
-            alert('Practice session manager not available');
+        if (!this.practiceSessionComponent) {
+            this.logger.error('Practice Planner: Practice session component not available');
+            alert('Practice session component not available');
             return;
         }
 
@@ -817,7 +814,7 @@ class PracticePlanner {
         });
 
         try {
-            const success = await this.practiceSessionManager.startFromPlan(this.currentPracticePlan.id, this.currentScoreId);
+            const success = await this.practiceSessionComponent.startPracticeFromPlan(this.currentPracticePlan.id, this.currentScoreId);
             
             if (!success) {
                 this.logger.error('Practice Planner: Failed to start session from saved plan');

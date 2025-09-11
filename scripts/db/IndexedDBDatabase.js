@@ -1,9 +1,10 @@
 const DB_NAME = 'PlayTimeDB';
-const DB_VERSION = 3; // bumped for practice plans and practice plan highlights stores
+const DB_VERSION = 4; // bumped for practice sessions store
 const STORE_NAME = 'pdfFiles';
 const SECTIONS_STORE = 'sections';
 const PRACTICE_PLANS_STORE = 'practicePlans';
 const PRACTICE_PLAN_HIGHLIGHTS_STORE = 'practicePlanHighlights';
+const PRACTICE_SESSIONS_STORE = 'practiceSessions';
 
 export class IndexedDBDatabase extends window.AbstractDatabase {
     // Abstract method: save(item)
@@ -439,6 +440,145 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
             }
         });
     }
+
+    // ---- Practice Sessions API ----
+    async savePracticeSession(session) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_SESSIONS_STORE], 'readwrite');
+                const store = tx.objectStore(PRACTICE_SESSIONS_STORE);
+                const sessionData = {
+                    ...session,
+                    createdAt: session.createdAt || new Date().toISOString()
+                };
+                const req = store.add(sessionData);
+                req.onsuccess = () => {
+                    this.logger.info('✅ Practice session saved with ID:', req.result);
+                    resolve(req.result);
+                };
+                req.onerror = () => {
+                    this.logger.error('❌ Failed to save practice session:', req.error);
+                    reject(req.error);
+                };
+            } catch (e) {
+                this.logger.error('❌ Exception saving practice session:', e);
+                reject(e);
+            }
+        });
+    }
+
+    async getPracticeSession(id) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_SESSIONS_STORE], 'readonly');
+                const store = tx.objectStore(PRACTICE_SESSIONS_STORE);
+                const req = store.get(Number(id));
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            } catch (e) { 
+                reject(e); 
+            }
+        });
+    }
+
+    async getPracticeSessionsByScore(scoreId) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_SESSIONS_STORE], 'readonly');
+                const store = tx.objectStore(PRACTICE_SESSIONS_STORE);
+                const index = store.index('scoreId');
+                const req = index.getAll(scoreId);
+                req.onsuccess = () => {
+                    this.logger.info(`✅ Found ${req.result.length} practice sessions for score ${scoreId}`);
+                    resolve(req.result);
+                };
+                req.onerror = () => {
+                    this.logger.error('❌ Failed to get practice sessions:', req.error);
+                    reject(req.error);
+                };
+            } catch (e) { 
+                this.logger.error('❌ Exception getting practice sessions:', e);
+                reject(e); 
+            }
+        });
+    }
+
+    async updatePracticeSession(id, updates) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_SESSIONS_STORE], 'readwrite');
+                const store = tx.objectStore(PRACTICE_SESSIONS_STORE);
+                const numericId = Number(id);
+                
+                // First get the existing record
+                const getReq = store.get(numericId);
+                getReq.onsuccess = () => {
+                    const existingRecord = getReq.result;
+                    if (!existingRecord) {
+                        reject(new Error(`Practice session with id ${id} not found`));
+                        return;
+                    }
+                    
+                    // Merge the updates with existing data
+                    const updatedRecord = { ...existingRecord, ...updates };
+                    
+                    // Save the updated record
+                    const putReq = store.put(updatedRecord);
+                    putReq.onsuccess = () => {
+                        this.logger.info('✅ Practice session updated:', numericId);
+                        resolve(updatedRecord);
+                    };
+                    putReq.onerror = () => {
+                        this.logger.error('❌ Failed to update practice session:', putReq.error);
+                        reject(putReq.error);
+                    };
+                };
+                getReq.onerror = () => {
+                    this.logger.error('❌ Failed to get practice session for update:', getReq.error);
+                    reject(getReq.error);
+                };
+            } catch (e) { 
+                this.logger.error('❌ Exception updating practice session:', e);
+                reject(e); 
+            }
+        });
+    }
+
+    async deletePracticeSession(id) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) { 
+                return reject(new Error('Database not initialized')); 
+            }
+            try {
+                const tx = this._db.transaction([PRACTICE_SESSIONS_STORE], 'readwrite');
+                const store = tx.objectStore(PRACTICE_SESSIONS_STORE);
+                const req = store.delete(Number(id));
+                req.onsuccess = () => {
+                    this.logger.info('✅ Practice session deleted:', id);
+                    resolve();
+                };
+                req.onerror = () => {
+                    this.logger.error('❌ Failed to delete practice session:', req.error);
+                    reject(req.error);
+                };
+            } catch (e) { 
+                this.logger.error('❌ Exception deleting practice session:', e);
+                reject(e); 
+            }
+        });
+    }
     
     constructor(logger = console) {
         super();
@@ -493,6 +633,15 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                     pph.createIndex('highlightId', 'highlightId', { unique: false });
                     pph.createIndex('sortOrder', 'sortOrder', { unique: false });
                     this.logger.info('✅ practice plan highlights store created');
+                }
+                // practice sessions store
+                if (!database.objectStoreNames.contains(PRACTICE_SESSIONS_STORE)) {
+                    const ps = database.createObjectStore(PRACTICE_SESSIONS_STORE, { keyPath: 'id', autoIncrement: true });
+                    ps.createIndex('planId', 'planId', { unique: false });
+                    ps.createIndex('scoreId', 'scoreId', { unique: false });
+                    ps.createIndex('startTime', 'startTime', { unique: false });
+                    ps.createIndex('completed', 'completed', { unique: false });
+                    this.logger.info('✅ practice sessions store created');
                 }
             };
         });

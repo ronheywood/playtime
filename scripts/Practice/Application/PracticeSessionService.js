@@ -26,7 +26,7 @@ class PracticeSessionService {
             scoreId: scoreData.id,
             sections,
             options: {
-                timerDuration: options.timerDuration || 30000,
+                timerDuration: options.timerDuration || 180000, // 3 minutes default
                 showConfidenceDialog: options.showConfidenceDialog !== false,
                 ...options
             }

@@ -142,6 +142,12 @@ class DIContainer {
             }
             return new PracticeSessionService(practicePersistence, logger, confidenceMapper);
         }, ['practicePersistence', 'logger', 'confidenceMapper']);
+        
+
+        this.container.singleton('practiceSessionComponent', (stateManager, practiceSessionService, highlightingService, logger) => {
+            return new PracticeSessionComponent(stateManager, practiceSessionService, highlightingService, logger);
+        }, ['stateManager', 'practiceSessionService', 'highlightingService', 'logger']);
+
 
         // Highlighting Service - manages highlight business logic
         this.container.singleton('highlightingService', (database, logger, confidenceMapper, coordinateMapper) => {
@@ -160,6 +166,23 @@ class DIContainer {
             }
             return new ScoreManagementService(database, logger);
         }, ['database', 'logger']);
+
+        // Practice Plan Persistence Service - manages practice plan storage
+        this.container.singleton('practicePlanPersistenceService', (database, logger) => {
+            const PracticePlanPersistenceService = window.PracticePlanPersistenceService;
+            if (!PracticePlanPersistenceService) {
+                throw new Error('PracticePlanPersistenceService class not loaded');
+            }
+            return new PracticePlanPersistenceService(database, logger);
+        }, ['database', 'logger']);
+
+        // Practice Planner - manages practice session setup UI
+        this.container.singleton('practicePlanner', (logger, database, highlightPersistenceService, practicePlanPersistenceService) => {
+            if (typeof window.createPlayTimePracticePlanner !== 'function') {
+                throw new Error('createPlayTimePracticePlanner factory not loaded');
+            }
+            return window.createPlayTimePracticePlanner(logger, database, highlightPersistenceService, practicePlanPersistenceService);
+        }, ['logger', 'database', 'highlightPersistenceService', 'practicePlanPersistenceService']);
     }
 
     /**
