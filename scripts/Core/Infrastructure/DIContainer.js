@@ -257,8 +257,8 @@ class DIContainer {
         // otherwise fall back to requiring the local implementation in CommonJS/test envs.
         this.container.singleton('playTimePDFViewer', (logger) => {
             let createFn = null;
-            if (typeof window !== 'undefined' && typeof window.createPlayTimePDFViewer === 'function') {
-                createFn = window.createPlayTimePDFViewer;
+            if (typeof createPlayTimePDFViewer === 'function') {
+                createFn = createPlayTimePDFViewer;
             } else {
                 try {
                     // eslint-disable-next-line global-require
@@ -269,7 +269,7 @@ class DIContainer {
                 }
             }
 
-            const instance = createFn(logger);
+            const instance = createFn(logger, window.PlayTimeConstants);
             // Do not assign to window here; bootstrap will decide whether to expose globals.
             return instance;
         }, ['logger']);

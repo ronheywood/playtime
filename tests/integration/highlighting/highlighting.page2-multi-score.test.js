@@ -32,20 +32,6 @@ describe('Highlighting multi score page 2 reselect', () => {
       getHighlights: jest.fn().mockImplementation(async (pdfId) => store.sections.filter(s=>s.pdfId===pdfId || String(s.pdfId)===String(pdfId)))
     });
 
-    // PDF viewer stub with page support; we will simulate page changes
-    let currentPage = 1;
-    global.window.createPlayTimePDFViewer = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockImplementation(async (p) => { currentPage = p; window.dispatchEvent(new CustomEvent(PT_CONSTANTS.EVENTS.PAGE_CHANGED,{ detail:{ page:p }})); }),
-      getCurrentPage: () => currentPage,
-      getTotalPages: () => 3
-    });
-  // Do NOT create the PlayTimePDFViewer global here. Prefer DI-registration
-  // via the test factory `createPlayTimePDFViewer`. Main.js will initialize
-  // the DI container and create the instance during DOMContentLoaded. Tests
-  // should resolve the viewer from DI when needed.
-
     // Base DOM
     document.body.innerHTML = `
       <main>

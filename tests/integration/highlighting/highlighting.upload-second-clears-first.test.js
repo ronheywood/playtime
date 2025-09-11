@@ -24,19 +24,6 @@ describe('Second upload clears first score highlights', () => {
       addHighlight: jest.fn().mockImplementation(function(sec){ sec.id = this._sections.length+1; this._sections.push(sec); return Promise.resolve(sec.id); }),
       getHighlights: jest.fn().mockImplementation(function(pdfId){ return Promise.resolve(this._sections.filter(s=>s.pdfId===pdfId)); })
     });
-
-    // PDF viewer stub
-    let currentPage = 1;
-    global.window.createPlayTimePDFViewer = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockImplementation(async(p=1)=>{ currentPage=p; window.dispatchEvent(new CustomEvent(PT_CONSTANTS.EVENTS.PAGE_CHANGED,{ detail:{ page:p }})); }),
-      getCurrentPage: () => currentPage,
-      getTotalPages: () => 2
-    });
-    try {
-      global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
-    } catch (_) {}
     
     const helpers = require('../../helpers/test-helpers.js');
     //TODO - use the helper to create this DOM

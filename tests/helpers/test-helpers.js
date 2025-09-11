@@ -346,18 +346,7 @@ const TestHelpers = {
                 delete: jest.fn().mockResolvedValue(true)
             };
         };
-        
-        // Mock PDF viewer factory
-        global.window.createPlayTimePDFViewer = (logger = console) => {
-            return {
-                init: jest.fn().mockResolvedValue(true),
-                loadPDF: jest.fn().mockResolvedValue(true),
-                renderPage: jest.fn().mockResolvedValue(true),
-                getCurrentPage: jest.fn().mockReturnValue(1),
-                getTotalPages: jest.fn().mockReturnValue(1)
-            };
-        };
-        
+
         // Mock score list factory
         global.window.createPlayTimeScoreList = (db = null, logger = console) => {
             return {
@@ -414,19 +403,6 @@ const TestHelpers = {
         
         // Bootstrap the application using the window-free test harness
         const app = await triggerDOMContentLoaded();
-
-        // Test-only compatibility shim: if the DI container wasn't used by main.js
-        // and tests still expect a `window.PlayTimePDFViewer` global, create it
-        // from the test factory `createPlayTimePDFViewer` so we don't reintroduce
-        // the legacy global in production code.
-    
-        if (typeof global.window.createPlayTimePDFViewer === 'function') {
-            // If DI container is present in the test run, register the test
-            // factory into it so tests can resolve the viewer via DI.
-            try {
-                global.window.diContainer.container.singleton('playTimePDFViewer', (logger) =>this.createPlayTimePDFViewer(logger));
-            } catch (_) {}
-        }
         
         // Make key functions available globally for testing
         if (typeof initializeFileUpload !== 'undefined') {

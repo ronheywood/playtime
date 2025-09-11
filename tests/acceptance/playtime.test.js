@@ -29,46 +29,6 @@ describe('PlayTime Music Practice App', () => {
         // Use the real in-memory database implementation for acceptance tests
         const MemoryDatabase = require('../../scripts/db/MemoryDatabase');
         global.window.createPlayTimeDB = (logger) => new MemoryDatabase();
-
-        // Mock PDF viewer with loadPDF and renderPage methods + zoom API for UI tests
-        global.window.createPlayTimePDFViewer = (logger) => {
-            let zoom = 1.0;
-            const ZOOM = { MIN: 1.0, MAX: 3.0, STEP: 0.25 };
-            const clamp = (v) => Math.min(Math.max(v, ZOOM.MIN), ZOOM.MAX);
-            const viewer = {
-                init: jest.fn().mockResolvedValue(true),
-                loadPDF: jest.fn().mockResolvedValue(true),
-                renderPage: jest.fn().mockResolvedValue(true),
-                getZoom: () => zoom,
-                getZoomBounds: () => ({ min: ZOOM.MIN, max: ZOOM.MAX }),
-                setZoom: jest.fn().mockImplementation((v) => { zoom = clamp(Number(v) || 1.0); return zoom; }),
-                // Minimal implementation used by focus mode handler during tests
-                focusOnRectPercent: jest.fn().mockImplementation(async (pctRect, opts = {}) => {
-                    // Emulate logic: ensure zoom > 1 for focus highlight
-                    if (zoom <= 1) {
-                        viewer.setZoom(1.1);
-                    }
-                    return { zoom: viewer.getZoom(), centered: { deltaX: 0, deltaY: 0 } };
-                })
-            };
-            viewer.zoomIn = jest.fn(() => viewer.setZoom(zoom + ZOOM.STEP));
-            viewer.zoomOut = jest.fn(() => viewer.setZoom(zoom - ZOOM.STEP));
-            return viewer;
-        };
-        // Prefer registering the test factory into the DI container when
-        // available so the app can resolve the viewer via DI. Keep a global
-        // fallback for legacy test paths.
-        
-        if (typeof global.window.createPlayTimePDFViewer === 'function') {
-            
-            if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-                try { global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger, PT_CONSTANTS)); } catch(_) {}
-            }
-                
-            if (!global.window.PlayTimePDFViewer) {
-                try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch(_) {}
-            }
-        }
         
     // Setup dependencies for highlighting module (required after dependency injection refactoring)
     const confidence = require('../../scripts/confidence');

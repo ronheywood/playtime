@@ -17,22 +17,7 @@ describe('Highlighting re-select score', () => {
       addHighlight: jest.fn().mockResolvedValue(true),
       getHighlights: jest.fn().mockResolvedValue([{ pdfId:1, page:1, confidence:2, xPct:0, yPct:0, wPct:0.2, hPct:0.2 }])
     });
-    global.window.createPlayTimePDFViewer = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockImplementation(async () => {
-        // simulate page change event
-        const EV = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS) || {};
-        const evName = EV.PAGE_CHANGED || 'playtime:page-changed';
-        window.dispatchEvent(new CustomEvent(evName,{ detail:{ page:1 } }));
-      }),
-      getCurrentPage: () => 1,
-      getTotalPages: () => 2
-    });
-  // Register test factory into DI if present; fallback to legacy global instance
-  try {
-    global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
-  } catch(_) {}
+    
     document.body.innerHTML = `
       <main>
         <section id="upload-section"><input type="file" id="pdf-upload" accept="application/pdf"></section>

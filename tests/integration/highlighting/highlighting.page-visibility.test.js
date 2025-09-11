@@ -11,51 +11,13 @@ describe('Highlighting Page Visibility Integration', () => {
     const logger = require('../../../scripts/logger.js');
     logger.setSilent(true);
 
-    // Provide PDF viewer stub with paging + events
-    global.window.createPlayTimePDFViewer = (logger) => {
-      let currentPage = 1;
-      const totalPages = 3;
-      const dispatchPageChanged = () => {
-        try {
-          const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.PAGE_CHANGED) || 'playtime:page-changed';
-          const ev = new CustomEvent(evName, { detail: { page: currentPage } });
-          window.dispatchEvent(ev);
-        } catch (_) { /* noop */ }
-      };
-      return {
-        init: jest.fn().mockResolvedValue(true),
-        loadPDF: jest.fn().mockResolvedValue(true),
-        renderPage: jest.fn().mockImplementation(async (p) => { currentPage = p; dispatchPageChanged(); }),
-        getZoom: () => 1,
-        getZoomBounds: () => ({ min: 1, max: 3 }),
-        setZoom: jest.fn(() => 1),
-        zoomIn: jest.fn(() => 1),
-        zoomOut: jest.fn(() => 1),
-        getCurrentPage: () => currentPage,
-        getTotalPages: () => totalPages,
-        nextPage: async function() { if (currentPage < totalPages) { currentPage += 1; dispatchPageChanged(); } },
-        prevPage: async function() { if (currentPage > 1) { currentPage -= 1; dispatchPageChanged(); } },
-        attachUIControls: () => {}
-      };
-    };
-    // Register test factory into DI if present and keep legacy global fallback
-    try {
-      global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
-    } catch(_) {}
-
-
     // In-memory DB stub (minimal)
     global.window.createPlayTimeDB = () => ({ init: jest.fn().mockResolvedValue(true), save: jest.fn().mockResolvedValue(true), getAll: jest.fn().mockResolvedValue([]) });
 
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../../scripts/confidence.js');
     global.window.PlayTimeConfidence = confidence;
-    // Register test factory into DI if present
     
-    try { 
-      global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
-    } catch(_) {}
-
     // Bootstrap the application using test harness (uses mocked highlighting via DI)
     const { bootstrapApplicationForTests } = require('../../helpers/integration-bootstrap');
     await bootstrapApplicationForTests();

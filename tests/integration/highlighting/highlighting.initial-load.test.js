@@ -24,23 +24,7 @@ describe('Highlighting initial load rehydration', () => {
       addHighlight: jest.fn().mockImplementation(async (sec) => { store.sections.push({ id: store.sections.length+1, ...sec }); }),
       getHighlights: jest.fn().mockImplementation(async (pdfId) => store.sections.filter(s => s.pdfId === pdfId || String(s.pdfId) === String(pdfId)))
     });
-
-  // PDF viewer stub with page tracking
-  global.window.createPlayTimePDFViewer = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockResolvedValue(true),
-      getCurrentPage: () => 1,
-      getTotalPages: () => 2
-    });
-  // Register the test factory into the DI container when available and
-  // fallback to a global instance for legacy test paths.
-  try {
-    if (typeof global.window.createPlayTimePDFViewer === 'function') {
-      global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
-    }
-  } catch(_) {}
-
+    
     const Highlighting = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting;
 
@@ -101,14 +85,7 @@ describe('Highlighting initial load rehydration', () => {
       addHighlight: jest.fn().mockImplementation(async (sec) => { store.sections.push({ id: store.sections.length+1, ...sec }); }),
       getHighlights: jest.fn().mockImplementation(async (pdfId) => store.sections.filter(s => s.pdfId === pdfId || String(s.pdfId) === String(pdfId)))
     });
-  global.window.createPlayTimePDFViewer = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockResolvedValue(true),
-      getCurrentPage: () => 1,
-      getTotalPages: () => 2
-    });
-  global.window.PlayTimePDFViewer = TestHelpers.createPlayTimePDFViewer(logger);
+    
     const Highlighting2 = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting2;
     
