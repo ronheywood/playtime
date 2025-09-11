@@ -146,6 +146,4 @@ class Score {
 // Export for both CommonJS and ES modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = Score;
-} else if (typeof window !== 'undefined') {
-    window.Score = Score;
 }
