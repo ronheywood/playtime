@@ -48,9 +48,7 @@ describe('Zoom Handler Consistency', () => {
         };
 
         // Create viewer instance
-        viewer = TestHelpers.createPlayTimePDFViewer({
-            info: () => {}, warn: () => {}, error: () => {}
-        });
+        viewer = TestHelpers.createPlayTimePDFViewer(TestHelpers.createSilentLogger(), TestHelpers.createMockConstantsModule());
         
         await viewer.init();
         const file = TestHelpers.createMockFile();

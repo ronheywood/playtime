@@ -1,6 +1,7 @@
 /** @jest-environment jsdom */
 // Integration test: after refresh, first score auto-selected triggers highlight rehydration
 const { PT_CONSTANTS } = require('../../../scripts/constants.js');
+const TestHelpers = require('../../helpers/test-helpers.js');
 
 describe('Highlighting initial load rehydration', () => {
   beforeEach(async () => {
@@ -36,10 +37,7 @@ describe('Highlighting initial load rehydration', () => {
   // fallback to a global instance for legacy test paths.
   try {
     if (typeof global.window.createPlayTimePDFViewer === 'function') {
-      try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-      } } catch(_) {}
-      if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
+      global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
     }
   } catch(_) {}
 
@@ -110,7 +108,7 @@ describe('Highlighting initial load rehydration', () => {
       getCurrentPage: () => 1,
       getTotalPages: () => 2
     });
-  global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer();
+  global.window.PlayTimePDFViewer = TestHelpers.createPlayTimePDFViewer(logger);
     const Highlighting2 = require('../../../scripts/highlighting/highlighting.js');
     global.window.PlayTimeHighlighting = Highlighting2;
     

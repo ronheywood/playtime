@@ -1,6 +1,7 @@
 /** @jest-environment jsdom */
 // Integration: re-selecting a score should re-show its highlights
 const { SELECTORS } = require('../../../scripts/constants.js');
+const TestHelpers = require('../../helpers/test-helpers.js');
 
 describe('Highlighting re-select score', () => {
   beforeEach(async () => {
@@ -30,12 +31,7 @@ describe('Highlighting re-select score', () => {
     });
   // Register test factory into DI if present; fallback to legacy global instance
   try {
-    if (typeof global.window.createPlayTimePDFViewer === 'function') {
-      try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-      } } catch(_) {}
-      if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
-    }
+    global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
   } catch(_) {}
     document.body.innerHTML = `
       <main>

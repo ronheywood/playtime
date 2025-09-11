@@ -2,6 +2,7 @@
 // Upload score1, create highlight page1, upload score2 -> score1 highlight should not remain visible.
 
 const { PT_CONSTANTS } = require('../../../scripts/constants.js');
+const TestHelpers = require('../../helpers/test-helpers.js');
 
 describe('Second upload clears first score highlights', () => {
   beforeEach(async () => {
@@ -34,11 +35,9 @@ describe('Second upload clears first score highlights', () => {
       getTotalPages: () => 2
     });
     try {
-      if (typeof global.window.createPlayTimePDFViewer === 'function' && global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-      }
+      global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
     } catch (_) {}
-    if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
+    
     const helpers = require('../../helpers/test-helpers.js');
     //TODO - use the helper to create this DOM
     document.body.innerHTML = `

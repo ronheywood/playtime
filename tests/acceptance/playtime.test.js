@@ -62,7 +62,7 @@ describe('PlayTime Music Practice App', () => {
         if (typeof global.window.createPlayTimePDFViewer === 'function') {
             
             if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-                try { global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger)); } catch(_) {}
+                try { global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger, PT_CONSTANTS)); } catch(_) {}
             }
                 
             if (!global.window.PlayTimePDFViewer) {
@@ -73,7 +73,6 @@ describe('PlayTime Music Practice App', () => {
     // Setup dependencies for highlighting module (required after dependency injection refactoring)
     const confidence = require('../../scripts/confidence');
     global.window.PlayTimeConfidence = confidence;
-    global.window.PlayTimeConstants = PT_CONSTANTS;
     
     // Use real highlighting capability (data-role driven)
     const Highlighting = require('../../scripts/highlighting/highlighting.js');

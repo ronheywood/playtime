@@ -3,9 +3,11 @@
 /**
  * Create PlayTime PDF Viewer with dependency injection
  * @param {Object} logger - Logger instance to use for logging
+ * @param {Object} constants - PlayTime constants object
  * @returns {Object} PDF Viewer interface
  */
-function createPlayTimePDFViewer(logger = console) {
+function createPlayTimePDFViewer(logger = console, constants) {
+    const EventLayoutChanged = constants.EVENTS.LAYOUT_CHANGED;
     // PDF viewer state
     let currentPDF = null;
     let currentPage = 1;
@@ -66,10 +68,7 @@ function createPlayTimePDFViewer(logger = console) {
             const zoomDisplays = Array.from(doc.querySelectorAll(SEL.ZOOM_DISPLAY));
 
             const publishLayoutChangedNow = () => {
-                try {
-                    const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.LAYOUT_CHANGED) || 'playtime:layout-changed';
-                    window.dispatchEvent(new CustomEvent(evName));
-                } catch(_) {}
+                window.dispatchEvent(new CustomEvent(EventLayoutChanged));
             };
             const publishLayoutChanged = () => {
                 const raf = (cb) => (typeof window.requestAnimationFrame === 'function' ? window.requestAnimationFrame(cb) : setTimeout(cb, 0));

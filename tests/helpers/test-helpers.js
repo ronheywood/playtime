@@ -419,25 +419,13 @@ const TestHelpers = {
         // and tests still expect a `window.PlayTimePDFViewer` global, create it
         // from the test factory `createPlayTimePDFViewer` so we don't reintroduce
         // the legacy global in production code.
-        try {
-            if (typeof global.window.createPlayTimePDFViewer === 'function') {
-                // If DI container is present in the test run, register the test
-                // factory into it so tests can resolve the viewer via DI.
-                try {
-                    if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-                        try {
-                            global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-                        } catch (_) {}
-                    }
-                } catch (_) {}
-
-                // Maintain backward compatibility for tests that still expect the global
-                if (!global.window.PlayTimePDFViewer) {
-                    try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch (_) {}
-                }
-            }
-        } catch (e) {
-            // swallow errors - tests can still provide their own global if needed
+    
+        if (typeof global.window.createPlayTimePDFViewer === 'function') {
+            // If DI container is present in the test run, register the test
+            // factory into it so tests can resolve the viewer via DI.
+            try {
+                global.window.diContainer.container.singleton('playTimePDFViewer', (logger) =>this.createPlayTimePDFViewer(logger));
+            } catch (_) {}
         }
         
         // Make key functions available globally for testing
@@ -502,7 +490,7 @@ const TestHelpers = {
      */
     createPlayTimePDFViewer: (logger = console) => {
         const createPlayTimePDFViewer = require('../../scripts/pdf-viewer');
-        return createPlayTimePDFViewer(logger);
+        return createPlayTimePDFViewer(logger, TestHelpers.createMockConstantsModule());
     },
 
     // Utility Helpers

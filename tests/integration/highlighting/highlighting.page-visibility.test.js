@@ -3,6 +3,7 @@
  */
 
 const { PT_CONSTANTS } = require('../../../scripts/constants.js');
+const TestHelpers = require('../../helpers/test-helpers.js');
 
 describe('Highlighting Page Visibility Integration', () => {
   beforeEach(async () => {
@@ -37,15 +38,11 @@ describe('Highlighting Page Visibility Integration', () => {
         attachUIControls: () => {}
       };
     };
-  // Register test factory into DI if present and keep legacy global fallback
-  try {
-    if (typeof global.window.createPlayTimePDFViewer === 'function') {
-      try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-      } } catch(_) {}
-      if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch(_) {} }
-    }
-  } catch(_) {}
+    // Register test factory into DI if present and keep legacy global fallback
+    try {
+      global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
+    } catch(_) {}
+
 
     // In-memory DB stub (minimal)
     global.window.createPlayTimeDB = () => ({ init: jest.fn().mockResolvedValue(true), save: jest.fn().mockResolvedValue(true), getAll: jest.fn().mockResolvedValue([]) });
@@ -53,16 +50,11 @@ describe('Highlighting Page Visibility Integration', () => {
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../../scripts/confidence.js');
     global.window.PlayTimeConfidence = confidence;
-          // Register test factory into DI if present and keep legacy global fallback
-          try {
-            if (typeof global.window.createPlayTimePDFViewer === 'function') {
-              try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-                global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-              } } catch(_) {}
-              if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch(_) {} }
-            }
-          } catch(_) {}
-    global.window.PlayTimeConstants = PT_CONSTANTS;
+    // Register test factory into DI if present
+    
+    try { 
+      global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => TestHelpers.createPlayTimePDFViewer(logger));
+    } catch(_) {}
 
     // Bootstrap the application using test harness (uses mocked highlighting via DI)
     const { bootstrapApplicationForTests } = require('../../helpers/integration-bootstrap');

@@ -161,8 +161,7 @@ async function setupMultipagePDFTest(page) {
         focusOnRectPercent: async () => ({ zoom: 1.1, centered: { deltaX: 0, deltaY: 0 } })
       };
     };
-    // Also expose a concrete instance for code paths that use the global
-    try { window.PlayTimePDFViewer = window.createPlayTimePDFViewer(); } catch(_) {}
+    
   });
 
   // Navigate to the application after registering the factory
