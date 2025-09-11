@@ -32,7 +32,6 @@ describe('PlayTime Music Practice App', () => {
         
     // Setup dependencies for highlighting module (required after dependency injection refactoring)
     const confidence = require('../../scripts/confidence');
-    global.window.PlayTimeConfidence = confidence;
     
     // Use real highlighting capability (data-role driven)
     const Highlighting = require('../../scripts/highlighting/highlighting.js');

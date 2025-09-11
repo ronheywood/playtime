@@ -19,8 +19,8 @@ class PracticeSessionManager {
         
         // Initialize ConfidenceMapper with confidence module
         this.confidenceMapper = null;
-        if (typeof window !== 'undefined' && window.ConfidenceMapper && window.PlayTimeConfidence) {
-            this.confidenceMapper = new window.ConfidenceMapper(window.PlayTimeConfidence);
+        if (typeof window !== 'undefined' && window.ConfidenceMapper && PlayTimeConfidence) {
+            this.confidenceMapper = new window.ConfidenceMapper(PlayTimeConfidence);
         }
         
         // Configurable timeouts for testing

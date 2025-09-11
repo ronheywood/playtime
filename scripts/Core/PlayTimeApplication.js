@@ -138,7 +138,7 @@ class PlayTimeApplication {
             // Build dependencies object for highlighting
             const deps = { database };
 
-            await highlighting.init({}, logger, window.PlayTimeConfidence, window.PlayTimeConstants, deps);
+            await highlighting.init({}, logger, PlayTimeConfidence, window.PlayTimeConstants, deps);
             // Start with highlighting disabled
             highlighting.disableSelection();
             this.logger.info('Highlighting system initialized');

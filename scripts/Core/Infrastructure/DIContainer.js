@@ -32,6 +32,8 @@ class DIContainer {
             return new Logger();
         });
 
+        this.container.singleton('confidence', () => PlayTimeConfidence);
+
         // Database - singleton for data persistence
         // Note: do NOT depend on 'database' here (self-dependency causes a cycle).
         this.container.singleton('database', (logger) => {
@@ -238,7 +240,7 @@ class DIContainer {
             // application bootstrap which will call init() explicitly.
             if (database) {
                 try {
-                    const initResult = highlightingInstance.init(config, logger, window.PlayTimeConfidence, window.PlayTimeConstants, { database });
+                    const initResult = highlightingInstance.init(config, logger, confidence, window.PlayTimeConstants, { database });
                     // If init returns a promise, attach a noop catch so unhandled
                     // rejections don't bubble up synchronously.
                     if (initResult && typeof initResult.then === 'function') {
@@ -250,7 +252,7 @@ class DIContainer {
             }
             // Do NOT write globals here; leave bootstrap to surface instances if needed
             return highlightingInstance;
-            }, ['logger']);
+            }, ['logger','confidence']);
 
         // PDF Viewer - provide the PlayTime PDF viewer via DI
         // Prefer a browser global factory `createPlayTimePDFViewer` if present,

@@ -52,8 +52,7 @@ describe('Highlighting - Integration Tests', () => {
             }
         };
         
-        global.window.PlayTimeConfidence = mockConfidence;
-        global.PlayTimeConfidence = mockConfidence; // Also set on global directly
+        global.PlayTimeConfidence = mockConfidence;
 
         // Mock constants
         global.window.PlayTimeConstants = {
@@ -72,7 +71,7 @@ describe('Highlighting - Integration Tests', () => {
         delete global.window.PlayTimeDB;
         delete global.window.PlayTimePDFViewer;
         delete global.window.PlayTimeCurrentScoreId;
-        delete global.window.PlayTimeConfidence;
+        delete global.PlayTimeConfidence;
         delete global.window.PlayTimeConstants;
     });
 

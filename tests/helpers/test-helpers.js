@@ -369,7 +369,7 @@ const TestHelpers = {
         };
         
         // Mock confidence module
-        global.window.PlayTimeConfidence = {
+        global.PlayTimeConfidence = {
             init: jest.fn(),
             setActiveConfidence: jest.fn(),
             clearActiveConfidence: jest.fn()

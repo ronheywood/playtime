@@ -64,7 +64,7 @@ class HighlightElement {
                 try {
                     // Try to create mapper with confidence module if available
                     const confidenceModule = (typeof require !== 'undefined') ? 
-                        require('../confidence') : window.PlayTimeConfidence;
+                        require('../confidence') : PlayTimeConfidence;
                     const mapper = new ConfidenceMapper(confidenceModule);
                     color = mapper.confidenceToColor(record.confidence);
                 } catch (e) {

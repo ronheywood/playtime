@@ -40,7 +40,7 @@ describe('Highlighting re-select score', () => {
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../../scripts/confidence.js');
     const { PT_CONSTANTS } = require('../../../scripts/constants.js');
-    global.window.PlayTimeConfidence = confidence;
+    global.PlayTimeConfidence = confidence;
     global.window.PlayTimeConstants = PT_CONSTANTS;
 
     require('../../../scripts/highlighting/highlighting.js');
