@@ -4,7 +4,7 @@
  * and MockEventBus (imported from tests/helpers)
  */
 
-const { IEventBus, WebEventBus, CloudEventBus, createEventBus } = require('../../scripts/core/EventBus');
+const { IEventBus, WebEventBus, CloudEventBus, createEventBus } = require('../../scripts/Core/EventBus');
 const MockEventBus = require('../helpers/MockEventBus');
 
 describe('EventBus System', () => {
