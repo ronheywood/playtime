@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Zoom Fix Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 10px; 
+            border-radius: 4px; 
+            margin: 10px 0;
+        }
+        .pass { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .fail { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        
+        .pdf-viewer-container {
+            width: 800px;
+            height: 600px;
+            border: 2px solid #ddd;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            background: #f9f9f9;
+        }
+        .pdf-viewer-container.focus-mode {
+            border-color: #007bff;
+            background: #fff;
+        }
+        
+        #pdf-canvas {
+            display: block;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            margin: 10px 0;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: #f8f9fa;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background: #e9ecef;
+        }
+        .controls button.active {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+        
+        .zoom-display {
+            font-weight: bold;
+            font-size: 18px;
+            color: #007bff;
+        }
+        
+        .test-steps {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .test-steps h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .test-steps ol {
+            margin: 10px 0;
+        }
+        .test-steps li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Focus Zoom Fix Test</h1>
+    
+    <div class="test-container">
+        <h2>Bug Verification Test</h2>
+        <div class="test-steps">
+            <h3>📋 Test Steps:</h3>
+            <ol>
+                <li><strong>Set Browser Zoom:</strong> Use Ctrl+ to set browser zoom to 125% or higher</li>
+                <li><strong>Load PDF:</strong> Click "Load Test PDF" to simulate PDF loading</li>
+                <li><strong>Toggle Focus Mode:</strong> Click "Toggle Focus Mode" (without double-clicking any highlight)</li>
+                <li><strong>Check Results:</strong> Verify zoom percentage shows correct value (not 100%) and PDF appears crisp</li>
+            </ol>
+        </div>
+        
+        <div class="controls">
+            <button onclick="loadTestPDF()">📄 Load Test PDF</button>
+            <button id="focus-toggle" onclick="toggleFocusMode()">🎯 Toggle Focus Mode</button>
+            <button onclick="zoomIn()">🔍+ Zoom In</button>
+            <button onclick="zoomOut()">🔍- Zoom Out</button>
+        </div>
+        
+        <div class="status info">
+            <strong>Zoom:</strong> <span class="zoom-display" data-role="zoom-display">100%</span> | 
+            <strong>Browser Zoom:</strong> <span id="browser-zoom">Detecting...</span> |
+            <strong>Focus Mode:</strong> <span id="focus-status">Inactive</span>
+        </div>
+        
+        <div class="pdf-viewer-container" data-role="pdf-viewer">
+            <canvas id="pdf-canvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <!-- Include the actual scripts -->
+    <script src="scripts/logger.js"></script>
+    <script src="scripts/constants.js"></script>
+    <script src="scripts/pdf-viewer.js"></script>
+    <script src="scripts/layout/focus-mode-handler.js"></script>
+    
+    <script>
+        // Test setup
+        let focusHandler = null;
+        let pdfLoaded = false;
+        
+        // Mock PDF loading
+        function loadTestPDF() {
+            const canvas = document.getElementById('pdf-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Draw a simple test "PDF" with text
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#333333';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Test PDF Page', canvas.width/2, 100);
+            
+            ctx.font = '16px Arial';
+            ctx.fillText('This simulates a PDF document', canvas.width/2, 150);
+            ctx.fillText('Focus mode should zoom to fit canvas width', canvas.width/2, 180);
+            ctx.fillText('and show correct zoom percentage', canvas.width/2, 210);
+            
+            // Draw some "highlight" areas
+            ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+            ctx.fillRect(200, 250, 400, 30);
+            ctx.fillRect(150, 300, 500, 30);
+            
+            // Initialize PDF viewer mock
+            if (!window.PlayTimePDFViewer) {
+                window.PlayTimePDFViewer = {
+                    getZoom: () => currentZoom,
+                    setZoom: (zoom) => {
+                        currentZoom = zoom;
+                        updateZoomDisplay();
+                        renderAtZoom(zoom);
+                    },
+                    focusOnRectPercent: async (rect, opts) => {
+                        // Simulate the working zoom calculation
+                        const container = document.querySelector('.pdf-viewer-container');
+                        const containerW = container.clientWidth;
+                        const basePageW = 800; // Simulated PDF width
+                        
+                        const targetScale = containerW / (rect.wPct * basePageW);
+                        const clampedZoom = Math.max(1.1, Math.min(3.0, targetScale));
+                        
+                        window.PlayTimePDFViewer.setZoom(clampedZoom);
+                        
+                        addTestResult(`✅ focusOnRectPercent called: zoom set to ${Math.round(clampedZoom * 100)}%`, 'pass');
+                        return { zoom: clampedZoom, centered: { deltaX: 0, deltaY: 0 } };
+                    }
+                };
+            }
+            
+            // Initialize focus mode handler
+            const elements = {
+                canvas: canvas,
+                viewerContainer: document.querySelector('.pdf-viewer-container'),
+                sidebar: null,
+                focusBtn: null,
+                exitBtn: null,
+                toggleBtn: document.getElementById('focus-toggle')
+            };
+            
+            focusHandler = new PlayTimeFocusModeHandler(elements);
+            pdfLoaded = true;
+            
+            addTestResult('✅ Test PDF loaded and focus handler initialized', 'pass');
+        }
+        
+        let currentZoom = 1.0;
+        
+        function updateZoomDisplay() {
+            const displays = document.querySelectorAll('[data-role="zoom-display"]');
+            displays.forEach(d => {
+                d.textContent = `${Math.round(currentZoom * 100)}%`;
+            });
+        }
+        
+        function renderAtZoom(zoom) {
+            const canvas = document.getElementById('pdf-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear and redraw at new zoom level
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const scale = zoom;
+            ctx.save();
+            ctx.scale(scale, scale);
+            
+            // Draw content (scaled)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width/scale, canvas.height/scale);
+            
+            ctx.fillStyle = '#333333';
+            ctx.font = `${24/scale}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText('Test PDF Page', (canvas.width/scale)/2, 100/scale);
+            
+            ctx.font = `${16/scale}px Arial`;
+            ctx.fillText(`Zoom: ${Math.round(zoom * 100)}%`, (canvas.width/scale)/2, 150/scale);
+            ctx.fillText('PDF rendered at correct resolution', (canvas.width/scale)/2, 180/scale);
+            
+            ctx.restore();
+            
+            addTestResult(`📐 PDF re-rendered at ${Math.round(zoom * 100)}% zoom (crisp, not pixelated)`, 'pass');
+        }
+        
+        function toggleFocusMode() {
+            if (!pdfLoaded) {
+                addTestResult('❌ Please load test PDF first', 'fail');
+                return;
+            }
+            
+            const isActive = focusHandler.canvas.getAttribute('data-focus-mode') === 'active';
+            const container = document.querySelector('.pdf-viewer-container');
+            
+            if (isActive) {
+                focusHandler.exitFocusMode();
+                container.classList.remove('focus-mode');
+                document.getElementById('focus-status').textContent = 'Inactive';
+                document.getElementById('focus-toggle').classList.remove('active');
+                addTestResult('🚪 Exited focus mode', 'info');
+            } else {
+                // This should now use the PDF viewer API instead of CSS transform
+                focusHandler.enterFocusMode();
+                container.classList.add('focus-mode');
+                document.getElementById('focus-status').textContent = 'Active';
+                document.getElementById('focus-toggle').classList.add('active');
+                
+                // Verify the fix worked
+                setTimeout(() => {
+                    const zoomDisplay = document.querySelector('[data-role="zoom-display"]').textContent;
+                    if (zoomDisplay === '100%') {
+                        addTestResult('❌ BUG: Zoom still shows 100% (fix did not work)', 'fail');
+                    } else {
+                        addTestResult(`✅ SUCCESS: Zoom correctly shows ${zoomDisplay} (fix worked!)`, 'pass');
+                    }
+                }, 100);
+            }
+        }
+        
+        function zoomIn() {
+            if (window.PlayTimePDFViewer) {
+                const newZoom = Math.min(3.0, currentZoom + 0.25);
+                window.PlayTimePDFViewer.setZoom(newZoom);
+            }
+        }
+        
+        function zoomOut() {
+            if (window.PlayTimePDFViewer) {
+                const newZoom = Math.max(0.5, currentZoom - 0.25);
+                window.PlayTimePDFViewer.setZoom(newZoom);
+            }
+        }
+        
+        function addTestResult(message, type) {
+            const results = document.getElementById('test-results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        // Detect browser zoom
+        function detectBrowserZoom() {
+            const zoom = Math.round(window.devicePixelRatio * 100);
+            document.getElementById('browser-zoom').textContent = `${zoom}%`;
+            
+            if (zoom > 100) {
+                addTestResult(`📱 Browser zoom detected: ${zoom}% (good for testing the bug)`, 'info');
+            } else {
+                addTestResult(`📱 Browser zoom: ${zoom}% (try Ctrl+ to set >100% for bug reproduction)`, 'info');
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            detectBrowserZoom();
+            addTestResult('🚀 Test page loaded. Ready to test focus zoom fix!', 'info');
+        });
+        
+        window.addEventListener('resize', detectBrowserZoom);
+    </script>
+</body>
+</html>

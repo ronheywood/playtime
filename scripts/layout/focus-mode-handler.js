@@ -130,8 +130,27 @@ class FocusModeHandler {
                     this._scheduleLayoutDispatch({ waitForTransition: false, detail: { phase: 'enter-highlight' } });
                 });
             } catch(e) { /* non-fatal */ }
+        } else if (typeof window !== 'undefined' && window.PlayTimePDFViewer && typeof window.PlayTimePDFViewer.focusOnRectPercent === 'function') {
+            // FIXED PATH: Use PDF viewer API for canvas-width focus (no highlight provided)
+            // Create a "full page width" highlight to get consistent zoom calculation
+            try {
+                const fullPageHighlight = {
+                    xPct: 0.0,      // Start at left edge
+                    yPct: 0.4,      // Center vertically (roughly)
+                    wPct: 1.0,      // Full page width 
+                    hPct: 0.2       // Small height so zoom focuses on width
+                };
+                const p = window.PlayTimePDFViewer.focusOnRectPercent(fullPageHighlight, { paddingPx: options.padding || 20 });
+                Promise.resolve(p).then(() => {
+                    // Dispatch layout changed so any zoom UI (if present) can refresh
+                    this._scheduleLayoutDispatch({ waitForTransition: false, detail: { phase: 'enter-canvas-width' } });
+                });
+            } catch(e) { 
+                // Fallback to legacy behavior if PDF viewer API fails
+                this.applyFocusLayout();
+            }
         } else {
-            // Legacy fallback behavior (no specific highlight)
+            // Legacy fallback behavior (PDF viewer API not available)
             this.applyFocusLayout();
         }
 
