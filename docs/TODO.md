@@ -31,7 +31,16 @@
   - [ ] **Effort**: 12 hours
   - [ ] **Files**: `scripts/core/AppState.js`, `scripts/core/StateManager.js`
 
-**Total Architecture Sprint**: 80 hours (2 weeks) - **MUST COMPLETE BEFORE SPRINT 3**
+- [ ] **🔥 CRITICAL: Resolve ES Module vs CommonJS Conflicts**
+  - [ ] Fix mixed module system causing "Unexpected token 'export'" errors in Jest tests
+  - [ ] Core files (DIContainer, IndexedDBDatabase) use ES modules but tests need CommonJS
+  - [ ] Either standardize on CommonJS with proper exports or configure Jest for ES modules
+  - [ ] **Impact**: Blocking database layer testing, IndexedDB integration tests impossible
+  - [ ] **Evidence**: Failed tests in highlight-deletion sprint, had to skip IndexedDBDatabase unit tests
+  - [ ] **Effort**: 8 hours - standardize module system across codebase
+  - [ ] **Files**: `scripts/Core/Infrastructure/*.js`, `scripts/db/*.js`, Jest configuration
+
+**Total Architecture Sprint**: 88 hours (2+ weeks) - **MUST COMPLETE BEFORE SPRINT 3**
 
 ## 🚀 Implementation Priority Queue (AFTER Architecture Sprint)
 

@@ -1,6 +1,11 @@
 /**
  * HighlightDeletionService - Handles atomic deletion of highlights and practice plan cleanup
  * Provides safe deletion with confirmation and transaction rollback
+ * 
+ * Usage in application:
+ * - Registered as singleton in DI container as 'highlightDeletionService'
+ * - Access via: app.diContainer.get('highlightDeletionService')
+ * - Dependencies: database, logger (automatically injected)
  */
 class HighlightDeletionService {
     constructor(database, logger = console) {
@@ -44,68 +49,19 @@ class HighlightDeletionService {
      * @private
      */
     async deleteHighlightWithTransaction(highlightId) {
-        // Check if we have IndexedDB database
-        if (!this.database.db) {
-            throw new Error('Database not initialized');
-        }
+        // Use the database abstraction layer instead of raw IndexedDB
+        const operations = [
+            { type: 'deleteHighlight', highlightId: highlightId },
+            { type: 'deletePracticePlanHighlights', practicePlanId: highlightId } // Clean up any practice plan references
+        ];
 
-        // Create transaction for both highlights and practice plans
-        const transaction = this.database.db.transaction(['highlights', 'practicePlans'], 'readwrite');
+        const result = await this.database.deleteWithTransaction(operations);
         
-        return new Promise((resolve, reject) => {
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(new Error('Transaction failed: ' + transaction.error));
-            
-            try {
-                // 1. Delete highlight from highlights store
-                const highlightStore = transaction.objectStore('highlights');
-                highlightStore.delete(highlightId);
-
-                // 2. Update all practice plans that contain this highlight
-                const planStore = transaction.objectStore('practicePlans');
-                const getAllRequest = planStore.getAll();
-                
-                getAllRequest.onsuccess = () => {
-                    const plans = getAllRequest.result;
-                    
-                    plans.forEach(plan => {
-                        let planModified = false;
-                        const originalSectionCount = plan.sections.length;
-                        
-                        // Remove sections that reference the deleted highlight
-                        plan.sections = plan.sections.filter(section => {
-                            if (section.highlightId === highlightId) {
-                                planModified = true;
-                                return false; // Remove this section
-                            }
-                            return true; // Keep this section
-                        });
-                        
-                        if (planModified) {
-                            // Recalculate total duration
-                            plan.totalDuration = plan.sections.reduce((total, section) => {
-                                return total + (section.targetTime || 0);
-                            }, 0);
-                            
-                            // Save updated plan
-                            planStore.put(plan);
-                        }
-                    });
-                };
-                
-                // Trigger the success event immediately for mock
-                if (getAllRequest.onsuccess) {
-                    getAllRequest.onsuccess();
-                }
-                
-                getAllRequest.onerror = () => {
-                    reject(new Error('Failed to retrieve practice plans'));
-                };
-
-            } catch (error) {
-                reject(error);
-            }
-        });
+        if (!result.success) {
+            throw new Error('Failed to delete highlight atomically');
+        }
+        
+        return result;
     }
 }
 

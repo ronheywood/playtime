@@ -169,6 +169,15 @@ class DIContainer {
             }
             return new ScoreManagementService(database, logger);
         }, ['database', 'logger']);
+
+        // Highlight Deletion Service - manages atomic highlight deletion and practice plan cleanup
+        this.container.singleton('highlightDeletionService', (database, logger) => {
+            const HighlightDeletionService = window.HighlightDeletionService;
+            if (!HighlightDeletionService) {
+                throw new Error('HighlightDeletionService class not loaded');
+            }
+            return new HighlightDeletionService(database, logger);
+        }, ['database', 'logger']);
     }
 
     /**

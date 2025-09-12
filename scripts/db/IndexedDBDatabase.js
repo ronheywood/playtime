@@ -556,14 +556,14 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                 };
                 
                 // Execute all operations within the transaction
-                operations.forEach((operation, index) => {
+                operations.forEach((operation, operationIndex) => {
                     switch (operation.type) {
                         case 'deleteHighlight':
                             const sectionsStore = tx.objectStore(SECTIONS_STORE);
                             const deleteReq = sectionsStore.delete(Number(operation.highlightId));
                             
                             deleteReq.onsuccess = () => {
-                                results[index] = { type: operation.type, success: true };
+                                results[operationIndex] = { type: operation.type, success: true };
                                 completedOperations++;
                                 checkCompletion();
                             };
@@ -576,8 +576,8 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                             
                         case 'deletePracticePlanHighlights':
                             const practiceStore = tx.objectStore(PRACTICE_PLAN_HIGHLIGHTS_STORE);
-                            const index = practiceStore.index('practicePlanId');
-                            const cursorReq = index.openCursor(IDBKeyRange.only(Number(operation.practicePlanId)));
+                            const practicePlanIndex = practiceStore.index('practicePlanId');
+                            const cursorReq = practicePlanIndex.openCursor(IDBKeyRange.only(Number(operation.practicePlanId)));
                             
                             cursorReq.onsuccess = (event) => {
                                 const cursor = event.target.result;
@@ -586,7 +586,7 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                                     cursor.continue();
                                 } else {
                                     // All practice plan highlights deleted
-                                    results[index] = { type: operation.type, success: true };
+                                    results[operationIndex] = { type: operation.type, success: true };
                                     completedOperations++;
                                     checkCompletion();
                                 }

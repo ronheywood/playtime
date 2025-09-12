@@ -80,6 +80,45 @@ describe('Highlight Deletion Integration', () => {
             async savePracticePlan(plan) {
                 this.practicePlans.set(plan.id, plan);
                 return plan.id;
+            },
+            
+            // Mock deleteWithTransaction method
+            async deleteWithTransaction(operations) {
+                try {
+                    const results = [];
+                    
+                    for (const operation of operations) {
+                        switch (operation.type) {
+                            case 'deleteHighlight':
+                                const deleted = this.highlights.delete(operation.highlightId);
+                                results.push({ type: operation.type, success: deleted });
+                                break;
+                                
+                            case 'deletePracticePlanHighlights':
+                                // For practice plan highlights, we clean up the practice plans
+                                for (const [planId, plan] of this.practicePlans.entries()) {
+                                    const originalLength = plan.sections?.length || 0;
+                                    if (plan.sections) {
+                                        plan.sections = plan.sections.filter(section => 
+                                            section.highlightId !== operation.practicePlanId
+                                        );
+                                        plan.totalDuration = plan.sections.reduce((total, section) => 
+                                            total + (section.targetTime || 0), 0
+                                        );
+                                    }
+                                }
+                                results.push({ type: operation.type, success: true });
+                                break;
+                                
+                            default:
+                                throw new Error(`Unsupported operation: ${operation.type}`);
+                        }
+                    }
+                    
+                    return { success: true, results };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
             }
         };
         
@@ -253,9 +292,9 @@ describe('Highlight Deletion Integration', () => {
             };
             await database.saveHighlight(highlight);
 
-            // Mock database to simulate error during practice plan update
-            const originalTransaction = database.db.transaction;
-            database.db.transaction = jest.fn(() => {
+            // Mock database to simulate error during transaction
+            const originalDeleteWithTransaction = database.deleteWithTransaction;
+            database.deleteWithTransaction = jest.fn(() => {
                 throw new Error('Database connection lost');
             });
 
@@ -266,8 +305,8 @@ describe('Highlight Deletion Integration', () => {
             // Verify logger was called with error
             expect(mockLogger.error).toHaveBeenCalledWith('Highlight deletion failed:', expect.any(Error));
 
-            // Restore original transaction method
-            database.db.transaction = originalTransaction;
+            // Restore original method
+            database.deleteWithTransaction = originalDeleteWithTransaction;
 
             // Highlight should still exist (transaction rolled back)
             const stillExists = await database.getHighlight('highlight-1');

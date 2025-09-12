@@ -19,6 +19,7 @@ async function initializePlayTime() {
             'StateManager',
             'PracticeSessionService',
             'HighlightingService',
+            'HighlightDeletionService',
             'ScoreManagementService',
             'ComponentFactory',
             'PracticeSessionComponent',
