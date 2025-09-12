@@ -5,16 +5,206 @@
 ## 📊 **Current Architecture Problems**
 
 ### Critical Issues Blocking Advanced Development:
-1. **Global Window Dependencies** - Hard to test, maintain, and extend
-2. **Mixed Concerns** - Business logic tangled with UI and infrastructure
-3. **No Service Layer** - Domain logic scattered across components
-4. **Brittle Event System** - Events used for everything, including synchronous operations
-5. **State Management Chaos** - No single source of truth
-6. **Template Complexity** - String concatenation HTML with embedded logic
-7. **Event Binding Nightmare** - Manual DOM event management everywhere
-8. **Component Reuse** - No component abstraction or reusability
 
-## 🔧 **Framework Evaluation: Minimal Solutions for Maximum Impact**
+**Team Assessment (Sep 12, 2025)**: While all issues are important, we need to tackle them in dependency order and respect developer preferences for window globals.
+
+1. **Component Privacy Violations** - "new HighlightingModule().internals.getState()" breaks encapsulation
+2. **No Clear API Contracts** - Can't scan abstracts to find where new behavior should live  
+3. **Testing Isolation Impossible** - Can't test practice plans without configuring PDF viewer + highlighting
+4. **Missing Fire-and-Forget Events** - UI changes require complex orchestration instead of simple async calls
+5. **Mixed Concerns** - Business logic tangled with UI and infrastructure  
+6. **Brittle Event System** - Events used for everything, including synchronous operations
+7. **State Management Chaos** - No single source of truth
+8. **Global Window Dependencies** - Hard to test, but developer prefers this pattern
+
+## 🎯 **TEAM-ALIGNED INCREMENTAL PLAN (Sep 12, 2025)**
+
+### **Team Feedback Integration**:
+- ✅ **Keep window globals** - Developer prefers this pattern, it's familiar and working
+- ✅ **PlayTimeApplication bootstrap** - Team likes the cleaner main.js approach  
+- 🎯 **Focus on contracts** - Team wants to scan abstracts and find where behavior lives
+- 🎯 **Isolation for testing** - Test practice plans without PDF viewer complexity
+- 🎯 **Fire-and-forget events** - Make UI changes via simple async event calls
+
+### **Dependency-Ordered Implementation Strategy**
+
+#### **Phase 1: API Contracts + Abstracts (Week 1) - FOUNDATION**
+**Goal**: Create scannable contracts so team can find where new behavior belongs
+
+```javascript
+// scripts/contracts/PracticeContract.js
+export const PracticeContract = {
+  // Clear API for practice behavior
+  async startSession(planId) { /* ... */ },
+  async completeSection(sectionId, confidence) { /* ... */ },
+  async pauseSession() { /* ... */ },
+  
+  // Events this module publishes
+  EVENTS: {
+    SESSION_STARTED: 'practice:session-started',
+    SECTION_COMPLETED: 'practice:section-completed',
+    SESSION_PAUSED: 'practice:session-paused'
+  }
+};
+
+// scripts/contracts/HighlightingContract.js
+export const HighlightingContract = {
+  // Clear API for highlighting behavior  
+  async enable() { /* ... */ },
+  async disable() { /* ... */ },
+  async createHighlight(coords, confidence) { /* ... */ },
+  
+  // Events this module publishes
+  EVENTS: {
+    ENABLED: 'highlighting:enabled',
+    DISABLED: 'highlighting:disabled', 
+    HIGHLIGHT_CREATED: 'highlighting:created'
+  }
+};
+```
+
+**Benefits**: 
+- Team can scan contracts to see where new behavior should live
+- Clear separation between modules without complex DI
+- Gradual migration from current globals
+
+#### **Phase 2: Fire-and-Forget Event Bus (Week 2) - COMMUNICATION**
+**Goal**: Simple async events for UI changes, no complex orchestration
+
+```javascript
+// scripts/core/SimpleEventBus.js - Keep it simple!
+window.PlayTimeEvents = {
+  async emit(eventName, data) {
+    // Fire and forget - no return values, no complex flows
+    const event = new CustomEvent(eventName, { detail: data });
+    document.dispatchEvent(event);
+    
+    // Log for debugging
+    console.log(`� Event: ${eventName}`, data);
+  },
+  
+  on(eventName, handler) {
+    document.addEventListener(eventName, handler);
+  },
+  
+  off(eventName, handler) {
+    document.removeEventListener(eventName, handler);
+  }
+};
+
+// Usage - Simple and predictable
+await PlayTimeEvents.emit('highlighting:disable');
+await PlayTimeEvents.emit('practice:start', { planId: '123' });
+await PlayTimeEvents.emit('ui:update-confidence', { sectionId: '456', confidence: 'high' });
+```
+
+**Benefits**:
+- No complex orchestration - just fire events and forget
+- UI changes become simple async calls
+- Easy to debug with console logging
+- Keeps developer's preferred window global pattern
+
+#### **Phase 3: Module Isolation (Week 3) - TESTING**
+**Goal**: Test practice plans without PDF viewer complexity
+
+```javascript
+// scripts/practice/PracticeModule.js - Self-contained module
+window.PracticeModule = {
+  // Public API - no internals exposed
+  async createPlan(scoreId, sections) { /* ... */ },
+  async startSession(planId) { /* ... */ },
+  async completeSection(sectionId, confidence) { /* ... */ },
+  
+  // Internal state - private, not accessible from outside
+  _currentSession: null,
+  _timer: null,
+  _database: null,
+  
+  // Internal methods - private
+  _initializeTimer() { /* ... */ },
+  _updateDatabase() { /* ... */ }
+};
+
+// Testing becomes simple - no PDF viewer needed!
+test('practice plan creation', async () => {
+  const plan = await PracticeModule.createPlan('score123', sections);
+  expect(plan.sections).toHaveLength(3);
+  // No highlighting module, no PDF viewer, no complex setup!
+});
+```
+
+**Benefits**:
+- Test practice logic in isolation
+- No "new HighlightingModule().internals.getState()" anti-patterns
+- Clear public API, private internals
+- Fast, focused tests
+
+#### **Phase 4: Private Internals Cleanup (Week 4) - ENCAPSULATION**
+**Goal**: Stop "it works doesn't it?" violations of module privacy
+
+```javascript
+// Before: Privacy violations everywhere
+const highlighting = new HighlightingModule();
+highlighting.internals.getState(); // ❌ BAD
+highlighting._private.updateUI(); // ❌ BAD
+
+// After: Clean public APIs only
+await HighlightingModule.enable(); // ✅ GOOD
+await HighlightingModule.disable(); // ✅ GOOD
+await HighlightingModule.createHighlight(coords, confidence); // ✅ GOOD
+
+// If you need state, use events
+PlayTimeEvents.on('highlighting:state-changed', (event) => {
+  console.log('Highlighting state:', event.detail.enabled);
+});
+```
+
+**Benefits**:
+- Prevents "works but wrong" patterns
+- Forces proper API design
+- Makes modules truly replaceable
+- Easier to reason about system behavior
+
+## 🚦 **MIGRATION STRATEGY: Respect Developer Preferences**
+
+### **Keep What Works**:
+- ✅ **Window globals** - `window.PracticeModule`, `window.HighlightingModule`
+- ✅ **Direct function calls** - No complex DI injection
+- ✅ **Familiar patterns** - Build on what developer already knows
+
+### **Improve Gradually**:
+- 🔄 **Add contracts** - Clear APIs without changing internals
+- 🔄 **Add events** - Fire-and-forget communication
+- 🔄 **Add isolation** - Better testing without architectural upheaval
+- 🔄 **Remove privacy violations** - Clean boundaries without DI complexity
+
+### **Don't Fight The Developer**:
+- ❌ **No complex DI** - Developer doesn't want constructor injection
+- ❌ **No service layers** - Keep the familiar module pattern  
+- ❌ **No framework lock-in** - Stick with vanilla patterns that work
+
+## 📈 **EXPECTED OUTCOMES**
+
+### **Week 1: Contracts**
+- Team can scan files to see where new behavior belongs
+- Clear module boundaries without changing existing code
+
+### **Week 2: Events**  
+- UI changes via simple async events: `PlayTimeEvents.emit('ui:update')`
+- No more complex orchestration logic
+
+### **Week 3: Isolation**
+- Test practice plans without PDF viewer setup
+- Fast, focused unit tests
+
+### **Week 4: Privacy**
+- No more "new Module().internals.hack()" patterns
+- Clean public APIs only
+
+### **Total Investment**: 4 weeks gradual improvement
+### **Developer Friction**: Minimal - builds on existing preferences
+### **Testing Improvement**: Massive - isolated, fast tests
+### **Maintainability**: Dramatically better contracts and boundaries
 
 ### **Complexity Areas Requiring Framework Support**:
 
