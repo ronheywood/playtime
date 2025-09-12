@@ -3,6 +3,7 @@
 
 const TestHelpers = require('../../helpers/test-helpers');
 const TEST_CONSTANTS = require('../../helpers/test-constants');
+global.PT_CONSTANTS = require('../../../scripts/constants.js');
 
 describe('Zoom Handler Consistency', () => {
     let viewer;
@@ -48,9 +49,7 @@ describe('Zoom Handler Consistency', () => {
         };
 
         // Create viewer instance
-        viewer = TestHelpers.createPlayTimePDFViewer({
-            info: () => {}, warn: () => {}, error: () => {}
-        });
+        viewer = TestHelpers.createPlayTimePDFViewer(TestHelpers.createSilentLogger(), TestHelpers.createMockConstantsModule());
         
         await viewer.init();
         const file = TestHelpers.createMockFile();
@@ -76,7 +75,7 @@ describe('Zoom Handler Consistency', () => {
         
         // Spy on layout change events
         layoutChangeSpy = jest.fn();
-        const layoutEventName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.LAYOUT_CHANGED) || 'playtime:layout-changed';
+        const layoutEventName = 'playtime:layout-changed';
         window.addEventListener(layoutEventName, layoutChangeSpy);
         
         // Spy on UI updates by monitoring zoom display changes

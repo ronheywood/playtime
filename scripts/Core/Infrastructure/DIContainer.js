@@ -1,30 +1,6 @@
-/**
- * Application Dependency Injection Container
- * Configures and provides all application services
- */
-// Resolve ServiceContainer in a dual-mode way so this file can be required
-// Note: Avoid importing UI modules at top-level to keep this file usable
-// as an ES module in browsers and as CommonJS in tests. UI modules are
-// resolved lazily from globals or via require when needed.
-// from CommonJS test environments as well as imported by browser bundles.
-let ServiceContainer;
-try {
-    if (typeof require === 'function' && typeof module !== 'undefined' && module.exports) {
-        // CommonJS environment (Node/Jest)
-        // eslint-disable-next-line global-require
-        const mod = require('./ServiceContainer.js');
-        ServiceContainer = mod && (mod.default || mod);
-    } else {
-        // Browser environment - expect a global
-        ServiceContainer = (typeof window !== 'undefined' && window.ServiceContainer) || null;
-    }
-} catch (e) {
-    ServiceContainer = (typeof window !== 'undefined' && window.ServiceContainer) || null;
-}
-
 class DIContainer {
     constructor() {
-        this.container = new ServiceContainer();
+        this.container = new window.ServiceContainer();
         this.initialized = false;
     }
 
@@ -53,8 +29,10 @@ class DIContainer {
 
         // Logger - singleton for consistent logging
         this.container.singleton('logger', () => {
-            return window.Logger || console;
+            return new Logger();
         });
+
+        this.container.singleton('confidence', () => PlayTimeConfidence);
 
         // Database - singleton for data persistence
         // Note: do NOT depend on 'database' here (self-dependency causes a cycle).
@@ -62,11 +40,24 @@ class DIContainer {
             if (window.PlayTimeDB) {
                 return window.PlayTimeDB;
             }
+            
+            // Create database instance if it doesn't exist
+            if (window.IndexedDBDatabase && window.AbstractDatabase) {
+                try {
+                    logger.info('Creating database instance...');
+                    window.PlayTimeDB = new window.IndexedDBDatabase(logger);
+                    return window.PlayTimeDB;
+                } catch (error) {
+                    logger.error('Failed to create database instance:', error);
+                    throw new Error('Failed to create database instance: ' + error.message);
+                }
+            }
+            
             // Provide a clearer message and allow logger to record the issue
             if (logger && typeof logger.error === 'function') {
-                try { logger.error('Database service requested before initialization'); } catch (_) {}
+                try { logger.error('Database classes not loaded or database service requested before initialization'); } catch (_) {}
             }
-            throw new Error('Database not initialized');
+            throw new Error('Database not initialized - database classes not available');
         }, ['logger']);
         
         this.container.singleton('highlightPersistenceService', (database, logger) => {
@@ -151,6 +142,12 @@ class DIContainer {
             }
             return new PracticeSessionService(practicePersistence, logger, confidenceMapper);
         }, ['practicePersistence', 'logger', 'confidenceMapper']);
+        
+
+        this.container.singleton('practiceSessionComponent', (stateManager, practiceSessionService, highlightingService, logger) => {
+            return new PracticeSessionComponent(stateManager, practiceSessionService, highlightingService, logger);
+        }, ['stateManager', 'practiceSessionService', 'highlightingService', 'logger']);
+
 
         // Highlighting Service - manages highlight business logic
         this.container.singleton('highlightingService', (database, logger, confidenceMapper, coordinateMapper) => {
@@ -169,6 +166,23 @@ class DIContainer {
             }
             return new ScoreManagementService(database, logger);
         }, ['database', 'logger']);
+
+        // Practice Plan Persistence Service - manages practice plan storage
+        this.container.singleton('practicePlanPersistenceService', (database, logger) => {
+            const PracticePlanPersistenceService = window.PracticePlanPersistenceService;
+            if (!PracticePlanPersistenceService) {
+                throw new Error('PracticePlanPersistenceService class not loaded');
+            }
+            return new PracticePlanPersistenceService(database, logger);
+        }, ['database', 'logger']);
+
+        // Practice Planner - manages practice session setup UI
+        this.container.singleton('practicePlanner', (logger, database, highlightPersistenceService, practicePlanPersistenceService) => {
+            if (typeof window.createPlayTimePracticePlanner !== 'function') {
+                throw new Error('createPlayTimePracticePlanner factory not loaded');
+            }
+            return window.createPlayTimePracticePlanner(logger, database, highlightPersistenceService, practicePlanPersistenceService);
+        }, ['logger', 'database', 'highlightPersistenceService', 'practicePlanPersistenceService']);
     }
 
     /**
@@ -193,19 +207,10 @@ class DIContainer {
             return new StateManager(appState, logger);
         }, ['appState', 'logger']);
 
-        // Component Factory - creates components with proper DI
-        this.container.singleton('componentFactory', (container, logger) => {
-            const ComponentFactory = window.ComponentFactory;
-            if (!ComponentFactory) {
-                throw new Error('ComponentFactory class not loaded');
-            }
-            return new ComponentFactory(container, logger);
-        }, ['container', 'logger']);
-
         // UI Highlighting - expose the PlayTimeHighlighting UI module via DI
         // Resolve the module directly from source in CommonJS/test environments.
         // Note: removing reliance on globals makes the service resolution explicit.
-    this.container.singleton('playTimeHighlighting', (logger, database) => {
+        this.container.singleton('playTimeHighlighting', (logger, database) => {
             // Resolve the PlayTimeHighlighting implementation lazily so this
             // DI container can be used both in browser bundles (where the
             // module may be loaded as a global) and in CommonJS test runs.
@@ -258,7 +263,7 @@ class DIContainer {
             // application bootstrap which will call init() explicitly.
             if (database) {
                 try {
-                    const initResult = highlightingInstance.init(config, logger, window.PlayTimeConfidence, window.PlayTimeConstants, { database });
+                    const initResult = highlightingInstance.init(config, logger, confidence, PT_CONSTANTS, { database });
                     // If init returns a promise, attach a noop catch so unhandled
                     // rejections don't bubble up synchronously.
                     if (initResult && typeof initResult.then === 'function') {
@@ -270,15 +275,15 @@ class DIContainer {
             }
             // Do NOT write globals here; leave bootstrap to surface instances if needed
             return highlightingInstance;
-            }, ['logger']);
+            }, ['logger','confidence']);
 
         // PDF Viewer - provide the PlayTime PDF viewer via DI
         // Prefer a browser global factory `createPlayTimePDFViewer` if present,
         // otherwise fall back to requiring the local implementation in CommonJS/test envs.
         this.container.singleton('playTimePDFViewer', (logger) => {
             let createFn = null;
-            if (typeof window !== 'undefined' && typeof window.createPlayTimePDFViewer === 'function') {
-                createFn = window.createPlayTimePDFViewer;
+            if (typeof createPlayTimePDFViewer === 'function') {
+                createFn = createPlayTimePDFViewer;
             } else {
                 try {
                     // eslint-disable-next-line global-require
@@ -289,7 +294,7 @@ class DIContainer {
                 }
             }
 
-            const instance = createFn(logger);
+            const instance = createFn(logger, PT_CONSTANTS);
             // Do not assign to window here; bootstrap will decide whether to expose globals.
             return instance;
         }, ['logger']);
@@ -332,6 +337,10 @@ class DIContainer {
         return this.container.get(serviceName);
     }
 
+    register(serviceName, factory, dependencies = []) {
+        this.container.singleton(serviceName, factory, dependencies);
+    }
+
     /**
      * Check if a service is available
      * @param {string} serviceName - Name of the service
@@ -366,6 +375,11 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = { DIContainer, diContainer };
 }
 
-export function createDiContainer() {
+function createDiContainer() {
     return new DIContainer();
+}
+
+// Make createDiContainer available globally
+if (typeof window !== 'undefined') {
+    window.createDiContainer = createDiContainer;
 }

@@ -32,6 +32,4 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = { ConfidenceLevel, confidenceToColor, colorToConfidence };
 }
 // Browser global (optional convenience)
-if (typeof window !== 'undefined') {
-  window.PlayTimeConfidence = { ConfidenceLevel, confidenceToColor, colorToConfidence };
-}
+PlayTimeConfidence = { ConfidenceLevel, confidenceToColor, colorToConfidence };

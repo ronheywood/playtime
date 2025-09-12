@@ -11,7 +11,6 @@ async function gotoWithSeed(page) {
   // First, wait for dependencies to be loaded
   await page.waitForFunction(() => {
     return (window as any).PlayTimeConfidence && 
-           (window as any).PlayTimeConstants && 
            (window as any).HighlightElement;
   }, { timeout: 5000 });
 
@@ -71,21 +70,25 @@ async function gotoWithSeed(page) {
     const rect = { left: geom.xPct, top: geom.yPct, width: geom.wPct, height: geom.hPct };
     // Use HighlightElement factory
     const HE = (window as any).HighlightElement;
-    const mapper = (window as any).CoordinateMapper || (window as any).CoordinateMapperClass;
+    // Build a ConfidenceMapper instance to satisfy HighlightElement.fromDatabaseRecord(mapper)
+    // HighlightElement.fromDatabaseRecord expects a mapper with confidenceToColor().
+    const mapper = (typeof (window as any).ConfidenceMapper === 'function' && (window as any).PlayTimeConfidence)
+      ? new (window as any).ConfidenceMapper((window as any).PlayTimeConfidence)
+      : (window as any).ConfidenceMapper || null;
   // Use real bounding rect + offset so positioning matches runtime behavior (canvas is centered)
   const vRect = viewer.getBoundingClientRect();
   const cRect = canvas.getBoundingClientRect();
   const canvasRect = { width: cRect.width || canvas.width || 800, height: cRect.height || canvas.height || 600 } as any;
   const offsetLeft = cRect.left - vRect.left;
   const offsetTop = cRect.top - vRect.top;
-    const elObj = HE.fromDatabaseRecord({
+  const elObj = HE.fromDatabaseRecord({
       id: 1,
       pdfId: 'synthetic',
       page: 1,
       confidence: 2,
       color: 'green',
       xPct: geom.xPct, yPct: geom.yPct, wPct: geom.wPct, hPct: geom.hPct
-    });
+  }, mapper);
   const dom = elObj.createDOMElement(canvasRect, offsetLeft, offsetTop, {
       highlightClass: 'highlight',
       colorStyles: {

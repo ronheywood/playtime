@@ -17,6 +17,7 @@ class Score {
      * @param {string} [data.contentType] - MIME type
      */
     constructor(data) {
+
         if (!data || typeof data !== 'object') {
             throw new Error('Score data must be a non-null object');
         }
@@ -140,24 +141,9 @@ class Score {
             contentType: dbRecord.contentType || dbRecord.content_type || dbRecord.mimeType
         });
     }
-
-    /**
-     * Creates multiple Scores from an array of database records.
-     * @param {Array} dbRecords - Array of database records
-     * @returns {Array<Score>} Array of Score instances
-     */
-    static fromDatabaseRecords(dbRecords) {
-        if (!Array.isArray(dbRecords)) {
-            throw new Error('Database records must be an array');
-        }
-
-        return dbRecords.map(record => Score.fromDatabaseRecord(record));
-    }
 }
 
 // Export for both CommonJS and ES modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = Score;
-} else if (typeof window !== 'undefined') {
-    window.Score = Score;
 }

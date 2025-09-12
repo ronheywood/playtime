@@ -1,4 +1,5 @@
 /** @jest-environment jsdom */
+const ConfidenceMapper = require('../../../scripts/highlighting/ConfidenceMapper');
 const HighlightElement = require('../../../scripts/highlighting/HighlightElement');
 
 describe('HighlightElement', () => {
@@ -94,7 +95,7 @@ describe('HighlightElement', () => {
                 color: 'amber', confidence: 1, page: 2, id: 'test-123'
             };
 
-            const highlight = HighlightElement.fromDatabaseRecord(record);
+            const highlight = HighlightElement.fromDatabaseRecord(record, new ConfidenceMapper());
 
             expect(highlight.xPct).toBe(0.2);
             expect(highlight.color).toBe('amber');
@@ -105,7 +106,7 @@ describe('HighlightElement', () => {
 
         test('throws on invalid record', () => {
             expect(() => HighlightElement.fromDatabaseRecord(null))
-                .toThrow('fromDatabaseRecord requires a valid record object');
+                .toThrow('fromDatabaseRecord requires a valid record');
         });
     });
 

@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-require('../../../scripts/main.js');
+const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
 const { PT_CONSTANTS } = require('../../../scripts/constants.js');
 const TestHelpers = require('../../helpers/test-helpers');
 
@@ -117,6 +117,17 @@ describe('Highlight Creation with Immediate Annotation', () => {
         // Mock PDF viewer for page information
         global.window.PlayTimePDFViewer = {
             getCurrentPage: jest.fn().mockReturnValue(1)
+        };
+
+        // Mock DI container for new architecture
+        global.window.diContainer = {
+            has: jest.fn().mockImplementation((service) => service === 'playTimePDFViewer'),
+            get: jest.fn().mockImplementation((service) => {
+                if (service === 'playTimePDFViewer') {
+                    return global.window.PlayTimePDFViewer;
+                }
+                return null;
+            })
         };
 
         // Mock global score ID

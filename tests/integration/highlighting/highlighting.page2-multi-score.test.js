@@ -8,8 +8,6 @@ describe('Highlighting multi score page 2 reselect', () => {
     // Setup silent logger to reduce test noise
     const testLogger = require('../../../scripts/logger.js');
     testLogger.setSilent(true);
-    global.logger = testLogger;
-    global.window.logger = testLogger;
 
     // Shared store to mimic persistence
     if (!global.__storeMulti) global.__storeMulti = { pdfs: [], sections: [] };
@@ -33,20 +31,6 @@ describe('Highlighting multi score page 2 reselect', () => {
       addHighlight: jest.fn().mockImplementation(async (sec) => { store.sections.push({ id: store.sections.length+1, ...sec }); }),
       getHighlights: jest.fn().mockImplementation(async (pdfId) => store.sections.filter(s=>s.pdfId===pdfId || String(s.pdfId)===String(pdfId)))
     });
-
-    // PDF viewer stub with page support; we will simulate page changes
-    let currentPage = 1;
-    global.window.createPlayTimePDFViewer = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockImplementation(async (p) => { currentPage = p; window.dispatchEvent(new CustomEvent(PT_CONSTANTS.EVENTS.PAGE_CHANGED,{ detail:{ page:p }})); }),
-      getCurrentPage: () => currentPage,
-      getTotalPages: () => 3
-    });
-  // Do NOT create the PlayTimePDFViewer global here. Prefer DI-registration
-  // via the test factory `createPlayTimePDFViewer`. Main.js will initialize
-  // the DI container and create the instance during DOMContentLoaded. Tests
-  // should resolve the viewer from DI when needed.
 
     // Base DOM
     document.body.innerHTML = `
@@ -72,12 +56,14 @@ describe('Highlighting multi score page 2 reselect', () => {
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../../scripts/confidence.js');
     const { PT_CONSTANTS } = require('../../../scripts/constants.js');
-    global.window.PlayTimeConfidence = confidence;
-    global.window.PlayTimeConstants = PT_CONSTANTS;
+    global.PlayTimeConfidence = confidence;
+    global.PT_CONSTANTS = PT_CONSTANTS;
     
     require('../../../scripts/highlighting/highlighting.js');
-    require('../../../scripts/main.js');
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    // Bootstrap the application using test harness
+    const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
+    await triggerDOMContentLoaded();
     await new Promise(r=>setTimeout(r,120)); // allow auto-select first score and rehydrate (page 1 only visible)
   });
 

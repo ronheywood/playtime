@@ -5,6 +5,7 @@
 
 // Use the same setup approach as other tests
 require('../setup');
+global.PracticeSessionTimer = require('../../scripts/Practice/practice-session-timer'); // Ensure timer is loaded first
 
 describe('Practice Planner Integration Tests', () => {
     let practicePlanner;
@@ -68,7 +69,6 @@ describe('Practice Planner Integration Tests', () => {
         // Make timer available on global/window
         if (typeof global !== 'undefined') {
             global.window = global.window || {};
-            global.window.PracticeSessionTimer = PracticeSessionTimer;
         }
         
         // Load the practice planner module
@@ -1448,7 +1448,7 @@ describe('Practice Planner Integration Tests', () => {
 
     describe('Sidebar Start Practice Session Button', () => {
         let mockPracticePlanPersistenceService;
-        let mockPracticeSessionManager;
+        let mockPracticeSessionComponent;
 
         beforeEach(() => {
             // Mock practice plan persistence service
@@ -1458,9 +1458,9 @@ describe('Practice Planner Integration Tests', () => {
                 loadPracticePlan: jest.fn()
             };
 
-            // Mock practice session manager
-            mockPracticeSessionManager = {
-                startFromPlan: jest.fn()
+            // Mock practice session component
+            mockPracticeSessionComponent = {
+                startPracticeFromPlan: jest.fn()
             };
 
             // Add the sidebar button to DOM BEFORE setting up practice planner
@@ -1474,7 +1474,7 @@ describe('Practice Planner Integration Tests', () => {
 
             // Set up practice planner with mocked services
             practicePlanner.practicePlanPersistenceService = mockPracticePlanPersistenceService;
-            practicePlanner.practiceSessionManager = mockPracticeSessionManager;
+            practicePlanner.practiceSessionComponent = mockPracticeSessionComponent;
 
             // Reinitialize to pick up the new button
             practicePlanner.startPracticeSessionButton = document.querySelector('[data-role="start-practice-session-sidebar"]');
@@ -1526,13 +1526,13 @@ describe('Practice Planner Integration Tests', () => {
             // Set up current practice plan
             practicePlanner.currentPracticePlan = mockPlan;
             practicePlanner.currentScoreId = 'score-1';
-            mockPracticeSessionManager.startFromPlan.mockResolvedValue(true);
+            mockPracticeSessionComponent.startPracticeFromPlan.mockResolvedValue(true);
 
             // Click the sidebar button
             await practicePlanner.handleStartPracticeSessionFromSidebar();
 
-            // Should call startFromPlan with correct parameters
-            expect(mockPracticeSessionManager.startFromPlan).toHaveBeenCalledWith('plan-123', 'score-1');
+            // Should call startPracticeFromPlan with correct parameters
+            expect(mockPracticeSessionComponent.startPracticeFromPlan).toHaveBeenCalledWith('plan-123', 'score-1');
         });
 
         test('should show error when sidebar button is clicked but no plan is available', async () => {
@@ -1544,9 +1544,9 @@ describe('Practice Planner Integration Tests', () => {
             // Click the sidebar button
             await practicePlanner.handleStartPracticeSessionFromSidebar();
 
-            // Should show error and not call startFromPlan
+            // Should show error and not call startPracticeFromPlan
             expect(alertSpy).toHaveBeenCalledWith('No practice plan available. Please create a practice plan first.');
-            expect(mockPracticeSessionManager.startFromPlan).not.toHaveBeenCalled();
+            expect(mockPracticeSessionComponent.startPracticeFromPlan).not.toHaveBeenCalled();
 
             alertSpy.mockRestore();
         });
@@ -1562,14 +1562,14 @@ describe('Practice Planner Integration Tests', () => {
             // Set up current practice plan
             practicePlanner.currentPracticePlan = mockPlan;
             practicePlanner.currentScoreId = 'score-1';
-            mockPracticeSessionManager.startFromPlan.mockResolvedValue(false);
+            mockPracticeSessionComponent.startPracticeFromPlan.mockResolvedValue(false);
 
             // Click the sidebar button
             await practicePlanner.handleStartPracticeSessionFromSidebar();
 
             // Should show error message
             expect(alertSpy).toHaveBeenCalledWith('Failed to start practice session from saved plan');
-            expect(mockPracticeSessionManager.startFromPlan).toHaveBeenCalledWith('plan-123', 'score-1');
+            expect(mockPracticeSessionComponent.startPracticeFromPlan).toHaveBeenCalledWith('plan-123', 'score-1');
 
             alertSpy.mockRestore();
         });

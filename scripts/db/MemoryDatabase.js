@@ -15,16 +15,28 @@ class MemoryDatabase extends AbstractDatabase {
         this._initialized = true;
     }
 
-    async save(item) {
+    async save(file, meta = {}) {
         if (!this._initialized) throw new Error('Database not initialized');
-        if (!item) return;
+        if (!file) return;
+        
+        // Create PDF data object similar to IndexedDBDatabase
+        const pdfData = {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            uploadDate: new Date().toISOString(),
+            // Include metadata like page count
+            pages: Number.isFinite(meta.pages) ? Number(meta.pages) : undefined,
+        };
+        
         // Always assign a unique string ID if not present
-        let id = item.id;
+        let id = pdfData.id;
         if (!id) {
             id = String(this._nextId++);
-            item.id = id;
+            pdfData.id = id;
         }
-        const toSave = { ...item, id };
+        
+        const toSave = { ...pdfData, id };
         this._store.set(id, toSave);
         return id;
     }

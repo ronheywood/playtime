@@ -46,12 +46,10 @@
     <!-- Include required dependencies -->
     <script src="scripts/confidence.js"></script>
     <script src="scripts/highlighting/ConfidenceMapper.js"></script>
-    <script src="scripts/Practice/practice-session-manager.js"></script>
+    <script src="scripts/Practice/Application/PracticeSessionService.js"></script>
+    <script src="scripts/Practice/UI/PracticeSessionComponent.js"></script>
 
     <script>
-        // Setup mock environment
-        window.PracticeSessionTimer = function() {};
-        
         // Mock logger
         const logger = {
             info: (...args) => console.log('INFO:', ...args),

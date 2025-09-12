@@ -599,7 +599,16 @@ test.describe('Practice Session Visual Flow', () => {
         const offsetTop = canvasRect.top - viewerRect.top;
         
         highlights.forEach(highlight => {
-          const element = HE.fromDatabaseRecord(highlight);
+          // Create a simple confidence mapper for the test
+          const mapper = {
+            confidenceToColor: (confidence) => {
+              if (confidence <= 1) return 'red';
+              if (confidence === 2) return 'amber';
+              return 'green';
+            }
+          };
+          
+          const element = HE.fromDatabaseRecord(highlight, mapper);
           const dom = element.createDOMElement(
             { width: canvasRect.width, height: canvasRect.height },
             offsetLeft,

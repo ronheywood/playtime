@@ -6,7 +6,6 @@
 // Import shared test utilities
 const TEST_CONSTANTS = require('../helpers/test-constants');
 const TestHelpers = require('../helpers/test-helpers');
-const { CONFIG } = require('../../scripts/main');
 
 describe('PlayTime Score List Integration', () => {
     let mockDatabase, mockLogger, scoreListModule;
@@ -188,7 +187,7 @@ describe('PlayTime Score List Integration', () => {
         const viewer = document.querySelector(scoreListConfig.SELECTORS.PDF_VIEWER);
         const status = document.createElement('div');
         status.className = 'status-message';
-        status.textContent = CONFIG.MESSAGES.SUCCESS_FILE_SELECTED + 'one.pdf';
+        status.textContent = 'Selected: one.pdf';
         viewer.appendChild(status);
 
         await playTimeScoreList.refresh();

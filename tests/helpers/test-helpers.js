@@ -89,6 +89,9 @@ const TestHelpers = {
             AMBER: 'amber', 
             GREEN: 'green'
         },
+        SELECTORS: {
+            PAGE_INFO: '[data-role="page-info"]'
+        },
         EVENTS: {
             LAYOUT_CHANGED: 'playtime:layout-changed'
         }
@@ -218,6 +221,7 @@ const TestHelpers = {
             </div>
             <div class="pdf-viewer-container">
                 <canvas id="pdf-canvas"></canvas>
+                <div class="status-message"></div>
             </div>
             <div class="viewer-controls">
                 <button id="prev-page-btn" data-role="prev-page" aria-label="Previous page">◀</button>
@@ -345,18 +349,7 @@ const TestHelpers = {
                 delete: jest.fn().mockResolvedValue(true)
             };
         };
-        
-        // Mock PDF viewer factory
-        global.window.createPlayTimePDFViewer = (logger = console) => {
-            return {
-                init: jest.fn().mockResolvedValue(true),
-                loadPDF: jest.fn().mockResolvedValue(true),
-                renderPage: jest.fn().mockResolvedValue(true),
-                getCurrentPage: jest.fn().mockReturnValue(1),
-                getTotalPages: jest.fn().mockReturnValue(1)
-            };
-        };
-        
+
         // Mock score list factory
         global.window.createPlayTimeScoreList = (db = null, logger = console) => {
             return {
@@ -379,14 +372,14 @@ const TestHelpers = {
         };
         
         // Mock confidence module
-        global.window.PlayTimeConfidence = {
+        global.PlayTimeConfidence = {
             init: jest.fn(),
             setActiveConfidence: jest.fn(),
             clearActiveConfidence: jest.fn()
         };
         
         // Mock constants module
-        global.window.PlayTimeConstants = {
+        global.PT_CONSTANTS = {
             EVENTS: {
                 CONFIDENCE_CHANGED: 'confidence-changed',
                 PAGE_CHANGED: 'page-changed',
@@ -403,44 +396,16 @@ const TestHelpers = {
 
     /**
      * Setup main.js integration for navigation testing
-     * Loads and evaluates main.js in the test environment
+     * Uses the test application bootstrap instead of eval'ing main.js
      */
-    setupMainJSIntegration: () => {
-        const path = require('path');
-        const fs = require('fs');
-        const mainJsPath = path.join(__dirname, '../../scripts/main.js');
-        const mainJsContent = fs.readFileSync(mainJsPath, 'utf8');
+    setupMainJSIntegration: async () => {
+        const { triggerDOMContentLoaded } = require('./integration-bootstrap');
         
         // Mock the required global objects for main.js
         TestHelpers.setupMainJsMocks();
         
-        // Execute main.js to define the functions and make them globally available
-        eval(mainJsContent);
-
-        // Test-only compatibility shim: if the DI container wasn't used by main.js
-        // and tests still expect a `window.PlayTimePDFViewer` global, create it
-        // from the test factory `createPlayTimePDFViewer` so we don't reintroduce
-        // the legacy global in production code.
-        try {
-            if (typeof global.window.createPlayTimePDFViewer === 'function') {
-                // If DI container is present in the test run, register the test
-                // factory into it so tests can resolve the viewer via DI.
-                try {
-                    if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-                        try {
-                            global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-                        } catch (_) {}
-                    }
-                } catch (_) {}
-
-                // Maintain backward compatibility for tests that still expect the global
-                if (!global.window.PlayTimePDFViewer) {
-                    try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(global.logger || console); } catch (_) {}
-                }
-            }
-        } catch (e) {
-            // swallow errors - tests can still provide their own global if needed
-        }
+        // Bootstrap the application using the window-free test harness
+        const app = await triggerDOMContentLoaded();
         
         // Make key functions available globally for testing
         if (typeof initializeFileUpload !== 'undefined') {
@@ -504,7 +469,7 @@ const TestHelpers = {
      */
     createPlayTimePDFViewer: (logger = console) => {
         const createPlayTimePDFViewer = require('../../scripts/pdf-viewer');
-        return createPlayTimePDFViewer(logger);
+        return createPlayTimePDFViewer(logger, TestHelpers.createMockConstantsModule());
     },
 
     // Utility Helpers

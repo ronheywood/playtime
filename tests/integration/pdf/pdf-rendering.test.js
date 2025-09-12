@@ -154,9 +154,9 @@ describe('PDF Rendering Integration', () => {
         await TestHelpers.setupPDFViewer(mockPDFViewer);
         await mockPDFViewer.loadPDF(mockFile);
 
-    TestHelpers.setupMainJSIntegration(); // viewer now handles its own UI control attachment
+        await TestHelpers.setupMainJSIntegration(); // viewer now handles its own UI control attachment
 
-    const pageInfo = document.querySelector('[data-role="page-info"]');
+        const pageInfo = document.querySelector('[data-role="page-info"]');
 
         // Verify initial state
         expect(mockPDFViewer.getCurrentPage()).toBe(TEST_CONSTANTS.FIRST_PAGE);

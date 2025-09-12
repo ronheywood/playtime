@@ -47,36 +47,19 @@ class HighlightElement {
     /**
      * Create HighlightElement from stored database record
      */
-    static fromDatabaseRecord(record) {
-        if (!record || typeof record !== 'object') {
-            throw new Error('fromDatabaseRecord requires a valid record object');
-        }
+    static fromDatabaseRecord(record, mapper) {
 
-        // Import ConfidenceMapper for color conversion
-        const ConfidenceMapper = (typeof require !== 'undefined') ? 
-            require('./ConfidenceMapper') : window.ConfidenceMapper;
+        if (!record) {
+            throw new Error('fromDatabaseRecord requires a valid record');
+        }
+        if (!mapper) {
+            throw new Error('fromDatabaseRecord requires a valid mapper');
+        }
         
         let color = record.color;
         
-        // If confidence exists, derive color from it (prioritize confidence over potentially stale color field)
         if (Number.isFinite(record.confidence)) {
-            if (ConfidenceMapper) {
-                try {
-                    // Try to create mapper with confidence module if available
-                    const confidenceModule = (typeof require !== 'undefined') ? 
-                        require('../confidence') : window.PlayTimeConfidence;
-                    const mapper = new ConfidenceMapper(confidenceModule);
-                    color = mapper.confidenceToColor(record.confidence);
-                } catch (e) {
-                    // Fallback to basic enum-to-color mapping
-                    const fallbackColors = { 0: 'red', 1: 'amber', 2: 'green' };
-                    color = fallbackColors[record.confidence] || record.color || 'amber';
-                }
-            } else {
-                // Fallback without ConfidenceMapper
-                const fallbackColors = { 0: 'red', 1: 'amber', 2: 'green' };
-                color = fallbackColors[record.confidence] || record.color || 'amber';
-            }
+            color = mapper.confidenceToColor(record.confidence);
         }
         
         // Ensure we have a valid color

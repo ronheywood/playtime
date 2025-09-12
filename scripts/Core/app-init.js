@@ -8,8 +8,8 @@
  * Initialize PlayTime application with new architecture
  */
 async function initializePlayTime() {
-    try {
-        console.log('Starting PlayTime with new architecture...');
+    
+        console.log('Starting PlayTime...');
 
         // Check if required classes are loaded
         const requiredClasses = [
@@ -41,56 +41,13 @@ async function initializePlayTime() {
             app.enableDevMode();
             console.log('Development mode enabled');
         }
-
-        // Set up legacy compatibility if needed
-        setupLegacyCompatibility(app);
+        
 
         console.log('PlayTime application initialized successfully!');
         return app;
-
-    } catch (error) {
-        console.error('Failed to initialize PlayTime application:', error);
-        
-        // Fall back to legacy initialization if available
-        if (typeof initializeLegacyPlayTime === 'function') {
-            console.log('Falling back to legacy initialization...');
-            return initializeLegacyPlayTime();
-        }
-        
-        throw error;
-    }
 }
 
-/**
- * Set up compatibility with legacy code during migration
- */
-function setupLegacyCompatibility(app) {
-    // Expose services globally for legacy code compatibility
-    if (!window.PlayTimeServices) {
-        window.PlayTimeServices = {
-            stateManager: app.getService('stateManager'),
-            practiceSessionService: app.getService('practiceSessionService'),
-            highlightingService: app.getService('highlightingService'),
-            scoreManagementService: app.getService('scoreManagementService'),
-            eventSystem: app.getService('eventSystemManager')
-        };
-    }
 
-    // Create legacy-compatible practice session manager
-    if (!window.createPracticeSessionManager) {
-        window.createPracticeSessionManager = function(logger, highlighting, timer, practiceSessionStarter, practicePlanPersistenceService, database, options) {
-            console.log('Legacy createPracticeSessionManager called - using new architecture');
-            
-            // Return the new practice session component wrapped to match legacy interface
-            const component = app.getComponent('main-practice-session');
-            if (component) {
-                return component;
-            }
-            
-            // Create new component if needed
-            return app.createComponent('PracticeSessionComponent', 'legacy-practice-session', options);
-        };
-    }
 
     // Maintain backward compatibility for existing event patterns
     const eventSystem = app.getService('eventSystemManager');

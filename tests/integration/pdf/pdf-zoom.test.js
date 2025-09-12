@@ -3,6 +3,7 @@
 
 const TestHelpers = require('../../helpers/test-helpers');
 const TEST_CONSTANTS = require('../../helpers/test-constants');
+global.PT_CONSTANTS = require('../../../scripts/constants.js');
 
 /**
  * EXPECTED NEW VIEWER API (to be implemented):

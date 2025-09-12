@@ -37,7 +37,7 @@ class AppState {
             
             // User preferences
             preferences: {
-                timerDuration: 30000, // 30 seconds
+                timerDuration: 180000, // 3 minutes (180 seconds)
                 showConfidenceDialog: true,
                 autoSave: true
             }
@@ -196,7 +196,7 @@ class AppState {
                 theme: 'light'
             },
             preferences: {
-                timerDuration: 30000,
+                timerDuration: 180000, // 3 minutes (180 seconds)
                 showConfidenceDialog: true,
                 autoSave: true
             }
@@ -443,5 +443,3 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
     window.AppState = AppState;
 }
-
-export default AppState;

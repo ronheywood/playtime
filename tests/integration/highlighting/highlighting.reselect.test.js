@@ -1,14 +1,13 @@
 /** @jest-environment jsdom */
 // Integration: re-selecting a score should re-show its highlights
 const { SELECTORS } = require('../../../scripts/constants.js');
+const TestHelpers = require('../../helpers/test-helpers.js');
 
 describe('Highlighting re-select score', () => {
   beforeEach(async () => {
     // Setup silent logger to reduce test noise
     const testLogger = require('../../../scripts/logger.js');
     testLogger.setSilent(true);
-    global.logger = testLogger;
-    global.window.logger = testLogger;
     
     global.window.createPlayTimeDB = () => ({
       init: jest.fn().mockResolvedValue(true),
@@ -18,27 +17,7 @@ describe('Highlighting re-select score', () => {
       addHighlight: jest.fn().mockResolvedValue(true),
       getHighlights: jest.fn().mockResolvedValue([{ pdfId:1, page:1, confidence:2, xPct:0, yPct:0, wPct:0.2, hPct:0.2 }])
     });
-    global.window.createPlayTimePDFViewer = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockImplementation(async () => {
-        // simulate page change event
-        const EV = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS) || {};
-        const evName = EV.PAGE_CHANGED || 'playtime:page-changed';
-        window.dispatchEvent(new CustomEvent(evName,{ detail:{ page:1 } }));
-      }),
-      getCurrentPage: () => 1,
-      getTotalPages: () => 2
-    });
-  // Register test factory into DI if present; fallback to legacy global instance
-  try {
-    if (typeof global.window.createPlayTimePDFViewer === 'function') {
-      try { if (global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-      } } catch(_) {}
-      if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
-    }
-  } catch(_) {}
+    
     document.body.innerHTML = `
       <main>
         <section id="upload-section"><input type="file" id="pdf-upload" accept="application/pdf"></section>
@@ -61,12 +40,14 @@ describe('Highlighting re-select score', () => {
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../../scripts/confidence.js');
     const { PT_CONSTANTS } = require('../../../scripts/constants.js');
-    global.window.PlayTimeConfidence = confidence;
-    global.window.PlayTimeConstants = PT_CONSTANTS;
+    global.PlayTimeConfidence = confidence;
+    global.PT_CONSTANTS = PT_CONSTANTS;
 
     require('../../../scripts/highlighting/highlighting.js');
-    require('../../../scripts/main.js');
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    // Bootstrap the application using test harness
+    const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
+    await triggerDOMContentLoaded();
     await new Promise(r=>setTimeout(r,120)); // allow auto-select + rehydrate
   });
 

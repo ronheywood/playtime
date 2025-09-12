@@ -7,11 +7,9 @@ class Logger {
     constructor() {
         // Determine test/dev environment safely:
         // Prefer runtime PlayTimeConfig when present (browser-friendly), fall back to Node process checks when available
-        const runtimeCfg = (typeof window !== 'undefined' && window.PlayTimeConfig) ? window.PlayTimeConfig : null;
         this.isTestEnvironment = (
             (typeof jest !== 'undefined') ||
             (typeof global !== 'undefined' && global.isTestEnvironment) ||
-            (runtimeCfg && runtimeCfg.isTest === true) ||
             (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')
         );
     this.isSilent = false; // Ensure logger is non-silent in tests
@@ -76,8 +74,7 @@ class Logger {
      */
     debug(message, ...args) {
         // Only debug in dev mode. Prefer PlayTimeConfig.env in browser, fall back to process.env when available.
-        const runtimeCfg = (typeof window !== 'undefined' && window.PlayTimeConfig) ? window.PlayTimeConfig : null;
-        const isDev = (runtimeCfg && runtimeCfg.env === 'development') || (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development');
+        const isDev = (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development');
         if (!this.isSilent && !this.isTestEnvironment && isDev) {
             console.log('🐛', message, ...args);
         }
@@ -90,14 +87,4 @@ const logger = new Logger();
 // For Node.js/CommonJS environments (tests)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = logger;
-}
-
-// For browser environments
-if (typeof window !== 'undefined') {
-    window.logger = logger;
-}
-
-// Also export as global for tests
-if (typeof global !== 'undefined') {
-    global.logger = logger;
 }

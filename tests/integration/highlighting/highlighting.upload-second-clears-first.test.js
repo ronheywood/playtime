@@ -2,14 +2,14 @@
 // Upload score1, create highlight page1, upload score2 -> score1 highlight should not remain visible.
 
 const { PT_CONSTANTS } = require('../../../scripts/constants.js');
+const TestHelpers = require('../../helpers/test-helpers.js');
 
 describe('Second upload clears first score highlights', () => {
   beforeEach(async () => {
     // Setup silent logger to reduce test noise
     const testLogger = require('../../../scripts/logger.js');
     testLogger.setSilent(true);
-    global.logger = testLogger;
-    global.window.logger = testLogger;
+    
     global.window.createPlayTimeDB = () => ({
       init: jest.fn().mockResolvedValue(true),
       _pdfs: [],
@@ -24,22 +24,7 @@ describe('Second upload clears first score highlights', () => {
       addHighlight: jest.fn().mockImplementation(function(sec){ sec.id = this._sections.length+1; this._sections.push(sec); return Promise.resolve(sec.id); }),
       getHighlights: jest.fn().mockImplementation(function(pdfId){ return Promise.resolve(this._sections.filter(s=>s.pdfId===pdfId)); })
     });
-
-    // PDF viewer stub
-    let currentPage = 1;
-    global.window.createPlayTimePDFViewer = () => ({
-      init: jest.fn().mockResolvedValue(true),
-      loadPDF: jest.fn().mockResolvedValue(true),
-      renderPage: jest.fn().mockImplementation(async(p=1)=>{ currentPage=p; window.dispatchEvent(new CustomEvent(PT_CONSTANTS.EVENTS.PAGE_CHANGED,{ detail:{ page:p }})); }),
-      getCurrentPage: () => currentPage,
-      getTotalPages: () => 2
-    });
-    try {
-      if (typeof global.window.createPlayTimePDFViewer === 'function' && global.window.diContainer && global.window.diContainer.container && typeof global.window.diContainer.container.singleton === 'function') {
-        global.window.diContainer.container.singleton('playTimePDFViewer', (logger) => global.window.createPlayTimePDFViewer(logger));
-      }
-    } catch (_) {}
-    if (!global.window.PlayTimePDFViewer) { try { global.window.PlayTimePDFViewer = global.window.createPlayTimePDFViewer(); } catch(_) {} }
+    
     const helpers = require('../../helpers/test-helpers.js');
     //TODO - use the helper to create this DOM
     document.body.innerHTML = `
@@ -94,12 +79,14 @@ describe('Second upload clears first score highlights', () => {
     // Setup dependencies that main.js now requires for highlighting initialization
     const confidence = require('../../../scripts/confidence.js');
     const { PT_CONSTANTS } = require('../../../scripts/constants.js');
-    global.window.PlayTimeConfidence = confidence;
-    global.window.PlayTimeConstants = PT_CONSTANTS;
+    global.PlayTimeConfidence = confidence;
+    global.PT_CONSTANTS = PT_CONSTANTS;
     
     require('../../../scripts/highlighting/highlighting.js');
-    require('../../../scripts/main.js');
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    // Bootstrap the application using test harness
+    const { triggerDOMContentLoaded } = require('../../helpers/integration-bootstrap');
+    await triggerDOMContentLoaded();
     await new Promise(r=>setTimeout(r,60));
   });
 

@@ -38,7 +38,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
 // Browser global
 if (typeof window !== 'undefined') {
-  window.PlayTimeConstants = PT_CONSTANTS;
+  
   // Lightweight global event buffer (topic -> last detail) to allow late subscribers
   if (!window.PlayTimeEventBuffer) {
     window.PlayTimeEventBuffer = {

@@ -46,15 +46,7 @@ try {
             if (global.window.diContainer && typeof global.window.diContainer.initialize === 'function') {
                 try { global.window.diContainer.initialize(); } catch (_) { /* ignore */ }
             }
-
-            // If instance exposes logger, wire it
-            try {
-                const instance = global.window.diContainer;
-                if (instance && typeof instance.has === 'function' && instance.has('logger')) {
-                    const logger = instance.get('logger');
-                    if (logger) global.window.logger = logger;
-                }
-            } catch (_) { /* ignore */ }
+            
         } catch (err) {
             // Ignore instantiation errors - tests continue to run in legacy mode
         }
@@ -62,13 +54,6 @@ try {
 } catch (e) {
     // Non-fatal: continue without DI in test environments where module cannot be required
 }
-
-// Ensure PlayTimeConfig exists in the test window so bootstrap can read runtime flags
-try {
-    if (typeof global.window !== 'undefined') {
-        global.window.PlayTimeConfig = global.window.PlayTimeConfig || { throwOnMissingDI: false };
-    }
-} catch (_) { /* ignore */ }
 
 
 // Mock IndexedDB for testing

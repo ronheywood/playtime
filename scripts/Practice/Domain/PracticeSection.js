@@ -3,7 +3,7 @@
  * Represents a single section within a practice session
  */
 class PracticeSection {
-    constructor({ id, name, highlightId, pageNumber = 1, targetTime = 30000 } = {}) {
+    constructor({ id, name, highlightId, pageNumber = 1, targetTime = 180000 } = {}) { // 3 minutes default
         this.id = id || `section_${Date.now()}`;
         this.name = name || 'Section';
         this.highlightId = highlightId || null;

@@ -9,8 +9,11 @@
  * - UI controls for timer
  */
 class PracticeSessionTimer {
-    constructor(options = {}) {
-        this.logger = options.logger || console;
+    constructor(logger, options = {}) {
+        if(!logger || typeof logger.info !== 'function') {
+            throw new Error('PracticeSessionTimer requires a logger instance');
+        }
+        this.logger = logger;
         this.timerId = null;
         this.isRunning = false;
         this.isPaused = false;
@@ -364,6 +367,6 @@ class PracticeSessionTimer {
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = PracticeSessionTimer;
-} else {
+} else if (typeof window !== 'undefined') {
     window.PracticeSessionTimer = PracticeSessionTimer;
 }

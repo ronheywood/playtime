@@ -3,10 +3,10 @@
  * Main application class using clean architecture with dependency injection
  * This replaces the legacy global window dependencies approach
  */
+
 class PlayTimeApplication {
     constructor() {
         this.diContainer = null;
-        this.componentFactory = null;
         this.stateManager = null;
         this.logger = null;
         this.initialized = false;
@@ -27,13 +27,15 @@ class PlayTimeApplication {
             console.log('Initializing PlayTime Application...');
 
             // Initialize dependency injection container
-            this.diContainer = new window.DIContainer();
+            this.diContainer = window.createDiContainer();
             this.diContainer.initialize();
+            
+            // Expose DI container globally for legacy modules
+            window.diContainer = this.diContainer;
 
             // Get core services
             this.logger = this.diContainer.get('logger');
             this.stateManager = this.diContainer.get('stateManager');
-            this.componentFactory = this.diContainer.get('componentFactory');
 
             this.logger.info('PlayTime Application: Core services initialized');
 
@@ -66,8 +68,17 @@ class PlayTimeApplication {
         this.logger.info('Initializing application components');
 
         try {
-            // Initialize core components using the component factory
-            this.components = this.componentFactory.initializeApplicationComponents();
+            // Initialize database first
+            await this.initializeDatabase();
+
+            // Initialize core UI components
+            await this.initializeUIComponents();
+
+            // Initialize business logic components
+            await this.initializeBusinessComponents();
+
+            // Set up event handlers and interactions
+            this.setupEventHandlers();
 
             this.logger.info('Application components initialized successfully');
 
@@ -75,6 +86,352 @@ class PlayTimeApplication {
             this.logger.error('Failed to initialize components', error);
             throw error;
         }
+    }
+
+    /**
+     * Initialize the database
+     */
+    async initializeDatabase() {
+        try {
+            const database = this.diContainer.get('database');
+            await database.init();
+            this.logger.info('Database initialized');
+        } catch (error) {
+            this.logger.error('Failed to initialize database', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Initialize core UI components
+     */
+    async initializeUIComponents() {
+        try {
+            // Initialize PDF viewer
+            const pdfViewer = this.diContainer.get('playTimePDFViewer');
+            await pdfViewer.init();
+            pdfViewer.attachUIControls(); // Attach UI controls for navigation and zoom
+            this.logger.info('PDF viewer initialized');
+
+            // Initialize score list
+            const scoreList = this.diContainer.get('playTimeScoreList');
+            await scoreList.init();
+            await scoreList.refresh();
+            this.logger.info('Score list initialized');
+
+        } catch (error) {
+            this.logger.error('Failed to initialize UI components', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Initialize business logic components
+     */
+    async initializeBusinessComponents() {
+        try {
+            // Initialize highlighting system
+            const highlighting = this.diContainer.get('playTimeHighlighting');
+            const database = this.diContainer.get('database');
+            const logger = this.diContainer.get('logger');
+
+            // Build dependencies object for highlighting
+            const deps = { database };
+
+            await highlighting.init({}, logger, PlayTimeConfidence, PT_CONSTANTS, deps);
+            // Start with highlighting disabled
+            highlighting.disableSelection();
+            this.logger.info('Highlighting system initialized');
+
+            // Initialize practice planner
+            this.initializePracticePlanner();
+
+        } catch (error) {
+            this.logger.error('Failed to initialize business components', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Initialize practice planner
+     */
+    initializePracticePlanner() {
+        try {
+            // Initialize the practice session component for managing active sessions
+            const practiceSessionComponent = this.diContainer.get('practiceSessionComponent');
+            
+            // Initialize the practice planner UI for setup and management using DI
+            const practicePlanner = this.diContainer.get('practicePlanner');
+            practicePlanner.init();
+            
+            this.logger.info('Practice planner initialized');
+        } catch (error) {
+            this.logger.error('Failed to initialize practice planner', error);
+        }
+    }
+    /**
+     * Set up event handlers and UI interactions
+     */
+    setupEventHandlers() {
+        // Set up confidence controls
+        this.setupConfidenceControls();
+
+        // Set up highlighting toggle
+        this.setupHighlightingToggle();
+
+        // Set up focus mode
+        this.setupFocusMode();
+
+        // Set up file upload
+        this.setupFileUpload();
+
+        // Set up score selection handler
+        this.setupScoreSelectionHandler();
+
+        this.logger.info('Event handlers set up');
+    }
+
+    /**
+     * Set up confidence controls
+     */
+    setupConfidenceControls() {
+        const confidenceButtons = document.querySelectorAll('[data-role^="color-"]');
+        if (confidenceButtons.length === 0) return;
+
+        const setPressed = (activeBtn) => {
+            confidenceButtons.forEach(btn => {
+                const isActive = btn === activeBtn;
+                btn.setAttribute('aria-pressed', String(isActive));
+                btn.classList.toggle('selected', isActive);
+            });
+        };
+
+        confidenceButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Only allow confidence selection if highlighting is active
+                const highlightingToggle = document.getElementById('highlighting-toggle');
+                const isHighlightingActive = highlightingToggle?.getAttribute('aria-pressed') === 'true';
+
+                if (!isHighlightingActive) {
+                    this.logger.info('Confidence selection ignored - highlighting is not active');
+                    return;
+                }
+
+                setPressed(btn);
+                const color = btn.getAttribute('data-color');
+
+                if (color) {
+                    // Dispatch confidence change event
+                    const eventDetail = { detail: { color } };
+                    window.dispatchEvent(new CustomEvent('playtime:confidence-changed', eventDetail));
+                }
+            });
+        });
+    }
+
+    /**
+     * Set up highlighting toggle
+     */
+    setupHighlightingToggle() {
+        const toggleButton = document.getElementById('highlighting-toggle');
+        const confidencePanel = document.getElementById('confidence-panel');
+
+        if (!toggleButton) return;
+
+        let isHighlightingActive = false;
+
+        const updateToggleState = (active) => {
+            isHighlightingActive = active;
+            toggleButton.setAttribute('aria-pressed', String(active));
+            toggleButton.classList.toggle('selected', active);
+
+            // Update button text
+            const buttonText = toggleButton.querySelector('span');
+            if (buttonText) {
+                buttonText.textContent = active ? 'Exit Highlighting' : 'Highlight Sections';
+            }
+
+            // Show/hide confidence panel
+            if (confidencePanel) {
+                confidencePanel.style.display = active ? 'block' : 'none';
+            }
+
+            // Toggle highlighting in the module
+            const highlighting = this.diContainer.get('playTimeHighlighting');
+            if (active) {
+                highlighting.enableSelection();
+                setInitialConfidence();
+            } else {
+                highlighting.disableSelection();
+                clearActiveConfidence();
+            }
+        };
+
+        const clearActiveConfidence = () => {
+            const confidenceButtons = document.querySelectorAll('[data-role^="color-"]');
+            confidenceButtons.forEach(btn => {
+                btn.setAttribute('aria-pressed', 'false');
+                btn.classList.remove('selected');
+            });
+        };
+
+        const setInitialConfidence = () => {
+            const greenButton = document.getElementById('color-green');
+            if (greenButton) {
+                greenButton.setAttribute('aria-pressed', 'true');
+                greenButton.classList.add('selected');
+
+                // Dispatch confidence change event
+                const eventDetail = { detail: { color: 'green' } };
+                window.dispatchEvent(new CustomEvent('playtime:confidence-changed', eventDetail));
+            }
+        };
+
+        toggleButton.addEventListener('click', () => {
+            updateToggleState(!isHighlightingActive);
+        });
+
+        // Initialize in disabled state
+        updateToggleState(false);
+    }
+
+    /**
+     * Set up focus mode
+     */
+    setupFocusMode() {
+        if (typeof window.createPlayTimeFocusModeCommands === 'function') {
+            window.PlayTimeFocusModeCommands = window.createPlayTimeFocusModeCommands();
+            if (window.PlayTimeFocusModeCommands?.initializeFocusModeCommands) {
+                window.PlayTimeFocusModeCommands.initializeFocusModeCommands();
+            }
+        }
+    }
+
+    /**
+     * Set up file upload
+     */
+    setupFileUpload() {
+        const fileInput = document.querySelector('#pdf-upload');
+        if (!fileInput) return;
+
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                await this.handleFileUpload(file);
+            } catch (error) {
+                this.logger.error('File upload failed', error);
+            }
+        });
+    }
+
+    /**
+     * Handle file upload
+     */
+    async handleFileUpload(file) {
+        if (!file.type.includes('pdf')) {
+            this.showStatusMessage('Error: Please select a PDF file', 'error');
+            return;
+        }
+
+        this.showStatusMessage(`Added: ${file.name}`, 'success');
+        this.updateCurrentScoreTitle(file.name);
+
+        try {
+            // Load PDF into viewer
+            const pdfViewer = this.diContainer.get('playTimePDFViewer');
+            await pdfViewer.loadPDF(file);
+            await pdfViewer.renderPage(1);
+
+            // Get page count from loaded PDF
+            const pageCount = pdfViewer.getTotalPages ? pdfViewer.getTotalPages() : 1;
+
+            // Save to database with actual page count
+            const database = this.diContainer.get('database');
+            const id = await database.save(file, { pages: pageCount });
+            window.PlayTimeCurrentScoreId = id;
+
+            // Refresh score list
+            const scoreList = this.diContainer.get('playTimeScoreList');
+            await scoreList.refresh();
+
+            // Dispatch score selected event
+            const detail = { pdfId: id, name: file.name, pages: pageCount };
+            window.dispatchEvent(new CustomEvent('playtime:score-selected', { detail }));
+
+        } catch (error) {
+            this.logger.error('Failed to process uploaded PDF', error);
+            this.showStatusMessage('Error loading PDF', 'error');
+        }
+    }
+
+    /**
+     * Set up score selection handler
+     * Handles loading PDFs from database when scores are selected
+     */
+    setupScoreSelectionHandler() {
+        window.addEventListener('playtime:score-selected', async (event) => {
+            try {
+                const { pdfId } = event.detail;
+                if (!pdfId) {
+                    this.logger.warn('Score selected event missing pdfId');
+                    return;
+                }
+
+                this.logger.info(`🎯 Loading PDF from database: ${pdfId}`);
+
+                // Get PDF from database
+                const database = this.diContainer.get('database');
+                const pdf = await database.get(pdfId);
+
+                if (!pdf || !pdf.data) {
+                    this.logger.error(`PDF not found or missing data: ${pdfId}`);
+                    this.showStatusMessage('Error: PDF data not found', 'error');
+                    return;
+                }
+
+                // Create blob from database data
+                const blob = new Blob([pdf.data], { type: 'application/pdf' });
+                const file = new File([blob], pdf.filename || pdf.name || 'score.pdf', { type: 'application/pdf' });
+
+                // Load into PDF viewer
+                const pdfViewer = this.diContainer.get('playTimePDFViewer');
+                await pdfViewer.loadPDF(file);
+                await pdfViewer.renderPage(1);
+
+                // Set current score ID
+                window.PlayTimeCurrentScoreId = pdfId;
+
+                this.logger.info(`✅ PDF loaded successfully: ${pdf.filename || pdf.name}`);
+
+            } catch (error) {
+                this.logger.error('Failed to load selected score', error);
+                this.showStatusMessage('Error loading score', 'error');
+            }
+        });
+    }
+
+    /**
+     * Show status message
+     */
+    showStatusMessage(message, type = 'info') {
+        const statusElement = document.querySelector('.status-message');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.setAttribute('data-status', type);
+        }
+    }
+
+    /**
+     * Update current score title
+     */
+    updateCurrentScoreTitle(filename) {
+        if (!filename) return;
+        const titleElements = document.querySelectorAll('[data-role="current-score-title"]');
+        titleElements.forEach(element => {
+            if (element) element.textContent = filename;
+        });
     }
 
     /**
@@ -122,7 +479,7 @@ class PlayTimeApplication {
         if (!this.initialized) {
             throw new Error('Application not initialized. Call initialize() first.');
         }
-        return this.componentFactory.getComponent(componentId);
+        return this.components[componentId];
     }
 
     /**
@@ -136,7 +493,9 @@ class PlayTimeApplication {
         if (!this.initialized) {
             throw new Error('Application not initialized. Call initialize() first.');
         }
-        return this.componentFactory.createComponent(componentName, componentId, options);
+        // For now, just store the component info
+        this.components[componentId] = { componentName, options };
+        return this.components[componentId];
     }
 
     /**
@@ -177,7 +536,7 @@ class PlayTimeApplication {
 
         try {
             // Destroy all components
-            this.componentFactory.destroyAllComponents();
+            // Note: Component cleanup will be handled by individual services
 
             // Reset application state
             this.stateManager.reset();
@@ -215,7 +574,7 @@ class PlayTimeApplication {
     getStatus() {
         return {
             initialized: this.initialized,
-            components: this.componentFactory ? this.componentFactory.getActiveComponents() : [],
+            components: Object.keys(this.components),
             state: this.initialized ? this.stateManager.getSnapshot() : null,
             timestamp: Date.now()
         };
@@ -237,7 +596,6 @@ class PlayTimeApplication {
             app: this,
             services: {
                 stateManager: this.stateManager,
-                componentFactory: this.componentFactory,
                 logger: this.logger
             },
             getService: (name) => this.getService(name),

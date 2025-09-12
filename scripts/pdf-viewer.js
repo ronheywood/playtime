@@ -3,9 +3,14 @@
 /**
  * Create PlayTime PDF Viewer with dependency injection
  * @param {Object} logger - Logger instance to use for logging
+ * @param {Object} constants - PlayTime constants object
  * @returns {Object} PDF Viewer interface
  */
-function createPlayTimePDFViewer(logger = console) {
+function createPlayTimePDFViewer(logger = console, constants) {
+    const EventLayoutChanged = constants.EVENTS.LAYOUT_CHANGED;
+    const EventPageChanged = constants.EVENTS.PAGE_CHANGED;
+    const SelectorPageInfo = constants.SELECTORS.PAGE_INFO;
+
     // PDF viewer state
     let currentPDF = null;
     let currentPage = 1;
@@ -66,10 +71,7 @@ function createPlayTimePDFViewer(logger = console) {
             const zoomDisplays = Array.from(doc.querySelectorAll(SEL.ZOOM_DISPLAY));
 
             const publishLayoutChangedNow = () => {
-                try {
-                    const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.LAYOUT_CHANGED) || 'playtime:layout-changed';
-                    window.dispatchEvent(new CustomEvent(evName));
-                } catch(_) {}
+                window.dispatchEvent(new CustomEvent(EventLayoutChanged));
             };
             const publishLayoutChanged = () => {
                 const raf = (cb) => (typeof window.requestAnimationFrame === 'function' ? window.requestAnimationFrame(cb) : setTimeout(cb, 0));
@@ -205,8 +207,7 @@ function createPlayTimePDFViewer(logger = console) {
                 logger.info(`✅ Page ${pageNum} rendered (zoom x${zoomMultiplier.toFixed(2)}) baseFit=${documentBaseFitScale?.toFixed(2) || 'null'} effective=${effectiveScale.toFixed(2)}`);
                 // Publish page-changed for interested modules (e.g., highlighting visibility)
                 try {
-                    const evName = (window.PlayTimeConstants && window.PlayTimeConstants.EVENTS && window.PlayTimeConstants.EVENTS.PAGE_CHANGED) || 'playtime:page-changed';
-                    const ev = new CustomEvent(evName, { detail: { page: currentPage } });
+                    const ev = new CustomEvent(EventPageChanged, { detail: { page: currentPage } });
                     window.dispatchEvent(ev);
                 } catch(_) { /* noop */ }
                 
@@ -374,8 +375,7 @@ function createPlayTimePDFViewer(logger = console) {
         getTotalPages: function() { return totalPages; },
         
         updatePageInfo: function() {
-            const roleSelector = (window.PlayTimeConstants && window.PlayTimeConstants.SELECTORS && window.PlayTimeConstants.SELECTORS.PAGE_INFO) || '[data-role="page-info"]';
-            const nodes = Array.from(document.querySelectorAll(roleSelector));
+            const nodes = Array.from(document.querySelectorAll(SelectorPageInfo));
             nodes.forEach(n => { n.textContent = `Page ${currentPage} of ${totalPages}`; });
         },
         

@@ -50,5 +50,3 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
     window.PracticePersistence = PracticePersistence;
 }
-
-export default PracticePersistence;

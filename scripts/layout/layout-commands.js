@@ -56,7 +56,7 @@ function changeLayout(type, options = {}) {
         
     } catch (error) {
         // Log error but don't throw - commands should be fire-and-forget
-        const logger = (typeof window !== 'undefined' && window.logger) ? window.logger : console;
+        const logger = window.diContainer.get('logger');
         logger.error(`Layout command ${type} failed:`, error);
     }
 }
