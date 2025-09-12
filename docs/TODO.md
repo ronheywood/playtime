@@ -195,6 +195,35 @@
 - [ ] Visual polish and light mode design should not look like "generic twitter boostrap"
 
 ## 🧪 Testing Strategy
+
+### **Testing Architecture Lessons Learned (Sep 12, 2025)**
+
+**Critical Discovery**: Integration tests using Jest mocks for event handling break real event flow
+- **Problem**: `global.window.addEventListener = jest.fn()` doesn't register real listeners
+- **Solution**: Use real `EventTarget` instances for integration tests
+- **Impact**: Fixed duplicate event issues in focus-mode-command-dispatch tests
+
+**Testing Strategy by Type**:
+```javascript
+// ❌ Anti-pattern: Jest mocks in integration tests
+global.window.addEventListener = jest.fn();
+global.window.dispatchEvent = jest.fn();
+
+// ✅ Integration tests: Real EventTarget for event flow
+const eventTarget = new EventTarget();
+global.window.addEventListener = eventTarget.addEventListener.bind(eventTarget);
+
+// ✅ Unit tests: Mock external dependencies only
+const mockPDFViewer = jest.fn();
+```
+
+**Test Classification**:
+- **Unit Tests**: Mock external dependencies, test isolated logic
+- **Integration Tests**: Real objects for internal communication (events, commands)
+- **End-to-End Tests**: Real DOM and browser environment
+
+This reinforces why architecture refactoring is critical - complex event flows need predictable, testable patterns.
+
 - [x] **Outside in TDD Methods**
   - [x] Define Acceptance tests
   - [x] CI/CD Supported
@@ -203,6 +232,7 @@
   - [x] Cross-module functionality
   - [x] PDF.js integration testing
   - [x] Database integration testing
+  - [x] Fixed event system testing anti-patterns
 
 ## 📦 Deployment & Distribution
 - [ ] **Progressive Web App (PWA)**
