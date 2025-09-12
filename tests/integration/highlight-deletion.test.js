@@ -6,7 +6,7 @@
 const TestHelpers = require('../helpers/test-helpers');
 
 describe('Highlight Deletion Integration', () => {
-    let database, highlightDeletionService, mockElements;
+    let database, highlightDeletionService, mockElements, mockLogger;
 
     beforeEach(async () => {
         // Set up DOM environment
@@ -86,13 +86,27 @@ describe('Highlight Deletion Integration', () => {
         // Create mock elements
         mockElements = TestHelpers.createFocusModeElements();
         
+        // Create mock logger
+        mockLogger = {
+            info: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+            debug: jest.fn()
+        };
+        
         // Create highlight deletion service
         const HighlightDeletionService = require('../../scripts/highlighting/HighlightDeletionService');
-        highlightDeletionService = new HighlightDeletionService(database);
+        highlightDeletionService = new HighlightDeletionService(database, mockLogger);
     });
 
     afterEach(async () => {
         TestHelpers.cleanup();
+        
+        // Reset mock logger
+        if (mockLogger) {
+            jest.clearAllMocks();
+        }
+        
         // Clean up global mocks
         if (global.confirm && global.confirm.mockRestore) {
             global.confirm.mockRestore();
@@ -248,6 +262,9 @@ describe('Highlight Deletion Integration', () => {
             // Act & Assert: Should handle error gracefully
             await expect(highlightDeletionService.deleteHighlight('highlight-1'))
                 .rejects.toThrow('Failed to delete highlight');
+
+            // Verify logger was called with error
+            expect(mockLogger.error).toHaveBeenCalledWith('Highlight deletion failed:', expect.any(Error));
 
             // Restore original transaction method
             database.db.transaction = originalTransaction;

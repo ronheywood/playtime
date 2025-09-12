@@ -3,8 +3,9 @@
  * Provides safe deletion with confirmation and transaction rollback
  */
 class HighlightDeletionService {
-    constructor(database) {
+    constructor(database, logger = console) {
         this.database = database;
+        this.logger = logger;
     }
 
     /**
@@ -32,7 +33,7 @@ class HighlightDeletionService {
 
         } catch (error) {
             // Log error and re-throw with user-friendly message
-            console.error('Highlight deletion failed:', error);
+            this.logger.error('Highlight deletion failed:', error);
             throw new Error(`Failed to delete highlight: ${error.message}`);
         }
     }

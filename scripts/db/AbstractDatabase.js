@@ -5,6 +5,12 @@ class AbstractDatabase {
     async getAll() { throw new Error('Not implemented'); }
     async get(id) { throw new Error('Not implemented'); }
     async delete(id) { throw new Error('Not implemented'); }
+    
+    // Highlight management
+    async deleteHighlight(highlightId) { throw new Error('Not implemented'); }
+    
+    // Transaction support for atomic operations
+    async deleteWithTransaction(operations) { throw new Error('Not implemented'); }
 }
 
 // Use CommonJS for Node.js/tests, ES module for browser

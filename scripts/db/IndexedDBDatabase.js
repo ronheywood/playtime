@@ -499,6 +499,118 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
     }
 
 
+    // ---- Highlight Deletion API ----
+    async deleteHighlight(highlightId) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) {
+                return reject(new Error('Database not initialized'));
+            }
+            try {
+                const tx = this._db.transaction([SECTIONS_STORE], 'readwrite');
+                const store = tx.objectStore(SECTIONS_STORE);
+                const numericId = Number(highlightId);
+                
+                const req = store.delete(numericId);
+                req.onsuccess = () => {
+                    this.logger.info('✅ Highlight deleted with ID:', highlightId);
+                    resolve(true);
+                };
+                req.onerror = () => {
+                    this.logger.error('❌ Failed to delete highlight:', req.error);
+                    reject(req.error);
+                };
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+    
+    // ---- Transaction Support for Atomic Operations ----
+    async deleteWithTransaction(operations) {
+        return new Promise((resolve, reject) => {
+            if (!this._db) {
+                return reject(new Error('Database not initialized'));
+            }
+            
+            try {
+                // Create transaction that spans all needed object stores
+                const storeNames = [SECTIONS_STORE, PRACTICE_PLAN_HIGHLIGHTS_STORE];
+                const tx = this._db.transaction(storeNames, 'readwrite');
+                const results = [];
+                let completedOperations = 0;
+                
+                const checkCompletion = () => {
+                    if (completedOperations === operations.length) {
+                        resolve({ success: true, results });
+                    }
+                };
+                
+                tx.onerror = () => {
+                    this.logger.error('❌ Transaction failed:', tx.error);
+                    reject(tx.error);
+                };
+                
+                tx.onabort = () => {
+                    this.logger.error('❌ Transaction aborted');
+                    reject(new Error('Transaction aborted'));
+                };
+                
+                // Execute all operations within the transaction
+                operations.forEach((operation, index) => {
+                    switch (operation.type) {
+                        case 'deleteHighlight':
+                            const sectionsStore = tx.objectStore(SECTIONS_STORE);
+                            const deleteReq = sectionsStore.delete(Number(operation.highlightId));
+                            
+                            deleteReq.onsuccess = () => {
+                                results[index] = { type: operation.type, success: true };
+                                completedOperations++;
+                                checkCompletion();
+                            };
+                            
+                            deleteReq.onerror = () => {
+                                this.logger.error('❌ Failed to delete highlight in transaction:', deleteReq.error);
+                                tx.abort();
+                            };
+                            break;
+                            
+                        case 'deletePracticePlanHighlights':
+                            const practiceStore = tx.objectStore(PRACTICE_PLAN_HIGHLIGHTS_STORE);
+                            const index = practiceStore.index('practicePlanId');
+                            const cursorReq = index.openCursor(IDBKeyRange.only(Number(operation.practicePlanId)));
+                            
+                            cursorReq.onsuccess = (event) => {
+                                const cursor = event.target.result;
+                                if (cursor) {
+                                    cursor.delete();
+                                    cursor.continue();
+                                } else {
+                                    // All practice plan highlights deleted
+                                    results[index] = { type: operation.type, success: true };
+                                    completedOperations++;
+                                    checkCompletion();
+                                }
+                            };
+                            
+                            cursorReq.onerror = () => {
+                                this.logger.error('❌ Failed to delete practice plan highlights in transaction:', cursorReq.error);
+                                tx.abort();
+                            };
+                            break;
+                            
+                        default:
+                            tx.abort();
+                            reject(new Error(`Unsupported transaction operation: ${operation.type}`));
+                            return;
+                    }
+                });
+                
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
     get _dbConn() {
         return this._db;
     }
@@ -519,6 +631,11 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
  */
 export function createIndexedDBDatabase(logger = console) {
     return new IndexedDBDatabase(logger);
+}
+
+// CommonJS export for Node.js testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { IndexedDBDatabase, createIndexedDBDatabase };
 }
 
 
