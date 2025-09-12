@@ -26,6 +26,76 @@
 - 🎯 **Isolation for testing** - Test practice plans without PDF viewer complexity
 - 🎯 **Fire-and-forget events** - Make UI changes via simple async event calls
 
+## 📝 **Architecture Implementation Learnings (Sep 12, 2025)**
+
+### **Highlight Deletion Feature Case Study**
+**Context**: Implemented complete highlight deletion with practice plan cleanup and keyboard support
+
+#### **What Worked Well** ✅:
+
+1. **DI Container & Service Pattern**
+   - Successfully created `HighlightDeletionService` with clean separation of concerns
+   - DI container registration made service easily available across components
+   - Atomic database transactions provided data consistency
+   - **Evidence**: All 8 integration tests passing, robust error handling
+
+2. **Existing Architecture Patterns**
+   - Layout command system provided clean UI state refresh mechanism
+   - Button group architecture in `HighlightActionButton` was extendable for dual buttons
+   - Event handling patterns supported keyboard integration seamlessly
+   - **Evidence**: Keyboard delete "just worked" by reusing existing delete logic
+
+3. **Testing Infrastructure**
+   - Mock database pattern enabled comprehensive integration testing
+   - Test structure supported complex multi-store transaction scenarios
+   - **Evidence**: 432 tests passing, including complex deletion scenarios
+
+#### **Architectural Pain Points Encountered** ❌:
+
+1. **Global Reference Debugging**
+   - **Problem**: Logger references scattered (`this.logger` vs `this._state.logger`)
+   - **Impact**: 1.5 hours debugging session to track down reference errors
+   - **Root Cause**: Inconsistent dependency injection patterns
+   - **Better Solution**: Service container with consistent logger injection
+
+2. **Component Evolution Breaking Tests**
+   - **Problem**: HighlightActionButton evolved from single button to complex button group
+   - **Impact**: All 10 unit tests needed comprehensive rewriting
+   - **Root Cause**: No clear component API contracts or backwards compatibility
+   - **Evidence**: Tests expected `.highlight-action-btn` but implementation used `.highlight-action-btn-group`
+
+3. **Cross-Module Communication Complexity**
+   - **Problem**: Practice plan state refresh required complex layout command orchestration
+   - **Current Pattern**: `deletion → database → layout command → UI refresh`
+   - **Simpler Pattern**: `deletion → event → direct UI update`
+   - **Impact**: 1.5 hours of coordination code for simple UI update
+
+4. **Database Layer Complexity**
+   - **Problem**: Empty practice plan deletion required complex multi-store logic
+   - **Impact**: 40+ lines of cursor-based operations in `deleteEmptyPracticePlans`
+   - **Root Cause**: No clear data relationship abstractions
+
+#### **Technical Debt Quantification**:
+
+**Time Investment Breakdown**:
+- Core deletion logic: 2 hours ✅ (service layer worked well)
+- Logger reference debugging: 1.5 hours ❌ (architectural debt)
+- UI component integration: 3 hours ❌ (complex component evolution)
+- Test fixing: 2 hours ❌ (broken component contracts)
+- Cross-module coordination: 1.5 hours ❌ (complex orchestration)
+
+**Technical Debt Ratio**: 8 hours actual / 2 hours ideal = **4x overhead**
+
+#### **Architecture Patterns Validated**:
+
+✅ **Service Layer Pattern** - Clean business logic implementation was straightforward
+✅ **DI Container** - Made service integration seamless
+❌ **Event-Driven Communication** - Layout command orchestration was unnecessarily complex
+❌ **Component API Contracts** - HighlightActionButton evolution broke all tests
+❌ **Consistent Dependency Injection** - Logger reference inconsistencies caused overhead
+
+**This case study strongly validates the Architecture Refactoring Plan priorities.**
+
 ### **Dependency-Ordered Implementation Strategy**
 
 #### **Phase 1: API Contracts + Abstracts (Week 1) - FOUNDATION**

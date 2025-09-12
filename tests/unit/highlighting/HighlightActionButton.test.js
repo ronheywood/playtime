@@ -56,30 +56,36 @@ describe('HighlightActionButton', () => {
         delete global.window;
     });
 
-    test('creates button with correct attributes', () => {
+    test('creates button group with correct attributes', () => {
         actionButton.init();
         
-        const button = mockContainer.querySelector('.highlight-action-btn');
-        expect(button).toBeTruthy();
-        expect(button.tagName).toBe('BUTTON');
-        expect(button.classList.contains('btn')).toBe(true);
-        expect(button.classList.contains('btn-default')).toBe(true);
-        expect(button.classList.contains('btn-icon')).toBe(true);
+        const buttonGroup = mockContainer.querySelector('.highlight-action-btn-group');
+        expect(buttonGroup).toBeTruthy();
+        expect(buttonGroup.tagName).toBe('DIV');
+        expect(buttonGroup.classList.contains('highlight-action-btn-group')).toBe(true);
 
-        // Check for notebook icon
-        const icon = button.querySelector('[data-lucide="notebook-pen"]');
-        expect(icon).toBeTruthy();
+        // Check for annotate button
+        const annotateButton = buttonGroup.querySelector('.highlight-action-btn-annotate');
+        expect(annotateButton).toBeTruthy();
+        expect(annotateButton.tagName).toBe('BUTTON');
+        
+        // Check for delete button if enabled
+        if (actionButton.config.showDelete) {
+            const deleteButton = buttonGroup.querySelector('.highlight-action-btn-delete');
+            expect(deleteButton).toBeTruthy();
+            expect(deleteButton.tagName).toBe('BUTTON');
+        }
     });
 
-    test('button is initially hidden', () => {
+    test('button group is initially hidden', () => {
         actionButton.init();
         
-        const button = mockContainer.querySelector('.highlight-action-btn');
-        expect(button.style.display).toBe('none');
-        expect(actionButton.visible).toBe(false);
+        const buttonGroup = mockContainer.querySelector('.highlight-action-btn-group');
+        expect(buttonGroup.style.display).toBe('none');
+        expect(actionButton.isVisible).toBe(false);
     });
 
-    test('showForHighlight makes button visible and positions it', () => {
+    test('showForHighlight makes button group visible and positions it', () => {
         // Mock container bounding rect
         mockContainer.getBoundingClientRect = jest.fn(() => ({
             left: 0,
@@ -103,67 +109,96 @@ describe('HighlightActionButton', () => {
         actionButton.init();
         actionButton.showForHighlight(mockHighlight);
         
-        const button = mockContainer.querySelector('.highlight-action-btn');
-        expect(button.style.display).toBe('flex');
-        expect(button.style.opacity).toBe('1');
-        expect(button.style.pointerEvents).toBe('auto');
-        expect(actionButton.visible).toBe(true);
-        expect(actionButton.highlight).toBe(mockHighlight);
+        const buttonGroup = mockContainer.querySelector('.highlight-action-btn-group');
+        expect(buttonGroup.style.display).toBe('flex');
+        expect(buttonGroup.style.opacity).toBe('1');
+        expect(buttonGroup.style.pointerEvents).toBe('auto');
+        expect(actionButton.isVisible).toBe(true);
+        expect(actionButton.activeHighlight).toBe(mockHighlight);
 
         // Check positioning (bottom-right of highlight)
-        expect(button.style.left).toBe('212px'); // 200 + 12 (offset)
-        expect(button.style.top).toBe('162px');  // 150 + 12 (offset)
+        expect(buttonGroup.style.left).toBe('212px'); // 200 + 12 (offset)
+        expect(buttonGroup.style.top).toBe('162px');  // 150 + 12 (offset)
     });
 
-    test('hide makes button invisible', () => {
+    test('hide makes button group invisible', () => {
         actionButton.init();
         actionButton.showForHighlight(mockHighlight);
         actionButton.hide();
         
-        const button = mockContainer.querySelector('.highlight-action-btn');
-        expect(button.style.opacity).toBe('0');
-        expect(button.style.pointerEvents).toBe('none');
-        expect(actionButton.visible).toBe(false);
-        expect(actionButton.highlight).toBe(null);
+        const buttonGroup = mockContainer.querySelector('.highlight-action-btn-group');
+        expect(buttonGroup.style.opacity).toBe('0');
+        expect(buttonGroup.style.pointerEvents).toBe('none');
+        expect(actionButton.isVisible).toBe(false);
+        expect(actionButton.activeHighlight).toBe(null);
     });
 
-    test('onClick callback is called when button is clicked', () => {
+    test('onAnnotate callback is called when annotate button is clicked', () => {
+        const mockCallback = jest.fn();
+        
+        actionButton.init().onAnnotate(mockCallback);
+        actionButton.showForHighlight(mockHighlight);
+        
+        const annotateButton = mockContainer.querySelector('.highlight-action-btn-annotate');
+        annotateButton.click();
+        
+        expect(mockCallback).toHaveBeenCalledWith(mockHighlight, expect.any(Event));
+    });
+
+    test('onDelete callback is called when delete button is clicked', () => {
+        const mockCallback = jest.fn();
+        
+        actionButton.init().onDelete(mockCallback);
+        actionButton.showForHighlight(mockHighlight);
+        
+        const deleteButton = mockContainer.querySelector('.highlight-action-btn-delete');
+        deleteButton.click();
+        
+        expect(mockCallback).toHaveBeenCalledWith(mockHighlight, expect.any(Event));
+    });
+
+    test('backward compatibility: onClick callback is called when annotate button is clicked', () => {
         const mockCallback = jest.fn();
         
         actionButton.init().onClick(mockCallback);
         actionButton.showForHighlight(mockHighlight);
         
-        const button = mockContainer.querySelector('.highlight-action-btn');
-        button.click();
+        const annotateButton = mockContainer.querySelector('.highlight-action-btn-annotate');
+        annotateButton.click();
         
         expect(mockCallback).toHaveBeenCalledWith(mockHighlight, expect.any(Event));
     });
 
-    test('button updates aria-label based on highlight', () => {
+    test('button group updates aria-label based on highlight', () => {
         actionButton.init();
         actionButton.showForHighlight(mockHighlight);
         
-        const button = mockContainer.querySelector('.highlight-action-btn');
-        expect(button.getAttribute('aria-label')).toBe(
+        const annotateButton = mockContainer.querySelector('.highlight-action-btn-annotate');
+        expect(annotateButton.getAttribute('aria-label')).toBe(
             'Add title and notes to green highlight on page 1'
+        );
+        
+        const deleteButton = mockContainer.querySelector('.highlight-action-btn-delete');
+        expect(deleteButton.getAttribute('aria-label')).toBe(
+            'Delete green highlight on page 1'
         );
     });
 
-    test('destroy removes button from DOM', () => {
+    test('destroy removes button group from DOM', () => {
         actionButton.init();
         
-        let button = mockContainer.querySelector('.highlight-action-btn');
-        expect(button).toBeTruthy();
+        let buttonGroup = mockContainer.querySelector('.highlight-action-btn-group');
+        expect(buttonGroup).toBeTruthy();
         
         actionButton.destroy();
         
-        button = mockContainer.querySelector('.highlight-action-btn');
-        expect(button).toBe(null);
-        expect(actionButton.visible).toBe(false);
-        expect(actionButton.highlight).toBe(null);
+        buttonGroup = mockContainer.querySelector('.highlight-action-btn-group');
+        expect(buttonGroup).toBe(null);
+        expect(actionButton.isVisible).toBe(false);
+        expect(actionButton.activeHighlight).toBe(null);
     });
 
-    test('button respects container bounds when positioning', () => {
+    test('button group respects container bounds when positioning', () => {
         // Mock small container
         mockContainer.getBoundingClientRect = jest.fn(() => ({
             left: 0,
@@ -197,11 +232,11 @@ describe('HighlightActionButton', () => {
         actionButton.init();
         actionButton.showForHighlight(mockHighlight);
         
-        const button = mockContainer.querySelector('.highlight-action-btn');
+        const buttonGroup = mockContainer.querySelector('.highlight-action-btn-group');
         
-        // Button should be constrained within container bounds
-        const left = parseInt(button.style.left);
-        const top = parseInt(button.style.top);
+        // Button group should be constrained within container bounds
+        const left = parseInt(buttonGroup.style.left) || 0;
+        const top = parseInt(buttonGroup.style.top) || 0;
         
         expect(left).toBeLessThanOrEqual(110); // 150 - 40 (button width)
         expect(top).toBeLessThanOrEqual(60);   // 100 - 40 (button height)

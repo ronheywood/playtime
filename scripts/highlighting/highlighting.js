@@ -658,6 +658,11 @@
                     event.preventDefault();
                     event.stopPropagation();
                     this._showActionButtonForHighlight(domElement);
+                } else if (event.key === 'Delete') {
+                    // Delete key for removing highlight
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this._handleDeleteKeyPress(domElement);
                 }
             });
 
@@ -1157,6 +1162,15 @@
                 this._state.logger.error?.('Failed to delete highlight:', error);
                 // You might want to show a user-friendly error message here
             }
+        },
+
+        /**
+         * Handle delete key press - deletes the highlight (same as delete button)
+         * @param {HTMLElement} highlightElement - The highlight element to delete
+         */
+        async _handleDeleteKeyPress(highlightElement) {
+            // Delegate to the same logic as the delete button
+            await this._handleDeleteButtonClick(highlightElement);
         },
 
         /**

@@ -135,15 +135,6 @@ button in the left panel should hide the "edit practice plan" diaglog - before s
 **Goal**: Perfect mobile interaction during practice
 
 **Tasks**:
-1. **Improve iPad scrolling in focus mode**
-   - Modify touch event handling in `MouseSelectionHandler.js`
-   - Add practice-mode awareness to touch handlers
-   - Allow pan/zoom when selection disabled
-
-2. **Add Screen Wake Lock support**
-   - Implement Wake Lock API in practice session starter
-   - Add user preference for enabling/disabling
-   - Graceful fallback for unsupported browsers
 
 3. **Fix practice plan dialog flow**
    - Update practice planner to auto-hide edit dialog on session start
@@ -155,20 +146,10 @@ button in the left panel should hide the "edit practice plan" diaglog - before s
 **Goal**: Enhanced practice session management
 
 **Tasks**:
-1. **Add timer completion dialog**
-   - Modal dialog with "Continue to next section" / "Repeat section" options
-   - Integration with practice session timer
-   - Save user preference for auto-advance
-
-2. **Practice plan section management**
+1. **Practice plan section management**
    - Add remove buttons to practice sections
    - Drag-and-drop reordering
    - Bulk actions (remove all, duplicate)
-
-3. **Highlight database management**
-   - Add delete highlight functionality
-   - Confirmation dialogs for destructive actions
-   - Undo capability with local storage
 
 **Definition of Done**: Complete practice session management with all user-requested features
 
