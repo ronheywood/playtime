@@ -507,7 +507,8 @@
             // Initialize action button
             this._components.actionButton
                 .init()
-                .onClick((highlightElement) => this._handleActionButtonClick(highlightElement));
+                .onClick((highlightElement) => this._handleActionButtonClick(highlightElement))
+                .onDelete((highlightElement) => this._handleDeleteButtonClick(highlightElement));
 
             // Initialize annotation form
             this._components.annotationForm
@@ -1092,6 +1093,55 @@
 
             // Show the annotation form
             this._components.annotationForm.showForHighlight(highlightData);
+        },
+
+        /**
+         * Handle delete button click - deletes the highlight
+         * @param {HTMLElement} highlightElement - The highlight element to delete
+         */
+        async _handleDeleteButtonClick(highlightElement) {
+            if (!highlightElement) return;
+
+            // Hide the action button immediately
+            this._components.actionButton.hide();
+
+            try {
+                // Get highlight ID from the element
+                const highlightId = highlightElement.dataset.hlId;
+                if (!highlightId) {
+                    this.logger.warn('Cannot delete highlight: no ID found');
+                    return;
+                }
+
+                // Get the highlight deletion service from DI container
+                const diContainer = window.diContainer;
+                if (!diContainer) {
+                    this.logger.error('DI container not available for highlight deletion');
+                    return;
+                }
+
+                const highlightDeletionService = diContainer.get('highlightDeletionService');
+                if (!highlightDeletionService) {
+                    this.logger.error('Highlight deletion service not available');
+                    return;
+                }
+
+                // Delete the highlight (service handles confirmation dialog)
+                await highlightDeletionService.deleteHighlight(highlightId);
+
+                // The service handles the database deletion, but we need to remove from UI
+                // Find and remove all highlight elements with this ID
+                const highlightElements = document.querySelectorAll(`[data-hl-id="${highlightId}"]`);
+                highlightElements.forEach(element => {
+                    element.remove();
+                });
+
+                this.logger.info(`Highlight ${highlightId} deleted successfully`);
+
+            } catch (error) {
+                this.logger.error('Failed to delete highlight:', error);
+                // You might want to show a user-friendly error message here
+            }
         },
 
         /**
