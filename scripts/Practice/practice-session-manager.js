@@ -93,7 +93,7 @@ class PracticeSessionManager {
             }
 
             // Initialize timer component if available
-            this.practiceSessionTimer = new PracticeSessionTimer(this.logger,{
+            this.practiceSessionTimer = new this.timer(this.logger,{
                 onTimerComplete: () => this.handleTimerComplete(),
                 onTimerTick: (timeLeft) => this.handleTimerTick(timeLeft),
                 onPauseToggle: (isPaused) => this.handlePauseToggle(isPaused),

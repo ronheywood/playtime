@@ -82,6 +82,10 @@ describe('Practice Session Flow - End to End', () => {
         const PracticeSessionStarter = require('../../scripts/Practice/practice-session-starter');
         const PracticeSessionManager = require('../../scripts/Practice/practice-session-manager');
         const PracticeSessionTimer = require('../../scripts/Practice/practice-session-timer');
+        const ConfidenceMapper = require('../../scripts/highlighting/ConfidenceMapper');
+        
+        // Create confidence mapper
+        const confidenceMapper = new ConfidenceMapper();
         
         // Mock window and document for browser-like environment
         global.window = {
@@ -135,6 +139,7 @@ describe('Practice Session Flow - End to End', () => {
             practiceSessionStarter,
             mockPracticePlanPersistence,
             database,
+            confidenceMapper,
             { pageRenderTimeout: 100, elementCheckInterval: 50 } // Faster for tests
         );
     });
@@ -318,13 +323,9 @@ describe('Practice Session Flow - End to End', () => {
             
             const planId = await mockPracticePlanPersistence.savePracticePlan(planData);
             
-            // Override the timer creation in _startSession by replacing it after session start
-            const originalStartSession = practiceSessionManager._startSession;
-            practiceSessionManager._startSession = async function(sessionConfig, scoreId) {
-                const result = await originalStartSession.call(this, sessionConfig, scoreId);
-                this.practiceSessionTimer = mockTimer; // Ensure our mock timer is used
-                return result;
-            };
+            // Replace the timer constructor before starting session so our mock is used
+            const originalTimer = practiceSessionManager.timer;
+            practiceSessionManager.timer = function() { return mockTimer; };
             
             await practiceSessionManager.startFromPlan(planId, 'timer-test');
             
@@ -361,12 +362,12 @@ describe('Practice Session Flow - End to End', () => {
             if (practiceSessionManager.practiceSessionTimer) {
                 const initialPausedState = practiceSessionManager.practiceSessionTimer.isPaused;
                 
-                // Simulate pause toggle
-                await practiceSessionManager.handlePauseToggle(true);
+                // Simulate pause by calling the timer's togglePause method
+                practiceSessionManager.practiceSessionTimer.togglePause();
                 expect(practiceSessionManager.practiceSessionTimer.isPaused).toBe(true);
                 
                 // Simulate resume
-                await practiceSessionManager.handlePauseToggle(false);
+                practiceSessionManager.practiceSessionTimer.togglePause(); // Toggle again to unpause
                 expect(practiceSessionManager.practiceSessionTimer.isPaused).toBe(false);
             } else {
                 // If timer is null, test that pause toggle method exists and doesn't crash
