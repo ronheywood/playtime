@@ -16,7 +16,8 @@ const LAYOUT_COMMAND_CONTRACT = {
         ZOOM: 'zoom', 
         SIDEBAR: 'sidebar',
         PANEL: 'panel',
-        THEME: 'theme'
+        THEME: 'theme',
+        PRACTICE_PLAN: 'practice-plan'
     },
     ACTIONS: {
         ENTER: 'enter',

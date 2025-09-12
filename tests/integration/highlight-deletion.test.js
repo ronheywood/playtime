@@ -125,6 +125,18 @@ describe('Highlight Deletion Integration', () => {
                                 results.push({ type: operation.type, success: true });
                                 break;
                                 
+                            case 'deleteEmptyPracticePlans':
+                                // Delete practice plans that have no sections
+                                let deletedPlanCount = 0;
+                                for (const [planId, plan] of this.practicePlans.entries()) {
+                                    if (!plan.sections || plan.sections.length === 0) {
+                                        this.practicePlans.delete(planId);
+                                        deletedPlanCount++;
+                                    }
+                                }
+                                results.push({ type: operation.type, success: true, deletedCount: deletedPlanCount });
+                                break;
+                                
                             default:
                                 throw new Error(`Unsupported operation: ${operation.type}`);
                         }
@@ -256,7 +268,7 @@ describe('Highlight Deletion Integration', () => {
             expect(updatedPlan.totalDuration).toBe(180); // Recalculated
         });
 
-        test('should handle multiple practice plans containing the same highlight', async () => {
+        test('should delete empty practice plans when highlight is removed', async () => {
             // Arrange: Create highlight and two practice plans
             const highlight = {
                 id: 'highlight-1',
@@ -285,16 +297,58 @@ describe('Highlight Deletion Integration', () => {
             // Act: Delete the highlight
             const result = await highlightDeletionService.deleteHighlight('highlight-1');
 
-            // Assert: Both practice plans should be updated
+            // Assert: Both practice plans should be deleted since they become empty
             expect(result).toBe(true);
             
             const updatedPlan1 = await database.getPracticePlan('plan-1');
             const updatedPlan2 = await database.getPracticePlan('plan-2');
             
-            expect(updatedPlan1.sections).toHaveLength(0);
-            expect(updatedPlan1.totalDuration).toBe(0);
-            expect(updatedPlan2.sections).toHaveLength(0);
-            expect(updatedPlan2.totalDuration).toBe(0);
+            // Plans should be deleted, not just emptied
+            expect(updatedPlan1).toBeNull();
+            expect(updatedPlan2).toBeNull();
+        });
+
+        test('should not delete practice plans that still have other highlights', async () => {
+            // Arrange: Create both highlights first
+            const highlight1 = {
+                id: 'highlight-1',
+                scoreId: 'score-1',
+                page: 1,
+                coordinates: { x: 100, y: 100, width: 200, height: 50 }
+            };
+            const highlight2 = {
+                id: 'highlight-2',
+                scoreId: 'score-1',
+                page: 1,
+                coordinates: { x: 300, y: 100, width: 200, height: 50 }
+            };
+            await database.saveHighlight(highlight1);
+            await database.saveHighlight(highlight2);
+            
+            // Create a practice plan with multiple highlights
+            const plan = {
+                id: 'plan-1',
+                name: 'Test Plan',
+                scoreId: 'score-1',
+                sections: [
+                    { highlightId: 'highlight-1', targetTime: 120 },
+                    { highlightId: 'highlight-2', targetTime: 180 }
+                ],
+                totalDuration: 300
+            };
+            await database.savePracticePlan(plan);
+
+            // Act: Delete one highlight
+            const result = await highlightDeletionService.deleteHighlight('highlight-1');
+
+            // Assert: Practice plan should still exist but with one less section
+            expect(result).toBe(true);
+            
+            const updatedPlan = await database.getPracticePlan('plan-1');
+            expect(updatedPlan).not.toBeNull();
+            expect(updatedPlan.sections).toHaveLength(1);
+            expect(updatedPlan.sections[0].highlightId).toBe('highlight-2');
+            expect(updatedPlan.totalDuration).toBe(180);
         });
 
         test('should handle transaction rollback on database error', async () => {

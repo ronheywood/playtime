@@ -456,7 +456,7 @@
             });
 
             // Initialize annotation form
-            this._components.annotationForm = new HighlightAnnotationFormClass(this.logger,{
+            this._components.annotationForm = new HighlightAnnotationFormClass(this._state.logger,{
                 containerId: 'pdf-canvas',
                 maxTitleLength: 100,
                 maxNotesLength: 1000
@@ -1109,20 +1109,20 @@
                 // Get highlight ID from the element
                 const highlightId = highlightElement.dataset.hlId;
                 if (!highlightId) {
-                    this.logger.warn('Cannot delete highlight: no ID found');
+                    this._state.logger.warn?.('Cannot delete highlight: no ID found');
                     return;
                 }
 
                 // Get the highlight deletion service from DI container
                 const diContainer = window.diContainer;
                 if (!diContainer) {
-                    this.logger.error('DI container not available for highlight deletion');
+                    this._state.logger.error?.('DI container not available for highlight deletion');
                     return;
                 }
 
                 const highlightDeletionService = diContainer.get('highlightDeletionService');
                 if (!highlightDeletionService) {
-                    this.logger.error('Highlight deletion service not available');
+                    this._state.logger.error?.('Highlight deletion service not available');
                     return;
                 }
 
@@ -1136,10 +1136,25 @@
                     element.remove();
                 });
 
-                this.logger.info(`Highlight ${highlightId} deleted successfully`);
+                this._state.logger.info?.(`Highlight ${highlightId} deleted successfully`);
+
+                // Trigger practice plan state refresh via layout command
+                if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.execute === 'function') {
+                    try {
+                        // Get current score ID to check practice plan state
+                        const currentScoreId = window.PlayTimeCurrentScoreId;
+                        await window.PlayTimeLayoutCommands.execute('practice-plan', { 
+                            action: 'check-empty',
+                            scoreId: currentScoreId 
+                        });
+                        this._state.logger.debug?.('Practice plan state refresh triggered after highlight deletion');
+                    } catch (layoutError) {
+                        this._state.logger.warn?.('Failed to refresh practice plan state:', layoutError);
+                    }
+                }
 
             } catch (error) {
-                this.logger.error('Failed to delete highlight:', error);
+                this._state.logger.error?.('Failed to delete highlight:', error);
                 // You might want to show a user-friendly error message here
             }
         },

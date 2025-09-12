@@ -534,7 +534,7 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
             
             try {
                 // Create transaction that spans all needed object stores
-                const storeNames = [SECTIONS_STORE, PRACTICE_PLAN_HIGHLIGHTS_STORE];
+                const storeNames = [SECTIONS_STORE, PRACTICE_PLAN_HIGHLIGHTS_STORE, PRACTICE_PLANS_STORE];
                 const tx = this._db.transaction(storeNames, 'readwrite');
                 const results = [];
                 let completedOperations = 0;
@@ -639,6 +639,83 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                             
                             getAllReq.onerror = () => {
                                 this.logger.error('❌ Failed to get practice plan highlights by highlight ID:', getAllReq.error);
+                                tx.abort();
+                            };
+                            break;
+                            
+                        case 'deleteEmptyPracticePlans':
+                            // Find practice plans that have no remaining highlights after this deletion
+                            const practiceStoreForPlans = tx.objectStore(PRACTICE_PLAN_HIGHLIGHTS_STORE);
+                            const plansStore = tx.objectStore(PRACTICE_PLANS_STORE);
+                            this.logger.debug?.('🔍 Checking for empty practice plans to delete...');
+                            // Get all practice plan highlights
+                            const getAllPlanHighlights = practiceStoreForPlans.getAll();
+                            
+                            getAllPlanHighlights.onsuccess = () => {
+                                const allPlanHighlights = getAllPlanHighlights.result || [];
+                                
+                                // Group by practice plan ID to find which plans have highlights
+                                const planHighlightCounts = new Map();
+                                allPlanHighlights.forEach(pph => {
+                                    const planId = pph.practicePlanId;
+                                    if (!planHighlightCounts.has(planId)) {
+                                        planHighlightCounts.set(planId, 0);
+                                    }
+                                    planHighlightCounts.set(planId, planHighlightCounts.get(planId) + 1);
+                                });
+                                
+                                // Get all practice plans and delete those with no highlights
+                                const getAllPlans = plansStore.getAll();
+                                
+                                getAllPlans.onsuccess = () => {
+                                    const allPlans = getAllPlans.result || [];
+                                    let deletedPlanCount = 0;
+                                    let plansToDelete = 0;
+                                    
+                                    // Count plans that need deletion
+                                    allPlans.forEach(plan => {
+                                        if (!planHighlightCounts.has(plan.id) || planHighlightCounts.get(plan.id) === 0) {
+                                            plansToDelete++;
+                                        }
+                                    });
+                                    
+                                    if (plansToDelete === 0) {
+                                        // No empty plans to delete
+                                        results[operationIndex] = { type: operation.type, success: true, deletedCount: 0 };
+                                        completedOperations++;
+                                        checkCompletion();
+                                        return;
+                                    }
+                                    
+                                    // Delete empty plans
+                                    allPlans.forEach(plan => {
+                                        if (!planHighlightCounts.has(plan.id) || planHighlightCounts.get(plan.id) === 0) {
+                                            const deletePlanReq = plansStore.delete(plan.id);
+                                            deletePlanReq.onsuccess = () => {
+                                                deletedPlanCount++;
+                                                if (deletedPlanCount === plansToDelete) {
+                                                    this.logger.info(`✅ Deleted ${deletedPlanCount} empty practice plans`);
+                                                    results[operationIndex] = { type: operation.type, success: true, deletedCount: deletedPlanCount };
+                                                    completedOperations++;
+                                                    checkCompletion();
+                                                }
+                                            };
+                                            deletePlanReq.onerror = () => {
+                                                this.logger.error('❌ Failed to delete empty practice plan:', deletePlanReq.error);
+                                                tx.abort();
+                                            };
+                                        }
+                                    });
+                                };
+                                
+                                getAllPlans.onerror = () => {
+                                    this.logger.error('❌ Failed to get practice plans for empty check:', getAllPlans.error);
+                                    tx.abort();
+                                };
+                            };
+                            
+                            getAllPlanHighlights.onerror = () => {
+                                this.logger.error('❌ Failed to get practice plan highlights for empty check:', getAllPlanHighlights.error);
                                 tx.abort();
                             };
                             break;

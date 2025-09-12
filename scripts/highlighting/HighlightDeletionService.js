@@ -52,7 +52,8 @@ class HighlightDeletionService {
         // Use the database abstraction layer instead of raw IndexedDB
         const operations = [
             { type: 'deleteHighlight', highlightId: highlightId },
-            { type: 'deletePracticePlanHighlightsByHighlightId', highlightId: highlightId } // Clean up practice plan references by highlight ID
+            { type: 'deletePracticePlanHighlightsByHighlightId', highlightId: highlightId }, // Clean up practice plan references by highlight ID
+            { type: 'deleteEmptyPracticePlans', highlightId: highlightId } // Delete practice plans that become empty
         ];
 
         const result = await this.database.deleteWithTransaction(operations);

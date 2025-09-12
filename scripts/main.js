@@ -706,6 +706,56 @@ if (typeof document !== 'undefined' && typeof document.addEventListener === 'fun
             });
             window.logger.info?.('Practice mode layout command handler registered');
         }
+
+        // Register practice plan layout command
+        if (window.PlayTimeLayoutCommands && typeof window.PlayTimeLayoutCommands.registerHandler === 'function') {
+            window.PlayTimeLayoutCommands.registerHandler('practice-plan', async (type, options) => {
+                const { action = 'refresh-state', scoreId } = options;
+                
+                appLogger.info('Practice Plan Layout Command:', { action, scoreId });
+
+                try {
+                    switch (action) {
+                        case 'refresh-state':
+                        case 'check-empty':
+                            // Get the practice planner instance
+                            let practicePlanner = null;
+                            
+                            // Try multiple ways to get the practice planner
+                            if (window.practicePlanner) {
+                                practicePlanner = window.practicePlanner;
+                            } else if (window.diContainer) {
+                                practicePlanner = window.diContainer.get('practicePlanner');
+                            } else if (window.PlayTimeApp && window.PlayTimeApp.practicePlanner) {
+                                practicePlanner = window.PlayTimeApp.practicePlanner;
+                            }
+                            
+                            if (!practicePlanner) {
+                                appLogger.warn('Practice planner not available for state update');
+                                return;
+                            }
+
+                            // Use the current score if none provided
+                            const currentScoreId = scoreId || practicePlanner.currentScoreId;
+                            if (!currentScoreId) {
+                                appLogger.debug('No score ID available for practice plan state check');
+                                return;
+                            }
+
+                            // Check if there are existing practice plans for this score
+                            await practicePlanner.checkForExistingPracticePlans(currentScoreId);
+                            appLogger.info('Practice plan state refreshed for score:', currentScoreId);
+                            break;
+                            
+                        default:
+                            appLogger.warn('Unknown practice plan action:', action);
+                    }
+                } catch (error) {
+                    appLogger.error('Practice plan layout command failed:', error);
+                }
+            });
+            appLogger.info('Practice plan layout command registered');
+        }
         // Reload scenario: current score id already set but no highlights rendered yet -> replay SCORE_SELECTED
         try {
             if (window.PlayTimeCurrentScoreId != null && !window.__playTimeReloadReplayed) {
