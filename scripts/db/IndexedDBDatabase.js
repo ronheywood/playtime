@@ -598,6 +598,51 @@ export class IndexedDBDatabase extends window.AbstractDatabase {
                             };
                             break;
                             
+                        case 'deletePracticePlanHighlightsByHighlightId':
+                            const practiceStoreByHighlight = tx.objectStore(PRACTICE_PLAN_HIGHLIGHTS_STORE);
+                            const highlightIndex = practiceStoreByHighlight.index('highlightId');
+                            
+                            // Use index to get only records matching the highlightId (keep as string)
+                            const getAllReq = highlightIndex.getAll(operation.highlightId.toString());
+                            
+                            getAllReq.onsuccess = () => {
+                                const recordsToDelete = getAllReq.result || [];
+                                
+                                if (recordsToDelete.length === 0) {
+                                    // No records found to delete
+                                    this.logger.info('✅ No practice plan highlights found for highlight ID:', operation.highlightId);
+                                    results[operationIndex] = { type: operation.type, success: true, deletedCount: 0 };
+                                    completedOperations++;
+                                    checkCompletion();
+                                    return;
+                                }
+                                
+                                // Delete all matching records
+                                let deletedCount = 0;
+                                recordsToDelete.forEach(record => {
+                                    const deleteReq = practiceStoreByHighlight.delete(record.id);
+                                    deleteReq.onsuccess = () => {
+                                        deletedCount++;
+                                        if (deletedCount === recordsToDelete.length) {
+                                            this.logger.info(`✅ Deleted ${deletedCount} practice plan highlights for highlight ID:`, operation.highlightId);
+                                            results[operationIndex] = { type: operation.type, success: true, deletedCount };
+                                            completedOperations++;
+                                            checkCompletion();
+                                        }
+                                    };
+                                    deleteReq.onerror = () => {
+                                        this.logger.error('❌ Failed to delete practice plan highlight record:', deleteReq.error);
+                                        tx.abort();
+                                    };
+                                });
+                            };
+                            
+                            getAllReq.onerror = () => {
+                                this.logger.error('❌ Failed to get practice plan highlights by highlight ID:', getAllReq.error);
+                                tx.abort();
+                            };
+                            break;
+                            
                         default:
                             tx.abort();
                             reject(new Error(`Unsupported transaction operation: ${operation.type}`));

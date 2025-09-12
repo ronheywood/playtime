@@ -100,6 +100,11 @@ class MemoryDatabase extends AbstractDatabase {
                         results.push({ type: operation.type, success: true });
                         break;
                         
+                    case 'deletePracticePlanHighlightsByHighlightId':
+                        // For now, just return success - extend when practice plan functionality is needed
+                        results.push({ type: operation.type, success: true });
+                        break;
+                        
                     default:
                         throw new Error(`Unsupported transaction operation: ${operation.type}`);
                 }

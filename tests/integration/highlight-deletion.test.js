@@ -95,16 +95,31 @@ describe('Highlight Deletion Integration', () => {
                                 break;
                                 
                             case 'deletePracticePlanHighlights':
-                                // For practice plan highlights, we clean up the practice plans
+                                // For practice plan highlights, we clean up the practice plans by practice plan ID
                                 for (const [planId, plan] of this.practicePlans.entries()) {
-                                    const originalLength = plan.sections?.length || 0;
+                                    if (planId === operation.practicePlanId) {
+                                        if (plan.sections) {
+                                            plan.sections = [];
+                                            plan.totalDuration = 0;
+                                        }
+                                    }
+                                }
+                                results.push({ type: operation.type, success: true });
+                                break;
+                                
+                            case 'deletePracticePlanHighlightsByHighlightId':
+                                // For practice plan highlights by highlight ID, we remove sections with matching highlight ID
+                                for (const [planId, plan] of this.practicePlans.entries()) {
                                     if (plan.sections) {
+                                        const originalLength = plan.sections.length;
                                         plan.sections = plan.sections.filter(section => 
-                                            section.highlightId !== operation.practicePlanId
+                                            section.highlightId !== operation.highlightId
                                         );
-                                        plan.totalDuration = plan.sections.reduce((total, section) => 
-                                            total + (section.targetTime || 0), 0
-                                        );
+                                        if (plan.sections.length !== originalLength) {
+                                            plan.totalDuration = plan.sections.reduce((total, section) => 
+                                                total + (section.targetTime || 0), 0
+                                            );
+                                        }
                                     }
                                 }
                                 results.push({ type: operation.type, success: true });
