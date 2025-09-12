@@ -4,27 +4,37 @@
  */
 
 const TestHelpers = require('../helpers/test-helpers');
-const { changeLayout, registerHandler, clearHandlers } = require('../../scripts/layout/layout-commands');
+const { changeLayout, registerHandler, executeCommand, registerCommand, clearCommands } = require('../../scripts/layout/layout-commands');
 const createPlayTimeFocusModeCommands = require('../../scripts/layout/focus-mode-commands');
 
 describe('Focus Mode Command Integration', () => {
-    let mockElements, commandEvents, focusModeCommands;
+    let mockElements, commandEvents, focusModeCommands, eventListener;
 
     beforeEach(() => {
         // Clean up from previous test first
         if (focusModeCommands && focusModeCommands.cleanupFocusModeCommands) {
             focusModeCommands.cleanupFocusModeCommands();
         }
-        clearHandlers();
+        clearCommands();
         
         // Set up DOM environment
         TestHelpers.setupDOM();
         
-        // Track command events
+        // Track command events - create fresh listener for each test
         commandEvents = [];
-        global.window.addEventListener('playtime:layout-command', (event) => {
+        
+        // Create a real EventTarget for testing events instead of jest mocks
+        const eventTarget = new EventTarget();
+        global.window.addEventListener = eventTarget.addEventListener.bind(eventTarget);
+        global.window.removeEventListener = eventTarget.removeEventListener.bind(eventTarget);
+        global.window.dispatchEvent = eventTarget.dispatchEvent.bind(eventTarget);
+        
+        // Create a named function for the event listener so we can remove it
+        eventListener = (event) => {
             commandEvents.push(event.detail);
-        });
+        };
+        
+        global.window.addEventListener('playtime:layout-command', eventListener);
 
         // Create focus mode buttons and elements
         mockElements = TestHelpers.createFocusModeElements();
@@ -35,17 +45,23 @@ describe('Focus Mode Command Integration', () => {
     });
 
     afterEach(() => {
+        // Clean up the specific event listener we added
+        if (eventListener && global.window.removeEventListener) {
+            global.window.removeEventListener('playtime:layout-command', eventListener);
+        }
+        
         // Clean up focus mode command listeners
         if (focusModeCommands && focusModeCommands.cleanupFocusModeCommands) {
             focusModeCommands.cleanupFocusModeCommands();
         }
         
         // Clear command handlers registry
-        clearHandlers();
+        clearCommands();
         
         // Clean up DOM
         TestHelpers.cleanup();
         commandEvents = [];
+        eventListener = null;
     });
 
     describe('Focus Mode Button Command Dispatch', () => {
@@ -55,10 +71,11 @@ describe('Focus Mode Command Integration', () => {
             
             // Assert: Command event was dispatched
             expect(commandEvents).toHaveLength(1);
-            expect(commandEvents[0]).toEqual({
+            expect(commandEvents[0]).toMatchObject({
                 type: 'focus-mode',
                 options: { action: 'enter' }
             });
+            expect(typeof commandEvents[0].timestamp).toBe('number');
         });
 
         test('should dispatch exit focus command when exit button clicked', () => {
@@ -66,11 +83,12 @@ describe('Focus Mode Command Integration', () => {
             mockElements.exitBtn.click();
             
             // Assert: Command event was dispatched
-            //TODO: expect(commandEvents).toHaveLength(1);
-            expect(commandEvents[0]).toEqual({
+            expect(commandEvents).toHaveLength(1);
+            expect(commandEvents[0]).toMatchObject({
                 type: 'focus-mode',
                 options: { action: 'exit' }
             });
+            expect(typeof commandEvents[0].timestamp).toBe('number');
         });
 
         test('should dispatch toggle focus command when toggle button clicked', () => {
@@ -78,11 +96,12 @@ describe('Focus Mode Command Integration', () => {
             mockElements.toggleBtn.click();
             
             // Assert: Command event was dispatched
-            //TODO: expect(commandEvents).toHaveLength(1);
-            expect(commandEvents[0]).toEqual({
+            expect(commandEvents).toHaveLength(1);
+            expect(commandEvents[0]).toMatchObject({
                 type: 'focus-mode',
                 options: { action: 'toggle' }
             });
+            expect(typeof commandEvents[0].timestamp).toBe('number');
         });
 
         test('should dispatch exit focus command when ESC key pressed in focus mode', () => {
@@ -94,11 +113,12 @@ describe('Focus Mode Command Integration', () => {
             document.dispatchEvent(escEvent);
             
             // Assert: Command event was dispatched
-            //TODO: expect(commandEvents).toHaveLength(1);
-            expect(commandEvents[0]).toEqual({
+            expect(commandEvents).toHaveLength(1);
+            expect(commandEvents[0]).toMatchObject({
                 type: 'focus-mode',
                 options: { action: 'exit' }
             });
+            expect(typeof commandEvents[0].timestamp).toBe('number');
         });
     });
 

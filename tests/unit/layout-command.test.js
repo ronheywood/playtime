@@ -66,10 +66,11 @@ describe('Layout Command Interface', () => {
         expect(mockDispatchEvent).toHaveBeenCalledTimes(1);
         const dispatchedEvent = mockDispatchEvent.mock.calls[0][0];
         expect(dispatchedEvent.type).toBe('playtime:layout-command');
-        expect(dispatchedEvent.detail).toEqual({
+        expect(dispatchedEvent.detail).toMatchObject({
             type: 'focus-mode',
             options: { action: 'enter' }
         });
+        expect(typeof dispatchedEvent.detail.timestamp).toBe('number');
     });
 
     test('registerHandler allows command subscription', () => {
@@ -90,9 +91,23 @@ describe('Layout Command Interface', () => {
     });
 
     test('unknown command types are handled gracefully', () => {
-        // Arrange & Act & Assert - Should not throw
+        // Arrange: Mock logger for this intentional test
+        const mockLogger = { error: jest.fn() };
+        const originalLogger = global.logger;
+        global.logger = mockLogger;
+
+        // Act & Assert - Should not throw
         expect(() => {
             LayoutCommands.changeLayout('unknown-type', {});
         }).not.toThrow();
+
+        // Verify error was logged (but suppressed from output)
+        expect(mockLogger.error).toHaveBeenCalledWith(
+            expect.stringContaining('Layout command unknown-type failed:'),
+            expect.any(Error)
+        );
+
+        // Restore logger
+        global.logger = originalLogger;
     });
 });
