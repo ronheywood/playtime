@@ -440,8 +440,8 @@ body {
 
 /* Fix for iPad/mobile: ensure timer stays visible */
 @media (hover: none) and (pointer: coarse) {
-    /* Mobile/tablet device detected - fix timer positioning */
-    #practice-session-timer {
+    /* Mobile/tablet device detected - fix timer positioning - but not when in pinch-zoom mode */
+    #practice-session-timer:not(.pinch-zoom-fixed) {
         position: fixed !important;
         top: env(safe-area-inset-top, 0.5rem) !important;
         right: 0.5rem !important;
@@ -599,8 +599,8 @@ body {
 
 /* Mobile/Touch Device Timer Positioning Fixes */
 @media (hover: none) and (pointer: coarse) {
-    /* Fix timer positioning on touch devices (iPad, mobile) */
-    #practice-session-timer {
+    /* Fix timer positioning on touch devices (iPad, mobile) - but not when in pinch-zoom mode */
+    #practice-session-timer:not(.pinch-zoom-fixed) {
         position: fixed !important;
         top: env(safe-area-inset-top, 0.5rem) !important;
         right: 1rem !important; /* Better positioning now that theme toggle is in sidebar */
@@ -615,8 +615,8 @@ body {
         pointer-events: auto !important;
     }
     
-    /* Dark mode support for mobile timer */
-    .dark #practice-session-timer {
+    /* Dark mode support for mobile timer - but not when in pinch-zoom mode */
+    .dark #practice-session-timer:not(.pinch-zoom-fixed) {
         background: rgba(34, 34, 34, 0.95) !important;
         border-color: hsl(var(--border)) !important;
     }
@@ -789,4 +789,212 @@ body {
 .practice-completion-overlay #end-session {
     background: hsl(var(--practice-needs-work));
     color: white;
+}
+
+/* Enhanced Pinch-Zoom Timer Positioning */
+/* When timer detects pinch-zoom state, apply enhanced floating positioning */
+/* Use higher specificity to override mobile media query styles */
+@media (hover: none) and (pointer: coarse) {
+    #practice-session-timer.pinch-zoom-fixed {
+        position: fixed !important;
+        /* top position will be set dynamically by JavaScript based on viewport */
+        /* right position will be set dynamically by JavaScript */
+        left: auto !important;
+        bottom: auto !important; /* Override any bottom positioning */
+        z-index: 99999 !important; /* Even higher z-index during pinch-zoom */
+        
+        /* Make timer truly float over content - remove toolbar positioning */
+        transform: none !important;
+        margin: 0 !important;
+        
+        /* Enhanced visual styling for pinch-zoom mode */
+        background: rgba(0, 0, 0, 0.9) !important; /* Darker background for better contrast */
+        backdrop-filter: blur(16px) !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+        border: 2px solid #007bff !important; /* Blue border for visibility */
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        
+        /* Ensure proper sizing and positioning */
+        max-width: calc(100vw - 16px) !important;
+        min-width: 280px !important;
+        width: auto !important;
+        
+        /* Force layer and smooth animations */
+        transform: translateZ(0) !important; /* Force hardware acceleration */
+        will-change: transform !important; /* Optimize for animations */
+        
+        /* Add subtle glow effect for visibility */
+        box-shadow: 
+            0 0 0 1px rgba(255, 255, 255, 0.1),
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            0 0 16px rgba(0, 123, 255, 0.3) !important;
+    }
+    
+    /* Override any toolbar constraints when timer is in pinch-zoom mode */
+    [data-role="main-toolbar"] #practice-session-timer.pinch-zoom-fixed {
+        position: fixed !important;
+        /* Position will be set by JavaScript */
+        left: auto !important;
+        bottom: auto !important;
+    }
+}
+
+/* Fallback for non-touch devices or when media query doesn't match */
+#practice-session-timer.pinch-zoom-fixed {
+    position: fixed !important;
+    /* top and right will be set dynamically by JavaScript */
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 99999 !important;
+    
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 2px solid #007bff !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    
+    max-width: calc(100vw - 16px) !important;
+    min-width: 280px !important;
+    width: auto !important;
+    
+    transform: translateZ(0) !important;
+    will-change: transform !important;
+    
+    box-shadow: 
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 0 16px rgba(0, 123, 255, 0.3) !important;
+}
+
+/* Override toolbar constraints for all cases */
+[data-role="main-toolbar"] #practice-session-timer.pinch-zoom-fixed {
+    position: fixed !important;
+    /* Position will be set by JavaScript */
+    left: auto !important;
+    bottom: auto !important;
+}
+
+/* Dark mode support for pinch-zoom timer */
+@media (hover: none) and (pointer: coarse) {
+    .dark #practice-session-timer.pinch-zoom-fixed {
+        background: rgba(0, 0, 0, 0.95) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 
+            0 0 0 1px rgba(255, 255, 255, 0.15),
+            0 8px 32px rgba(0, 0, 0, 0.6),
+            0 0 16px rgba(59, 130, 246, 0.4) !important;
+    }
+}
+
+/* Fallback dark mode for non-touch devices */
+.dark #practice-session-timer.pinch-zoom-fixed {
+    background: rgba(0, 0, 0, 0.95) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 
+        0 0 0 1px rgba(255, 255, 255, 0.15),
+        0 8px 32px rgba(0, 0, 0, 0.6),
+        0 0 16px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Timer content styling for pinch-zoom mode */
+@media (hover: none) and (pointer: coarse) {
+    #practice-session-timer.pinch-zoom-fixed .practice-session-timer-compact {
+        gap: 12px !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        color: white !important; /* Ensure text is visible on dark background */
+    }
+
+    /* White text for all timer elements in pinch-zoom mode */
+    #practice-session-timer.pinch-zoom-fixed,
+    #practice-session-timer.pinch-zoom-fixed * {
+        color: white !important;
+    }
+
+    /* Button styling for pinch-zoom mode */
+    #practice-session-timer.pinch-zoom-fixed .btn {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        color: white !important;
+    }
+
+    #practice-session-timer.pinch-zoom-fixed .btn:hover,
+    #practice-session-timer.pinch-zoom-fixed .btn:active {
+        background: rgba(255, 255, 255, 0.3) !important;
+        transform: scale(0.98) !important;
+    }
+
+    /* Enhanced touch targets during pinch-zoom */
+    #practice-session-timer.pinch-zoom-fixed .btn {
+        min-width: 48px !important;
+        min-height: 48px !important;
+        padding: 12px !important;
+        font-size: 14px !important;
+        touch-action: manipulation !important;
+        -webkit-tap-highlight-color: transparent !important;
+    }
+
+    /* Timer display enhancements for pinch-zoom visibility */
+    #practice-session-timer.pinch-zoom-fixed .time-remaining-compact {
+        font-size: 20px !important;
+        font-weight: 800 !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    #practice-session-timer.pinch-zoom-fixed .section-counter-compact {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* Improved button layout for pinch-zoom */
+    #practice-session-timer.pinch-zoom-fixed .timer-controls-compact {
+        gap: 12px !important;
+        justify-content: center !important;
+    }
+}
+
+/* Fallback styling for non-touch devices */
+#practice-session-timer.pinch-zoom-fixed .practice-session-timer-compact {
+    gap: 12px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    color: white !important;
+}
+
+#practice-session-timer.pinch-zoom-fixed,
+#practice-session-timer.pinch-zoom-fixed * {
+    color: white !important;
+}
+
+#practice-session-timer.pinch-zoom-fixed .btn {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 12px !important;
+}
+
+/* Visual feedback for pinch-zoom mode activation */
+#practice-session-timer.pinch-zoom-fixed::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        hsl(var(--primary)) 0%, 
+        hsl(var(--primary) / 0.7) 50%, 
+        hsl(var(--primary)) 100%);
+    animation: pinch-zoom-indicator 2s ease-in-out infinite;
+}
+
+@keyframes pinch-zoom-indicator {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
 }
